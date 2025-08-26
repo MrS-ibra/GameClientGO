@@ -508,23 +508,23 @@ void NGMP_OnlineServices_LobbyInterface::SearchForLobbies(std::function<void()> 
 			for (const auto& lobbyEntryIter : jsonObject["lobbies"])
 			{
 				LobbyEntry lobbyEntry;
-				lobbyEntryIter["id"].get_to(lobbyEntry.lobbyID);
-				lobbyEntryIter["owner"].get_to(lobbyEntry.owner);
-				lobbyEntryIter["name"].get_to(lobbyEntry.name);
-				lobbyEntryIter["map_name"].get_to(lobbyEntry.map_name);
-				lobbyEntryIter["map_path"].get_to(lobbyEntry.map_path);
-				lobbyEntryIter["map_official"].get_to(lobbyEntry.map_official);
-				lobbyEntryIter["current_players"].get_to(lobbyEntry.current_players);
-				lobbyEntryIter["max_players"].get_to(lobbyEntry.max_players);
-				lobbyEntryIter["vanilla_teams"].get_to(lobbyEntry.vanilla_teams);
-				lobbyEntryIter["starting_cash"].get_to(lobbyEntry.starting_cash);
-				lobbyEntryIter["limit_superweapons"].get_to(lobbyEntry.limit_superweapons);
-				lobbyEntryIter["track_stats"].get_to(lobbyEntry.track_stats);
-				lobbyEntryIter["passworded"].get_to(lobbyEntry.passworded);
-				lobbyEntryIter["allow_observers"].get_to(lobbyEntry.allow_observers);
-				lobbyEntryIter["max_cam_height"].get_to(lobbyEntry.max_cam_height);
-				lobbyEntryIter["exe_crc"].get_to(lobbyEntry.exe_crc);
-				lobbyEntryIter["ini_crc"].get_to(lobbyEntry.ini_crc);
+				lobbyEntryIter["LobbyID"].get_to(lobbyEntry.lobbyID);
+				lobbyEntryIter["Owner"].get_to(lobbyEntry.owner);
+				lobbyEntryIter["Name"].get_to(lobbyEntry.name);
+				lobbyEntryIter["MapName"].get_to(lobbyEntry.map_name);
+				lobbyEntryIter["MapPath"].get_to(lobbyEntry.map_path);
+				lobbyEntryIter["IsMapOfficial"].get_to(lobbyEntry.map_official);
+				lobbyEntryIter["NumCurrentPlayers"].get_to(lobbyEntry.current_players);
+				lobbyEntryIter["MaxPlayers"].get_to(lobbyEntry.max_players);
+				lobbyEntryIter["IsVanillaTeamsOnly"].get_to(lobbyEntry.vanilla_teams);
+				lobbyEntryIter["StartingCash"].get_to(lobbyEntry.starting_cash);
+				lobbyEntryIter["IsLimitSuperweapons"].get_to(lobbyEntry.limit_superweapons);
+				lobbyEntryIter["IsTrackingStats"].get_to(lobbyEntry.track_stats);
+				lobbyEntryIter["IsPassworded"].get_to(lobbyEntry.passworded);
+				lobbyEntryIter["AllowObservers"].get_to(lobbyEntry.allow_observers);
+				lobbyEntryIter["MaximumCameraHeight"].get_to(lobbyEntry.max_cam_height);
+				lobbyEntryIter["ExeCRC"].get_to(lobbyEntry.exe_crc);
+				lobbyEntryIter["IniCRC"].get_to(lobbyEntry.ini_crc);
 
 				// correct map path
 				if (lobbyEntry.map_official)
@@ -539,30 +539,15 @@ void NGMP_OnlineServices_LobbyInterface::SearchForLobbies(std::function<void()> 
 				// NOTE: These fields won't be present becauase they're private properties
 				//memberEntryIter["enc_key"].get_to(strEncKey);
 
-				for (const auto& memberEntryIter : lobbyEntryIter["members"])
+				for (const auto& memberEntryIter : lobbyEntryIter["Members"])
 				{
 					LobbyMemberEntry memberEntry;
 
-					memberEntryIter["user_id"].get_to(memberEntry.user_id);
-					memberEntryIter["display_name"].get_to(memberEntry.display_name);
-					memberEntryIter["ready"].get_to(memberEntry.m_bIsReady);
-					memberEntryIter["slot_index"].get_to(memberEntry.m_SlotIndex);
-					memberEntryIter["slot_state"].get_to(memberEntry.m_SlotState);
-
-					// NOTE: These fields won't be present becauase they're private properties
-					//memberEntryIter["ip_addr"].get_to(memberEntry.strIPAddress);
-					//memberEntryIter["port"].get_to(memberEntry.preferredPort);
-
-
-					// TODO_NGMP: MAybe surface the player slots via tooltip?
-
-					// NOTE: These fields wont be presen't because they really don't matter until you're in the match
-					//memberEntryIter["side"].get_to(memberEntry.side);
-					//memberEntryIter["color"].get_to(memberEntry.color);
-					//memberEntryIter["team"].get_to(memberEntry.team);
-					//memberEntryIter["startpos"].get_to(memberEntry.startpos);
-					//memberEntryIter["has_map"].get_to(memberEntry.has_map);
-
+					memberEntryIter["UserID"].get_to(memberEntry.user_id);
+					memberEntryIter["DisplayName"].get_to(memberEntry.display_name);
+					memberEntryIter["IsReady"].get_to(memberEntry.m_bIsReady);
+					memberEntryIter["SlotIndex"].get_to(memberEntry.m_SlotIndex);
+					memberEntryIter["SlotState"].get_to(memberEntry.m_SlotState);
 
 					lobbyEntry.members.push_back(memberEntry);
 				}
@@ -654,27 +639,30 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 
 						nlohmann::json jsonObjectRoot = nlohmann::json::parse(strBody);
 
-						auto lobbyEntryJSON = jsonObjectRoot["lobby"];
+						NetworkLog(ELogVerbosity::LOG_DEBUG, "LOBBY JSON");
+						NetworkLog(ELogVerbosity::LOG_DEBUG, strBody.c_str());
+
+						auto lobbyEntryIter = jsonObjectRoot["lobby"];
 
 						LobbyEntry lobbyEntry;
-						lobbyEntryJSON["id"].get_to(lobbyEntry.lobbyID);
-						lobbyEntryJSON["owner"].get_to(lobbyEntry.owner);
-						lobbyEntryJSON["name"].get_to(lobbyEntry.name);
-						lobbyEntryJSON["map_name"].get_to(lobbyEntry.map_name);
-						lobbyEntryJSON["map_path"].get_to(lobbyEntry.map_path);
-						lobbyEntryJSON["map_official"].get_to(lobbyEntry.map_official);
-						lobbyEntryJSON["current_players"].get_to(lobbyEntry.current_players);
-						lobbyEntryJSON["max_players"].get_to(lobbyEntry.max_players);
-						lobbyEntryJSON["vanilla_teams"].get_to(lobbyEntry.vanilla_teams);
-						lobbyEntryJSON["starting_cash"].get_to(lobbyEntry.starting_cash);
-						lobbyEntryJSON["limit_superweapons"].get_to(lobbyEntry.limit_superweapons);
-						lobbyEntryJSON["track_stats"].get_to(lobbyEntry.track_stats);
-						lobbyEntryJSON["allow_observers"].get_to(lobbyEntry.allow_observers);
-						lobbyEntryJSON["passworded"].get_to(lobbyEntry.passworded);
-						lobbyEntryJSON["rng_seed"].get_to(lobbyEntry.rng_seed);
-						lobbyEntryJSON["max_cam_height"].get_to(lobbyEntry.max_cam_height);
-						lobbyEntryJSON["exe_crc"].get_to(lobbyEntry.exe_crc);
-						lobbyEntryJSON["ini_crc"].get_to(lobbyEntry.ini_crc);
+						lobbyEntryIter["LobbyID"].get_to(lobbyEntry.lobbyID);
+						lobbyEntryIter["Owner"].get_to(lobbyEntry.owner);
+						lobbyEntryIter["Name"].get_to(lobbyEntry.name);
+						lobbyEntryIter["MapName"].get_to(lobbyEntry.map_name);
+						lobbyEntryIter["MapPath"].get_to(lobbyEntry.map_path);
+						lobbyEntryIter["IsMapOfficial"].get_to(lobbyEntry.map_official);
+						lobbyEntryIter["NumCurrentPlayers"].get_to(lobbyEntry.current_players);
+						lobbyEntryIter["MaxPlayers"].get_to(lobbyEntry.max_players);
+						lobbyEntryIter["IsVanillaTeamsOnly"].get_to(lobbyEntry.vanilla_teams);
+						lobbyEntryIter["RNGSeed"].get_to(lobbyEntry.rng_seed);
+						lobbyEntryIter["StartingCash"].get_to(lobbyEntry.starting_cash);
+						lobbyEntryIter["IsLimitSuperweapons"].get_to(lobbyEntry.limit_superweapons);
+						lobbyEntryIter["IsTrackingStats"].get_to(lobbyEntry.track_stats);
+						lobbyEntryIter["IsPassworded"].get_to(lobbyEntry.passworded);
+						lobbyEntryIter["AllowObservers"].get_to(lobbyEntry.allow_observers);
+						lobbyEntryIter["MaximumCameraHeight"].get_to(lobbyEntry.max_cam_height);
+						lobbyEntryIter["ExeCRC"].get_to(lobbyEntry.exe_crc);
+						lobbyEntryIter["IniCRC"].get_to(lobbyEntry.ini_crc);
 
 						// correct map path
 						if (lobbyEntry.map_official)
@@ -716,22 +704,21 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 							}
 						}
 
-						for (const auto& memberEntryIter : lobbyEntryJSON["members"])
+						for (const auto& memberEntryIter : lobbyEntryIter["Members"])
 						{
 							LobbyMemberEntry memberEntry;
 
-							memberEntryIter["user_id"].get_to(memberEntry.user_id);
-							memberEntryIter["display_name"].get_to(memberEntry.display_name);
-							memberEntryIter["ready"].get_to(memberEntry.m_bIsReady);
-							memberEntryIter["ip_addr"].get_to(memberEntry.strIPAddress);
-							memberEntryIter["port"].get_to(memberEntry.preferredPort);
-							memberEntryIter["side"].get_to(memberEntry.side);
-							memberEntryIter["color"].get_to(memberEntry.color);
-							memberEntryIter["team"].get_to(memberEntry.team);
-							memberEntryIter["startpos"].get_to(memberEntry.startpos);
-							memberEntryIter["has_map"].get_to(memberEntry.has_map);
-							memberEntryIter["slot_index"].get_to(memberEntry.m_SlotIndex);
-							memberEntryIter["slot_state"].get_to(memberEntry.m_SlotState);
+							memberEntryIter["UserID"].get_to(memberEntry.user_id);
+							memberEntryIter["DisplayName"].get_to(memberEntry.display_name);
+							memberEntryIter["IsReady"].get_to(memberEntry.m_bIsReady);
+							memberEntryIter["Port"].get_to(memberEntry.preferredPort);
+							memberEntryIter["Side"].get_to(memberEntry.side);
+							memberEntryIter["Color"].get_to(memberEntry.color);
+							memberEntryIter["Team"].get_to(memberEntry.team);
+							memberEntryIter["StartingPosition"].get_to(memberEntry.startpos);
+							memberEntryIter["HasMap"].get_to(memberEntry.has_map);
+							memberEntryIter["SlotState"].get_to(memberEntry.m_SlotState);
+							memberEntryIter["SlotIndex"].get_to(memberEntry.m_SlotIndex);
 
 							lobbyEntry.members.push_back(memberEntry);
 
@@ -1155,7 +1142,6 @@ void NGMP_OnlineServices_LobbyInterface::CreateLobby(UnicodeString strLobbyName,
 							me.user_id = m_CurrentLobby.owner;
 							me.display_name = pAuthInterface->GetDisplayName();
 							me.m_bIsReady = true; // host is always ready
-							me.strIPAddress = "127.0.0.1"; // TODO_NGMP: use localhost for non-host players too that are local...
 							me.preferredPort = NGMP_OnlineServicesManager::GetInstance()->GetPortMapper().GetOpenPort();
 
 							m_CurrentLobby.members.push_back(me);

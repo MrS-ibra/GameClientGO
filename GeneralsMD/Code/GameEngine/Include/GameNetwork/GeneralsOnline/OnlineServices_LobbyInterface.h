@@ -13,7 +13,6 @@ extern NGMPGame* TheNGMPGame;
 struct LobbyMemberEntry : public NetworkMemberBase
 {
 
-	std::string strIPAddress;
 	uint16_t preferredPort;
 	// NOTE: NetworkMemberBase is not deserialized
 
