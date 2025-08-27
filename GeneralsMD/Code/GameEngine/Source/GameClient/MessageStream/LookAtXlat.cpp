@@ -408,7 +408,11 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 				// The scaling is based on the current logic rate, this provides a consistent scroll speed at all GameClient FPS
 				// This also fixes scrolling within replays when fast forwarding due to the uncapped FPS
 				// When the FPS is in excess of the expected frame rate, the ratio will reduce the offset of the cameras movement
+#if defined(GENERALS_ONLINE)
+				const Real logicToFpsRatio = 30.0f / TheDisplay->getCurrentFPS();
+#else
 				const Real logicToFpsRatio = TheGlobalData->m_framesPerSecondLimit / TheDisplay->getCurrentFPS();
+#endif
 
 				switch (m_scrollType)
 				{
