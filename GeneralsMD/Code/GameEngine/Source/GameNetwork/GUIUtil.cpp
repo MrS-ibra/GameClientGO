@@ -466,8 +466,11 @@ void UpdateSlotList( GameInfo *myGame, GameWindow *comboPlayer[],
 			else
 			{
 				GadgetComboBoxSetSelectedPos(comboPlayer[i], slot->getState(), TRUE);
-        if( buttonAccept &&  buttonAccept[i] )
-				  buttonAccept[i]->winHide(TRUE);
+				if (buttonAccept && buttonAccept[i])
+					buttonAccept[i]->winHide(TRUE);
+
+				// NGMP: Support host migration, names can change for non-human occupied slots during migration
+				GadgetComboBoxSetText(comboPlayer[i], slot->getName());
 			}
 /*
 			if (myGame->getLocalSlotNum() == i && i!=0)
