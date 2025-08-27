@@ -629,52 +629,55 @@ static void handleColorSelection(int index)
 	}
 }
 
-static void handlePlayerTemplateSelection(int index)
+static void handlePlayerTemplateSelection(int index, bool bInitialSetup = false)
 {
 	GameWindow *combo = comboBoxPlayerTemplate[index];
 	Int playerTemplate, selIndex;
 	GadgetComboBoxGetSelectedPos(combo, &selIndex);
 	playerTemplate = (Int)GadgetComboBoxGetItemData(combo, selIndex);
 
-	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
-	NGMPGame* myGame = pLobbyInterface == nullptr ? nullptr : pLobbyInterface->GetCurrentGame();
-
-	if (myGame)
+	if (!bInitialSetup)
 	{
-		GameSlot * slot = myGame->getSlot(index);
-		if (playerTemplate == slot->getPlayerTemplate())
-			return;
+		NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+		NGMPGame* myGame = pLobbyInterface == nullptr ? nullptr : pLobbyInterface->GetCurrentGame();
 
-		Int oldTemplate = slot->getPlayerTemplate();
-		slot->setPlayerTemplate(playerTemplate);
+		if (myGame)
+		{
+			GameSlot* slot = myGame->getSlot(index);
+			if (playerTemplate == slot->getPlayerTemplate())
+				return;
 
-		int updatedStartPos = slot->getStartPos();
+			Int oldTemplate = slot->getPlayerTemplate();
+			slot->setPlayerTemplate(playerTemplate);
 
-		if (oldTemplate == PLAYERTEMPLATE_OBSERVER)
-		{
-			// was observer, so populate color & team with all, and enable
-			GadgetComboBoxSetSelectedPos(comboBoxColor[index], 0);
-			GadgetComboBoxSetSelectedPos(comboBoxTeam[index], 0);
-			slot->setStartPos(-1);
-			updatedStartPos = -1;
-		}
-		else if (playerTemplate == PLAYERTEMPLATE_OBSERVER)
-		{
-			// is becoming observer, so populate color & team with random only, and disable
-			GadgetComboBoxSetSelectedPos(comboBoxColor[index], 0);
-			GadgetComboBoxSetSelectedPos(comboBoxTeam[index], 0);
-			slot->setStartPos(-1);
-			updatedStartPos = -1;
-		}
+			int updatedStartPos = slot->getStartPos();
 
-		// NGMP: Update lobby (if local, for remote players we'll get it from the service)
-		if (index == myGame->getLocalSlotNum())
-		{
-			pLobbyInterface->UpdateCurrentLobby_MySide(playerTemplate, updatedStartPos);
-		}
-		else if (slot->getState() == SLOT_EASY_AI || slot->getState() == SLOT_MED_AI || slot->getState() == SLOT_BRUTAL_AI)
-		{
-			pLobbyInterface->UpdateCurrentLobby_AISide(index, playerTemplate, updatedStartPos);
+			if (oldTemplate == PLAYERTEMPLATE_OBSERVER)
+			{
+				// was observer, so populate color & team with all, and enable
+				GadgetComboBoxSetSelectedPos(comboBoxColor[index], 0);
+				GadgetComboBoxSetSelectedPos(comboBoxTeam[index], 0);
+				slot->setStartPos(-1);
+				updatedStartPos = -1;
+			}
+			else if (playerTemplate == PLAYERTEMPLATE_OBSERVER)
+			{
+				// is becoming observer, so populate color & team with random only, and disable
+				GadgetComboBoxSetSelectedPos(comboBoxColor[index], 0);
+				GadgetComboBoxSetSelectedPos(comboBoxTeam[index], 0);
+				slot->setStartPos(-1);
+				updatedStartPos = -1;
+			}
+
+			// NGMP: Update lobby (if local, for remote players we'll get it from the service)
+			if (index == myGame->getLocalSlotNum())
+			{
+				pLobbyInterface->UpdateCurrentLobby_MySide(playerTemplate, updatedStartPos);
+			}
+			else if (slot->getState() == SLOT_EASY_AI || slot->getState() == SLOT_MED_AI || slot->getState() == SLOT_BRUTAL_AI)
+			{
+				pLobbyInterface->UpdateCurrentLobby_AISide(index, playerTemplate, updatedStartPos);
+			}
 		}
 	}
 }
@@ -1522,7 +1525,7 @@ void InitWOLGameGadgets( void )
 		PopulatePlayerTemplateComboBox(i, comboBoxPlayerTemplate, theGameInfo, theGameInfo->getAllowObservers());
 
 		// Make sure selections are up to date on all machines
-		handlePlayerTemplateSelection(i);
+		handlePlayerTemplateSelection(i, true);
 	}
 #endif
 }
@@ -2147,8 +2150,6 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 		NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
 		if (pLobbyInterface != nullptr)
 		{
-			// TODO_NGMP: Reenable this again and fix the bugs
-			/*
 			if (pLobbyInterface->m_bHostMigrated)
 			{
 				pLobbyInterface->m_bHostMigrated = false;
@@ -2167,6 +2168,9 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 						buttonStart->winEnable(TRUE);
 						buttonSelectMap->winEnable(TRUE);
 						initialAcceptEnable = TRUE;
+
+						comboBoxStartingCash->winEnable(TRUE);
+						checkBoxLimitSuperweapons->winEnable(TRUE);
 
 
 						NetworkLog(ELogVerbosity::LOG_RELEASE, "Host left and server migrated the host to us...");
@@ -2199,14 +2203,12 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 				}
 
 				// Force a refresh to get latest lobby data
-				NGMP_OnlineServicesManager::GetInstance()->GetLobbyInterface()->UpdateRoomDataCache([]()
-					{
-
-					});
-
-
+				NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+				if (pLobbyInterface != nullptr)
+				{
+					pLobbyInterface->UpdateRoomDataCache(nullptr);
+				}
 			}
-			*/
 
 			if (pLobbyInterface->m_bPendingHostHasLeft || pLobbyInterface->m_bHostMigrated)
 			{
@@ -2217,8 +2219,6 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 				DEBUG_LOG(("Host left lobby\n"));
 				if (TheNGMPGame)
 					TheNGMPGame->reset();
-
-				// TODO_NGMP: Impl host migration, less annoying for users
 
 				GSMessageBoxOk(TheGameText->fetch("GUI:HostLeftTitle"), TheGameText->fetch("GUI:HostLeft"));
 
