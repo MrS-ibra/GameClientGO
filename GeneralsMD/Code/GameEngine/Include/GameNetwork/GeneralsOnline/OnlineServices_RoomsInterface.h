@@ -4,8 +4,11 @@
 #include "NetworkMesh.h"
 #include "../GameSpy/PeerDefs.h"
 #include "OnlineServices_Init.h"
+#include "Common/MultiplayerSettings.h"
 
 extern Color PlayerSlotColors[MAX_SLOTS];
+
+extern NGMPGame* TheNGMPGame;
 
 enum class EChatMessageType
 {
@@ -14,7 +17,7 @@ enum class EChatMessageType
 };
 static Color DetermineColorForChatMessage(EChatMessageType chatMessageType, Bool isPublic, Bool isAction, int lobbySlot = -1)
 {
-	Color style;
+	Color style = GameMakeColor(255, 255, 255, 255);
 
 	// TODO_NGMP: Support owner chat again
 	Bool isOwner = false;
@@ -34,7 +37,21 @@ static Color DetermineColorForChatMessage(EChatMessageType chatMessageType, Bool
 			}
 			else
 			{
-				style = PlayerSlotColors[lobbySlot];
+				if (TheNGMPGame)
+				{
+					GameSlot* pSlot = TheNGMPGame->getSlot(lobbySlot);
+
+					if (pSlot != nullptr)
+					{
+						int numColors = TheMultiplayerSettings->getNumColors();
+						int color = pSlot->getColor();
+						if (color > -1 && color < numColors)
+						{
+							MultiplayerColorDefinition* def = TheMultiplayerSettings->getColor(color);
+							style = def->getColor();
+						}
+					}
+				}
 			}
 		}
 		else
