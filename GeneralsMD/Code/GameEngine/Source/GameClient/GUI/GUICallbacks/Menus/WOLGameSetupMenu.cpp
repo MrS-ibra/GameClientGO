@@ -2150,70 +2150,76 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 		NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
 		if (pLobbyInterface != nullptr)
 		{
-			if (pLobbyInterface->m_bHostMigrated)
+			ServiceConfig& serviceConf = NGMP_OnlineServicesManager::GetInstance()->GetServiceConfig();
+			bool bHostMigrationEnabledOnService = serviceConf.enable_host_migration;
+
+			if (bHostMigrationEnabledOnService)
 			{
-				pLobbyInterface->m_bHostMigrated = false;
-
-				// If we are in-game, nothing to do here, the game handles it for us
-				if (!TheNGMPGame->isGameInProgress()) // in progress is in game, ingame is just in lobby
+				if (pLobbyInterface->m_bHostMigrated)
 				{
-					// TODO_NGMP: Make sure we did a lobby get first
-					// did we become the host?
-					bool bIsHost = pLobbyInterface->IsHost();
+					pLobbyInterface->m_bHostMigrated = false;
 
-					if (bIsHost)
+					// If we are in-game, nothing to do here, the game handles it for us
+					if (!TheNGMPGame->isGameInProgress()) // in progress is in game, ingame is just in lobby
 					{
-						// re init our UI & enable host buttons
-						buttonStart->winSetText(TheGameText->fetch("GUI:Start"));
-						buttonStart->winEnable(TRUE);
-						buttonSelectMap->winEnable(TRUE);
-						initialAcceptEnable = TRUE;
+						// TODO_NGMP: Make sure we did a lobby get first
+						// did we become the host?
+						bool bIsHost = pLobbyInterface->IsHost();
 
-						comboBoxStartingCash->winEnable(TRUE);
-						checkBoxLimitSuperweapons->winEnable(TRUE);
-
-
-						NetworkLog(ELogVerbosity::LOG_RELEASE, "Host left and server migrated the host to us...");
-
-						GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"The previous host has left the lobby. You are now the host."), GameMakeColor(255, 255, 255, 255), -1, -1);
-
-						// NOTE: don't need to mark ourselves ready, the service did it for us upon migration
-					}
-					else
-					{
-						GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"The previous host has left the lobby. a new host has been selected."), GameMakeColor(255, 255, 255, 255), -1, -1);
-					}
-
-					// re-enable critical buttons for everyone
-					if (buttonBack != nullptr)
-					{
-						buttonBack->winEnable(TRUE);
-					}
-
-					if (buttonStart != nullptr)
-					{
-						buttonStart->winEnable(TRUE);
-					}
-
-					GameWindow* buttonBuddy = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("GameSpyGameOptionsMenu.wnd:ButtonCommunicator"));
-					if (buttonBuddy != nullptr)
-					{
-						buttonBuddy->winEnable(FALSE);
-					}
-				}
-
-				TheNGMPGame->UpdateSlotsFromCurrentLobby();
-
-				WOLDisplaySlotList();
-
-				// Force a refresh to get latest lobby data
-				NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
-				if (pLobbyInterface != nullptr)
-				{
-					pLobbyInterface->UpdateRoomDataCache([]()
+						if (bIsHost)
 						{
-							
-						});
+							// re init our UI & enable host buttons
+							buttonStart->winSetText(TheGameText->fetch("GUI:Start"));
+							buttonStart->winEnable(TRUE);
+							buttonSelectMap->winEnable(TRUE);
+							initialAcceptEnable = TRUE;
+
+							comboBoxStartingCash->winEnable(TRUE);
+							checkBoxLimitSuperweapons->winEnable(TRUE);
+
+
+							NetworkLog(ELogVerbosity::LOG_RELEASE, "Host left and server migrated the host to us...");
+
+							GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"The previous host has left the lobby. You are now the host."), GameMakeColor(255, 255, 255, 255), -1, -1);
+
+							// NOTE: don't need to mark ourselves ready, the service did it for us upon migration
+						}
+						else
+						{
+							GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"The previous host has left the lobby. a new host has been selected."), GameMakeColor(255, 255, 255, 255), -1, -1);
+						}
+
+						// re-enable critical buttons for everyone
+						if (buttonBack != nullptr)
+						{
+							buttonBack->winEnable(TRUE);
+						}
+
+						if (buttonStart != nullptr)
+						{
+							buttonStart->winEnable(TRUE);
+						}
+
+						GameWindow* buttonBuddy = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("GameSpyGameOptionsMenu.wnd:ButtonCommunicator"));
+						if (buttonBuddy != nullptr)
+						{
+							buttonBuddy->winEnable(FALSE);
+						}
+					}
+
+					TheNGMPGame->UpdateSlotsFromCurrentLobby();
+
+					WOLDisplaySlotList();
+
+					// Force a refresh to get latest lobby data
+					NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+					if (pLobbyInterface != nullptr)
+					{
+						pLobbyInterface->UpdateRoomDataCache([]()
+							{
+
+							});
+					}
 				}
 			}
 

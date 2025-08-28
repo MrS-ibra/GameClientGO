@@ -228,8 +228,9 @@ struct ServiceConfig
 	bool relay_all_traffic = false;
 	int ra_slack_percent = 20;
 	int frame_grouping_frames = 2;
+	bool enable_host_migration = true;
 
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ServiceConfig, retry_signalling, use_mapped_port, min_run_ahead_frames, ra_update_frequency_frames, relay_all_traffic, ra_slack_percent, frame_grouping_frames)
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ServiceConfig, retry_signalling, use_mapped_port, min_run_ahead_frames, ra_update_frequency_frames, relay_all_traffic, ra_slack_percent, frame_grouping_frames, enable_host_migration)
 };
 
 class NGMP_OnlineServicesManager
