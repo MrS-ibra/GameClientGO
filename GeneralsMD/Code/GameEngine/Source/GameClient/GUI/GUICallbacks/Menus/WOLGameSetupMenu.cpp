@@ -1438,11 +1438,11 @@ void InitWOLGameGadgets( void )
 
 		if (theGameInfo->getLocalSlotNum() != i)
 		{
-			GadgetComboBoxAddEntry(comboBoxPlayer[i], TheGameText->fetch("GUI:Open"), PlayerSlotColors[i]);
-			GadgetComboBoxAddEntry(comboBoxPlayer[i], TheGameText->fetch("GUI:Closed"), PlayerSlotColors[i]);
-			GadgetComboBoxAddEntry(comboBoxPlayer[i], TheGameText->fetch("GUI:EasyAI"), PlayerSlotColors[i]);
-			GadgetComboBoxAddEntry(comboBoxPlayer[i], TheGameText->fetch("GUI:MediumAI"), PlayerSlotColors[i]);
-			GadgetComboBoxAddEntry(comboBoxPlayer[i], TheGameText->fetch("GUI:HardAI"), PlayerSlotColors[i]);
+			GadgetComboBoxAddEntry(comboBoxPlayer[i], TheGameText->fetch("GUI:Open"), GameSpyColor[GSCOLOR_PLAYER_NORMAL]);
+			GadgetComboBoxAddEntry(comboBoxPlayer[i], TheGameText->fetch("GUI:Closed"), GameSpyColor[GSCOLOR_PLAYER_NORMAL]);
+			GadgetComboBoxAddEntry(comboBoxPlayer[i], TheGameText->fetch("GUI:EasyAI"), GameSpyColor[GSCOLOR_PLAYER_NORMAL]);
+			GadgetComboBoxAddEntry(comboBoxPlayer[i], TheGameText->fetch("GUI:MediumAI"), GameSpyColor[GSCOLOR_PLAYER_NORMAL]);
+			GadgetComboBoxAddEntry(comboBoxPlayer[i], TheGameText->fetch("GUI:HardAI"), GameSpyColor[GSCOLOR_PLAYER_NORMAL]);
 			GadgetComboBoxSetSelectedPos(comboBoxPlayer[i], 0);
 		}
 		else
@@ -1451,7 +1451,7 @@ void InitWOLGameGadgets( void )
 			NGMPGameSlot* slot = theGameInfo->getGameSpySlot(i);
 			if (slot)
 			{
-				GadgetComboBoxAddEntry(comboBoxPlayer[i], slot->getName(), PlayerSlotColors[i]);
+				GadgetComboBoxAddEntry(comboBoxPlayer[i], slot->getName(), GameSpyColor[GSCOLOR_PLAYER_NORMAL]);
 				GadgetComboBoxSetSelectedPos(comboBoxPlayer[i], 0);
 			}
 		}

@@ -6,8 +6,6 @@
 #include "OnlineServices_Init.h"
 #include "Common/MultiplayerSettings.h"
 
-extern Color PlayerSlotColors[MAX_SLOTS];
-
 extern NGMPGame* TheNGMPGame;
 
 enum class EChatMessageType
