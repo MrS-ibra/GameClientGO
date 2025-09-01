@@ -2097,7 +2097,7 @@ void GameLogic::startNewGame( Bool loadingSaveGame )
 	// update the loadscreen
 	updateLoadProgress(LOAD_PROGRESS_POST_PRELOAD_ASSETS);
 
-	TheTacticalView->setDefaultView(0.0f, 0.0f, 1.0f);
+	TheTacticalView->setDefaultView(0.0f, 0.0f, 1.0f, false);
 	TheTacticalView->setAngleAndPitchToDefault();
 	TheTacticalView->setZoomToDefault();
 
