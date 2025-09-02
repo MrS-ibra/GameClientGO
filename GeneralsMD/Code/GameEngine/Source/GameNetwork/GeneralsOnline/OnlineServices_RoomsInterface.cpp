@@ -208,6 +208,14 @@ public:
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_NetworkDisconnectPlayer, msg_id, lobby_id, user_id)
 };
 
+class WebSocketMessage_MatchmakingAction_JoinPrearrangedLobby : public WebSocketMessageBase
+{
+public:
+	int64_t lobby_id;
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_MatchmakingAction_JoinPrearrangedLobby, msg_id, lobby_id)
+};
+
 
 class WebSocketMessage_RoomChatIncoming : public WebSocketMessageBase
 {
@@ -245,6 +253,14 @@ public:
 	int64_t target_user_id = -1;
 
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_RelayUpgrade, msg_id, target_user_id)
+};
+
+class WebSocketMessage_MatchmakingMessage : public WebSocketMessageBase
+{
+public:
+	std::string message;
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_MatchmakingMessage, msg_id, message)
 };
 
 class WebSocketMessage_NetworkRoomMemberListUpdate : public WebSocketMessageBase
@@ -542,6 +558,52 @@ void WebSocket::Tick()
 								if (pLobbyInterface != nullptr)
 								{
 									pLobbyInterface->SetLobbyListDirty();
+								}
+							}
+							break;
+
+							case EWebSocketMessageID::MATCHMAKING_ACTION_JOIN_PREARRANGED_LOBBY:
+							{
+								WebSocketMessage_MatchmakingAction_JoinPrearrangedLobby mmEvent = jsonObject.get<WebSocketMessage_MatchmakingAction_JoinPrearrangedLobby>();
+
+								NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+								if (pLobbyInterface != nullptr)
+								{
+									// TODO_QUICKMATCH: Only if really in quickmatch
+
+									// basic info needed to join
+									LobbyEntry lobbyEntry;
+									lobbyEntry.lobbyID = mmEvent.lobby_id;
+									lobbyEntry.map_path = "Maps\\Homeland Alliance\\Homeland Alliance.map";
+
+									pLobbyInterface->JoinLobby(lobbyEntry, std::string());
+								}
+								else
+								{
+									NetworkLog(ELogVerbosity::LOG_RELEASE, "[NETWORK_CONNECTION_DISCONNECT_PLAYER] Lobby interface is null");
+									break;
+								}
+							}
+							break;
+
+							case EWebSocketMessageID::MATCHMAKING_ACTION_START_GAME:
+							{
+								NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+								if (pLobbyInterface != nullptr)
+								{
+									pLobbyInterface->InvokeMatchmakingStartGameCallback();
+								}
+							}
+							break;
+
+							case EWebSocketMessageID::MATCHMAKING_MESSAGE:
+							{
+								WebSocketMessage_MatchmakingMessage matchmakingMsg = jsonObject.get<WebSocketMessage_MatchmakingMessage>();
+
+								NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+								if (pLobbyInterface != nullptr)
+								{
+									pLobbyInterface->InvokeMatchmakingMessageCallback(matchmakingMsg.message);
 								}
 							}
 							break;
