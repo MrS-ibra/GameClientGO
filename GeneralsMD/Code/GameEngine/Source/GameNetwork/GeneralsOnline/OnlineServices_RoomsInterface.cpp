@@ -387,7 +387,7 @@ void WebSocket::Tick()
 					try
 					{
 						// null terminate buffer
-						m_vecWSPartialBuffer[m_vecWSPartialBuffer.size()] = '\0';
+						m_vecWSPartialBuffer.push_back('\0');
 
 						// process it
 						nlohmann::json jsonObject;
