@@ -400,6 +400,7 @@ public:
 
 	void LeaveCurrentLobby();
 
+	LobbyEntry GetLobbyFromID(int64_t lobbyID);
 	LobbyEntry GetLobbyFromIndex(int index);
 
 	std::vector<LobbyEntry> m_vecLobbies;
