@@ -303,15 +303,16 @@ static void playerTooltip(GameWindow *window,
 	NGMP_OnlineServices_StatsInterface* pStatsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_StatsInterface>();
 	if (pRoomsInterface != nullptr && pAuthInterface != nullptr && pStatsInterface != nullptr)
 	{
-		NetworkRoomMember roomMember = pRoomsInterface->GetRoomMemberFromName(to_utf8(uName.str()).c_str());
+		int profileID = (int)GadgetListBoxGetItemData(listboxLobbyPlayers, row, 0);
+		NetworkRoomMember* roomMember = pRoomsInterface->GetRoomMemberFromID(profileID);
 
 		// TODO_NGMP: This is an async call, we should block future popups until it returns to avoid weirdness
 		if (col > 0)
 		{
-			if (roomMember.IsValid())
+			if (roomMember != nullptr)
 			{
 				// new
-				pStatsInterface->findPlayerStatsByID(roomMember.user_id, [=](bool bSuccess, PSPlayerStats stats)
+				pStatsInterface->findPlayerStatsByID(roomMember->user_id, [=](bool bSuccess, PSPlayerStats stats)
 					{
 						if (!bSuccess)
 						{
@@ -320,7 +321,7 @@ static void playerTooltip(GameWindow *window,
 						else
 						{
 							UnicodeString tooltip = UnicodeString::TheEmptyString;
-							if (roomMember.user_id == pAuthInterface->GetUserID())
+							if (roomMember->user_id == pAuthInterface->GetUserID())
 							{
 								tooltip.format(TheGameText->fetch("TOOLTIP:LocalPlayer"), uName.str());							}
 							else
@@ -344,7 +345,7 @@ static void playerTooltip(GameWindow *window,
 
 							// add user ID
 							UnicodeString tmp;
-							tmp.format(L"\nUser ID: %lld", roomMember.user_id);
+							tmp.format(L"\nUser ID: %lld", roomMember->user_id);
 							tooltip.concat(tmp);
 
 							// TODO_SOCIAL
@@ -711,6 +712,9 @@ static Int insertPlayerInListbox(const PlayerInfo& info, Color color)
 	Int index = GadgetListBoxAddEntryImage(listboxLobbyPlayers, rankImg, -1, 0, w, h);
 	GadgetListBoxAddEntryText(listboxLobbyPlayers, uStr, color, index, 1);
 #endif
+
+	// attach data
+	GadgetListBoxSetItemData(listboxLobbyPlayers, (void*)info.m_profileID, index);
 	return index;
 }
 
