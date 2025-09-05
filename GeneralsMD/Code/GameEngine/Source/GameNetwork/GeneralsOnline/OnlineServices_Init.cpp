@@ -542,6 +542,15 @@ void WebSocket::SendData_StartGame()
 	Send(strBody.c_str());
 }
 
+
+void WebSocket::SendData_CountdownStarted()
+{
+	nlohmann::json j;
+	j["msg_id"] = EWebSocketMessageID::START_GAME_COUNTDOWN_STARTED;
+	std::string strBody = j.dump();
+	Send(strBody.c_str());
+}
+
 void QoSManager::Tick()
 {
 	// are all probes done?

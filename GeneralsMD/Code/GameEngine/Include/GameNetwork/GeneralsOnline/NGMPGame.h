@@ -78,12 +78,7 @@ public:
 	virtual void reset(void);
 
 #if defined(GENERALS_ONLINE_ENABLE_MATCH_START_COUNTDOWN)
-	void StartCountdown()
-	{
-		m_bCountdownStarted = true;
-		m_countdownStartTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::utc_clock::now().time_since_epoch()).count();
-		m_countdownLastCheckTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::utc_clock::now().time_since_epoch()).count();
-	}
+	void StartCountdown();
 
 	void StopCountdown()
 	{

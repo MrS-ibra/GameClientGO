@@ -50,7 +50,8 @@ enum EWebSocketMessageID
 	NETWORK_CONNECTION_CLIENT_REQUEST_SIGNALLING = 19,
 	MATCHMAKING_ACTION_JOIN_PREARRANGED_LOBBY = 20,
 	MATCHMAKING_ACTION_START_GAME = 21,
-	MATCHMAKING_MESSAGE = 22
+	MATCHMAKING_MESSAGE = 22,
+	START_GAME_COUNTDOWN_STARTED = 23
 };
 
 enum class EQoSRegions
@@ -166,6 +167,8 @@ public:
 	void SendData_RequestSignalling(int64_t targetUserID);
 	void SendData_Signalling(int64_t targetUserID, std::vector<uint8_t> vecPayload);
 	void SendData_StartGame();
+
+	void SendData_CountdownStarted();
 
 	void Tick();
 
