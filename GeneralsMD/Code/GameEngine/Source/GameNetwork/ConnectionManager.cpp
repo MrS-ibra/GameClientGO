@@ -345,7 +345,9 @@ void ConnectionManager::destroyGameMessages() {
  * assumption that a command will only be relayed once.
  */
 void ConnectionManager::doRelay() {
-	NetworkLog(ELogVerbosity::LOG_DEBUG, "ConnectionManager::doRelay on execution frame %d", TheNetwork->getExecutionFrame());
+	Int execFrame = TheGameLogic->getFrame() + TheNetwork->getRunAhead();
+	NetworkLog(ELogVerbosity::LOG_DEBUG, "ConnectionManager::doRelay on execution frame %d", execFrame);
+
 	static Int numPackets = 0;
 	static Int numCommands = 0;
 
