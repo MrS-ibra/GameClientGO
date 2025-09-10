@@ -14,8 +14,7 @@ size_t WriteMemoryCallback(void* contents, size_t sizePerByte, size_t numBytes, 
 
 HTTPRequest::HTTPRequest(EHTTPVerb httpVerb, EIPProtocolVersion protover, const char* szURI, std::map<std::string, std::string>& inHeaders, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback,
 	std::function<void(size_t bytesReceived)> progressCallback /*= nullptr*/, int timeoutMS/*= -1*/) noexcept
-{
-	
+{	
 	m_pCURL = curl_easy_init();
 
 	// -1 means use default
@@ -32,8 +31,6 @@ HTTPRequest::HTTPRequest(EHTTPVerb httpVerb, EIPProtocolVersion protover, const 
 	m_mapHeaders = inHeaders;
 
 	m_progressCallback = progressCallback;
-
-	
 }
 
 HTTPRequest::~HTTPRequest()
@@ -45,17 +42,14 @@ HTTPRequest::~HTTPRequest()
 	curl_easy_cleanup(m_pCURL);
 
 	m_vecBuffer.clear();
-	m_vecBuffer.resize(0);
 
-    if (headers) {
+    if (headers)
+	{
         curl_slist_free_all(headers);
+		headers = nullptr;
     }
 }
 
-void HTTPRequest::PlatformThreaded_SetComplete()
-{
-	curl_easy_getinfo(m_pCURL, CURLINFO_RESPONSE_CODE, &m_responseCode);
-}
 
 void HTTPRequest::SetPostData(const char* szPostData)
 {
@@ -80,11 +74,6 @@ void HTTPRequest::StartRequest()
 
 void HTTPRequest::OnResponsePartialWrite(std::uint8_t* pBuffer, size_t numBytes)
 {
-	// TODO_HTTP: Progress update + buffer sizes are accessed from main thread, probably needs to be atomic or lock
-
-	// TODO_HTTP: Get the size up front, dont realloc
-	// TODO_HTTP: Use vector instead
-
 	// do we need a buffer resize?
 	if (m_currentBufSize_Used + numBytes >= m_vecBuffer.size())
 	{
@@ -97,14 +86,13 @@ void HTTPRequest::OnResponsePartialWrite(std::uint8_t* pBuffer, size_t numBytes)
 
 	NetworkLog(ELogVerbosity::LOG_DEBUG, "[%p] Received: %d bytes", this, numBytes);
 
-	m_bNeedsProgressUpdate = true;
+	InvokeProgressUpdateCallback();
 }
 
 void HTTPRequest::InvokeCallbackIfComplete()
 {
 	if (m_bIsComplete)
 	{
-		// TODO_HTTP: Assert if not game thread
 		if (m_completionCallback != nullptr)
 		{
 			// Convert m_vecBuffer to std::string for m_strResponse
@@ -124,7 +112,8 @@ void HTTPRequest::InvokeCallbackIfComplete()
 
 void HTTPRequest::Threaded_SetComplete(CURLcode result)
 {
-	PlatformThreaded_SetComplete();
+	// store response code
+	curl_easy_getinfo(m_pCURL, CURLINFO_RESPONSE_CODE, &m_responseCode);
 
 	m_bIsComplete = true;
 
@@ -159,13 +148,8 @@ void HTTPRequest::Threaded_SetComplete(CURLcode result)
 
 	NetworkLog(ELogVerbosity::LOG_RELEASE, "[%p|%s] Response was %d - %s!", this, strURIRedacted.c_str(), m_responseCode, strResponse.c_str());
 
-
-	// debug write to file
-	/*
-	std::ofstream file("libcurltest.dat", std::ofstream::out | std::ofstream::binary);
-	file.write((const char*)m_pBuffer, m_currentBufSize_Used);
-	file.close();
-	*/
+	// trigger callback
+	InvokeCallbackIfComplete();
 }
 
 void HTTPRequest::PlatformStartRequest()

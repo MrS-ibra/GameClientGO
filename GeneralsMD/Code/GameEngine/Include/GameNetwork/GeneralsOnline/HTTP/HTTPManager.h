@@ -32,7 +32,7 @@ public:
 
 	void Initialize();
 
-	void MainThreadTick();
+	void Tick();
 
 	void SendGETRequest(const char* szURI, EIPProtocolVersion protover, std::map<std::string, std::string>& inHeaders, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback, std::function<void(size_t bytesReceived)> progressCallback = nullptr, int timeoutMS = -1);
 	void SendPOSTRequest(const char* szURI, EIPProtocolVersion protover, std::map<std::string, std::string>& inHeaders, const char* szPostData, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback, std::function<void(size_t bytesReceived)> progressCallback = nullptr, int timeoutMS = -1);
@@ -40,10 +40,6 @@ public:
 	void SendDELETERequest(const char* szURI, EIPProtocolVersion protover, std::map<std::string, std::string>& inHeaders, const char* szData, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback, std::function<void(size_t bytesReceived)> progressCallback = nullptr, int timeoutMS = -1);
 
 	void Shutdown();
-
-	void BackgroundThreadRun();
-
-	char* PlatformEscapeString(const char* szString, int len);
 
 	bool IsProxyEnabled() const { return m_bProxyEnabled; }
 
@@ -85,9 +81,6 @@ private:
 	HTTPRequest* PlatformCreateRequest(EHTTPVerb htpVerb, EIPProtocolVersion protover, const char* szURI, std::map<std::string, std::string>& inHeaders, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback,
 		std::function<void(size_t bytesReceived)> progressCallback = nullptr, int timeoutMS = -1) noexcept;
 
-	void PlatformThreadedTick_PreLock();
-	void PlatformThreadedTick_Locked();
-
 private:
 	CURLM* m_pCurl = nullptr;
 
@@ -95,12 +88,6 @@ private:
 	std::string m_strProxyAddr;
 	uint16_t m_proxyPort;
 
-	bool m_bExitRequested = false;
-
-	std::thread* m_backgroundThread = nullptr;
-
-	std::recursive_mutex m_mutex;
-	std::vector<HTTPRequest*> m_vecRequestsPendingstart = std::vector<HTTPRequest*>();
 	std::vector<HTTPRequest*> m_vecRequestsInFlight = std::vector<HTTPRequest*>();
 };
 

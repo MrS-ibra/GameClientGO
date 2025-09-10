@@ -426,7 +426,7 @@ void NGMP_OnlineServicesManager::Tick()
 
 	if (m_pHTTPManager != nullptr)
 	{
-		m_pHTTPManager->MainThreadTick();
+		m_pHTTPManager->Tick();
 	}
 
 	if (m_pRoomInterface != nullptr)
