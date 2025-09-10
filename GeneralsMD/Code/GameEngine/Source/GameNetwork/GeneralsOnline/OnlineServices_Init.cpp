@@ -211,33 +211,46 @@ void NGMP_OnlineServicesManager::ContinueUpdate()
 		std::map<std::string, std::string> mapHeaders;
 		m_pHTTPManager->SendGETRequest(strDownloadPath.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
 			{
-				// set done
-				TheDownloadManager->OnProgressUpdate(downloadSize, downloadSize, 0, 0);
-
-				m_vecFilesDownloaded.push_back(strDownloadPath);
-
-				std::string strPatchDir = GetPatcherDirectoryPath();
-
-				// Extract the filename with extension from strDownloadPath  
-				std::string strFileName = strDownloadPath.substr(strDownloadPath.find_last_of('/') + 1);
-				std::string strOutPath = std::format("{}/{}", strPatchDir, strFileName.c_str());
-
-				std::vector<uint8_t> vecBuffer = pReq->GetBuffer();
-				size_t bufSize = pReq->GetBufferSize();
-
-				if (!std::filesystem::exists(strPatchDir))
+				if (statusCode != 200)
 				{
-					std::filesystem::create_directory(strPatchDir);
+					// show msg
+					ClearGSMessageBoxes();
+					MessageBoxOk(UnicodeString(L"Update Failed"), UnicodeString(L"Could not download the updater. Press below to exit."), []()
+						{
+							TheGameEngine->setQuitting(TRUE);
+						});
+					ShellExecuteA(NULL, "open", "https://www.playgenerals.online/updatefailed", NULL, NULL, SW_SHOWNORMAL);
 				}
+				else
+				{
+					// set done
+					TheDownloadManager->OnProgressUpdate(downloadSize, downloadSize, 0, 0);
 
-				FILE* pFile = fopen(strOutPath.c_str(), "wb");
-				fwrite(vecBuffer.data(), sizeof(uint8_t), bufSize, pFile);
-				fclose(pFile);
+					m_vecFilesDownloaded.push_back(strDownloadPath);
 
-				// call continue update again, thisll check if we're done or have more work to do
-				ContinueUpdate();
+					std::string strPatchDir = GetPatcherDirectoryPath();
 
-				NetworkLog(ELogVerbosity::LOG_RELEASE, "GOT FILE: %s", strDownloadPath.c_str());
+					// Extract the filename with extension from strDownloadPath  
+					std::string strFileName = strDownloadPath.substr(strDownloadPath.find_last_of('/') + 1);
+					std::string strOutPath = std::format("{}/{}", strPatchDir, strFileName.c_str());
+
+					std::vector<uint8_t> vecBuffer = pReq->GetBuffer();
+					size_t bufSize = pReq->GetBufferSize();
+
+					if (!std::filesystem::exists(strPatchDir))
+					{
+						std::filesystem::create_directory(strPatchDir);
+					}
+
+					FILE* pFile = fopen(strOutPath.c_str(), "wb");
+					fwrite(vecBuffer.data(), sizeof(uint8_t), bufSize, pFile);
+					fclose(pFile);
+
+					// call continue update again, thisll check if we're done or have more work to do
+					ContinueUpdate();
+
+					NetworkLog(ELogVerbosity::LOG_RELEASE, "GOT FILE: %s", strDownloadPath.c_str());
+				}
 			},
 			[=](size_t bytesReceived)
 			{
@@ -297,7 +310,7 @@ void NGMP_OnlineServicesManager::LaunchPatcher()
 	if (!bInvalidSize && bPatcherExeExists && bPatcherDirExists && ShellExecuteExA(&shellexInfo))
 	{
 		// Exit the application  
-		exit(0);
+		TheGameEngine->setQuitting(TRUE);
 	}
 	else
 	{
@@ -305,7 +318,7 @@ void NGMP_OnlineServicesManager::LaunchPatcher()
 		ClearGSMessageBoxes();
 		MessageBoxOk(UnicodeString(L"Update Failed"), UnicodeString(L"Could not run the updater. Press below to exit."), []()
 			{
-				exit(0);
+				TheGameEngine->setQuitting(TRUE);
 			});
 		ShellExecuteA(NULL, "open", "https://www.playgenerals.online/updatefailed", NULL, NULL, SW_SHOWNORMAL);
 	}

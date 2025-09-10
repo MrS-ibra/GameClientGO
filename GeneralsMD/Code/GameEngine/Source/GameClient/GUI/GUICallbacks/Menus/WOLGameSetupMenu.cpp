@@ -3331,7 +3331,7 @@ Bool handleGameSetupSlashCommands(UnicodeString uText)
 	}
 	else if (token == "quit")
 	{
-		exit(0);
+		TheGameEngine->setQuitting(TRUE);
 	}
 	else if (token == "steam" || token == "advnet")
 	{

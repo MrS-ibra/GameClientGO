@@ -180,7 +180,7 @@ void HTTPRequest::PlatformStartRequest()
 		curl_easy_setopt(m_pCURL, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(m_pCURL, CURLOPT_WRITEDATA, (void*)this);
 		curl_easy_setopt(m_pCURL, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-		curl_easy_setopt(m_pCURL, CURLOPT_USERAGENT, "GeneralsOnline/1.0");
+		curl_easy_setopt(m_pCURL, CURLOPT_USERAGENT, "GeneralsOnline Client");
 
 		
 		curl_easy_setopt(m_pCURL, CURLOPT_CONNECTTIMEOUT_MS, m_timeoutMS);
