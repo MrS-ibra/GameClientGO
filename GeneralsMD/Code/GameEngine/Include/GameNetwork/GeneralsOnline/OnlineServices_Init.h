@@ -406,7 +406,9 @@ public:
 
 	void Tick();
 
+#if defined(USE_PORT_MAPPER)
 	PortMapper& GetPortMapper() { return m_PortMapper; }
+#endif
 
 	void ProcessMOTD(const char* szMOTD)
 	{
@@ -442,7 +444,9 @@ public:
 	ServiceConfig& GetServiceConfig() { return m_ServiceConfig; }
 
 private:
+#if defined(USE_PORT_MAPPER)
 	PortMapper m_PortMapper;
+#endif
 
 	ServiceConfig m_ServiceConfig;
 

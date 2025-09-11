@@ -1,3 +1,5 @@
+#if defined(USE_PORT_MAPPER)
+
 #if defined(_DEBUG)
 //#define DISABLE_PORT_MAPPING 1
 #endif
@@ -519,3 +521,4 @@ void PortMapper::InvokeCallback()
 		NGMP_OnlineServicesManager::GetInstance()->m_cbPortMapperCallback();
 	}
 }
+#endif

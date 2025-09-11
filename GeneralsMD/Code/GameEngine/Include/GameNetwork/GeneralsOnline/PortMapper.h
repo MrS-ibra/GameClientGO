@@ -1,5 +1,7 @@
 #pragma once
 
+#if defined(USE_PORT_MAPPER)
+
 //#define DISABLE_UPNP 1
 //#define DISABLE_NATPMP 1
 //#define DISABLE_PCP 1
@@ -98,4 +100,4 @@ private:
 	int m_PCPMappingHandle = -1;
 };
 
-// TODO_PORT: What if everything fails? does it still return?
+#endif

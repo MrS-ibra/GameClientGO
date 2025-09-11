@@ -853,7 +853,12 @@ void NGMP_OnlineServices_LobbyInterface::JoinLobby(LobbyEntry lobbyInfo, std::st
 			bool bHasMap = TheMapCache->findMap(AsciiString(lobbyInfo.map_path.c_str()));
 
 			nlohmann::json j;
+#if defined(USE_PORT_MAPPER)
 			j["preferred_port"] = NGMP_OnlineServicesManager::GetInstance()->GetPortMapper().GetOpenPort();
+#else
+			j["preferred_port"] = 0;
+#endif
+
 			j["has_map"] = bHasMap;
 
 			if (!strPassword.empty())
@@ -1088,7 +1093,11 @@ void NGMP_OnlineServices_LobbyInterface::CreateLobby(UnicodeString strLobbyName,
 			j["map_path"] = sanitizedMapPath.str();
 			j["map_official"] = bIsOfficial;
 			j["max_players"] = initialMaxSize;
+#if defined(USE_PORT_MAPPER)
 			j["preferred_port"] = NGMP_OnlineServicesManager::GetInstance()->GetPortMapper().GetOpenPort();
+#else
+			j["preferred_port"] = 0;
+#endif
 			j["vanilla_teams"] = bVanillaTeamsOnly;
 			j["track_stats"] = bTrackStats;
 			j["starting_cash"] = startingCash;
@@ -1157,7 +1166,11 @@ void NGMP_OnlineServices_LobbyInterface::CreateLobby(UnicodeString strLobbyName,
 							me.user_id = m_CurrentLobby.owner;
 							me.display_name = pAuthInterface->GetDisplayName();
 							me.m_bIsReady = true; // host is always ready
+#if defined(USE_PORT_MAPPER)
 							me.preferredPort = NGMP_OnlineServicesManager::GetInstance()->GetPortMapper().GetOpenPort();
+#else
+							me.preferredPort = 0;
+#endif
 
 							m_CurrentLobby.members.push_back(me);
 

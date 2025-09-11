@@ -272,6 +272,7 @@ static void updateNumPlayersOnline(void)
 		GadgetListBoxAddEntryText(listboxInfo, UnicodeString(L" "), GameSpyColor[GSCOLOR_MOTD_HEADING], -1, -1);
 
 		// NETWORK CAPS
+#if defined(USE_PORT_MAPPER)
 		bool bHasPortMapped = NGMP_OnlineServicesManager::GetInstance()->GetPortMapper().HasPortOpen();
 		PortMapper::EMappingTech mappingTechUsed = NGMP_OnlineServicesManager::GetInstance()->GetPortMapper().GetPortMappingTechnologyUsed();
 
@@ -314,6 +315,7 @@ static void updateNumPlayersOnline(void)
 					strPortState = "No Port Mapped";
 				}
 		}
+#endif
 
 		// END NETWORK CAPS
 		while (aMotd.nextToken(&aLine, "\n"))
@@ -350,9 +352,7 @@ static void updateNumPlayersOnline(void)
 			GadgetListBoxAddEntryText(listboxInfo, line, c, -1, -1);
 		}
 
-		// add network caps
-
-		//ECapabilityState NATDirectConnect = NGMP_OnlineServicesManager::GetInstance()->GetPortMapper().HasDirectConnect();
+#if defined(USE_PORT_MAPPER)
 		int preferredPort = NGMP_OnlineServicesManager::GetInstance()->GetPortMapper().GetOpenPort();
 		{
 			Color c = GameMakeColor(255, 194, 15, 255);
@@ -366,33 +366,8 @@ static void updateNumPlayersOnline(void)
 			// network port
 			line.format(L"Network Port: %d (%hs)", preferredPort, strPortState.c_str());
 			GadgetListBoxAddEntryText(listboxInfo, line, c, -1, -1);
-
-			/*
-			// direct connect
-			line.format(L"Direct Connect: %hs%hs",
-				NATDirectConnect == ECapabilityState::UNDETERMINED ? "Still Being Determined..." : NATDirectConnect == ECapabilityState::SUPPORTED ? "Supported" : "Unsupported",
-#if !defined(GENERALS_ONLINE_PORT_MAP_FIREWALL_OVERRIDE_PORT)
-				(mappingTechUsed == PortMapper::EMappingTech::MANUAL) ? (NATDirectConnect == ECapabilityState::SUPPORTED ? "" : "\n\tWARNING: You have manually set a firewall port which does not appear to be open. Direct connectivity may not work.") : "",
-#else
-				""
-#endif
-			);
-			
-			GadgetListBoxAddEntryText(listboxInfo, line, c, -1, -1);
-			*/
-			
-			/*
-			// relayed connect
-			line.format(L"Relayed Connect: %hs", "Supported");
-			GadgetListBoxAddEntryText(listboxInfo, line, c, -1, -1);
-			
-
-			// server region
-			line.format(L"Server Region: %hs (%dms)", NGMP_OnlineServicesManager::GetInstance()->GetQoSManager().GetPreferredRegionName().c_str(),
-				NGMP_OnlineServicesManager::GetInstance()->GetQoSManager().GetPreferredRegionLatency());
-			GadgetListBoxAddEntryText(listboxInfo, line, c, -1, -1);
-			*/
 		}
+#endif
 		
 	}
 }

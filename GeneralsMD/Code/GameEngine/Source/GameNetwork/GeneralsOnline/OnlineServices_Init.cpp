@@ -434,7 +434,9 @@ void NGMP_OnlineServicesManager::Tick()
 		m_pAuthInterface->Tick();
 	}
 
+#if defined(USE_PORT_MAPPER)
 	m_PortMapper.Tick();
+#endif
 
 	if (m_pRoomInterface != nullptr)
 	{

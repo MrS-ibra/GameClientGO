@@ -642,7 +642,11 @@ NetworkMesh::NetworkMesh()
 			NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING LOGFUNC] %s", pszMsg);
 		});
 
+#if defined(USE_PORT_MAPPER)
 	int localPort = serviceConf.use_mapped_port ? NGMP_OnlineServicesManager::GetInstance()->GetPortMapper().GetOpenPort() : 0;
+#else
+	int localPort = 0;
+#endif
 
 	// create sockets
 	SteamNetworkingConfigValue_t opt;
@@ -772,7 +776,12 @@ void NetworkMesh::StartConnectionSignalling(int64_t remoteUserID, uint16_t prefe
 
 	ServiceConfig& serviceConf = pOnlineServicesMgr->GetServiceConfig();
 
+#if defined(USE_PORT_MAPPER)
 	int g_nLocalPort = serviceConf.use_mapped_port ? pOnlineServicesMgr->GetPortMapper().GetOpenPort() : 0;
+#else
+	int g_nLocalPort = 0;
+#endif
+
 	int g_nVirtualPortRemote = serviceConf.use_mapped_port ? preferredPort : 0;
 
 	// Our remote and local port don't match, so we need to set it explicitly

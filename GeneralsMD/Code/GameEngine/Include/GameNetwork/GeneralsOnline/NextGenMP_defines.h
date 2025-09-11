@@ -4,6 +4,8 @@
 #define GENERALS_ONLINE
 #endif
 
+//#define USE_PORT_MAPPER 1
+
 #if !defined(_DEBUG)
 //#define USE_TEST_ENV 1
 #endif
