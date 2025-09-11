@@ -79,18 +79,20 @@ void HTTPManager::Tick()
 	int msgq = 0;
 	CURLMsg* m = curl_multi_info_read(m_pCurl, &msgq);
 	std::vector<HTTPRequest*> vecItemsToRemove = std::vector<HTTPRequest*>();
-	if (m && (m->msg == CURLMSG_DONE))
+	if (m != nullptr && m->msg == CURLMSG_DONE)
 	{
-		CURL* e = m->easy_handle;
+		CURL* pCurlHandle = m->easy_handle;
 
-		// find the associated request
-		for (HTTPRequest* pRequest : m_vecRequestsInFlight)
+		if (pCurlHandle != nullptr)
 		{
-			HTTPRequest* pPlatformRequest = static_cast<HTTPRequest*>(pRequest);
-			if (pPlatformRequest->EasyHandleMatches(e))
+			// find the associated request
+			for (HTTPRequest* pRequest : m_vecRequestsInFlight)
 			{
-				pPlatformRequest->Threaded_SetComplete(m->data.result);
-				vecItemsToRemove.push_back(pRequest);
+				if (pRequest->EasyHandleMatches(pCurlHandle))
+				{
+					pRequest->Threaded_SetComplete(m->data.result);
+					vecItemsToRemove.push_back(pRequest);
+				}
 			}
 		}
 	}
