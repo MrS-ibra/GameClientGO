@@ -524,7 +524,7 @@ static void playerTooltip(GameWindow *window,
 
 			TheMouse->setCursorTooltip(tooltip, -1, NULL, 1.5f); // the text and width are the only params used.  the others are the default values.
 
-	}, EStatsRequestPolicy::RESPECT_CACHE_ALLOW_REQUEST);
+	}, EStatsRequestPolicy::CACHED_ONLY);
 }
 
 void gameAcceptTooltip(GameWindow *window, WinInstanceData *instData, UnsignedInt mouse)

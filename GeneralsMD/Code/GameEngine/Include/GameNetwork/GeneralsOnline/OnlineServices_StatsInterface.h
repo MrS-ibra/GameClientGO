@@ -467,6 +467,7 @@ public:
 	}
 
 	void findPlayerStatsByID(int64_t userID, std::function<void(bool, PSPlayerStats)> cb, EStatsRequestPolicy requestPolicy);
+	bool getPlayerStatsFromCache(int64_t userID, PSPlayerStats* outStats);
 
 	void UpdateMyStats(PSPlayerStats stats);
 

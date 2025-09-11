@@ -86,7 +86,7 @@ void NGMP_OnlineServices_StatsInterface::findPlayerStatsByID(int64_t userID, std
 		}
 		else
 		{
-			cb(false, m_mapCachedStats[userID]);
+			cb(false, PSPlayerStats());
 		}
 	}
 	else
@@ -215,6 +215,20 @@ void NGMP_OnlineServices_StatsInterface::findPlayerStatsByID(int64_t userID, std
 		}
 		
 	}
+}
+
+bool NGMP_OnlineServices_StatsInterface::getPlayerStatsFromCache(int64_t userID, PSPlayerStats* outStats)
+{
+	NetworkLog(ELogVerbosity::LOG_RELEASE, "[StatsRequest] Getting stats for user %lld (cache only, not making request due to policy)", userID);
+	// is it cached?
+	if (m_mapCachedStats.contains(userID))
+	{
+		*outStats = m_mapCachedStats[userID];
+		return true;
+	}
+
+	*outStats = PSPlayerStats();
+	return false;
 }
 
 void NGMP_OnlineServices_StatsInterface::UpdateMyStats(PSPlayerStats stats)

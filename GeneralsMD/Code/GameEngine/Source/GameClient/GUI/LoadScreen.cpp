@@ -86,6 +86,7 @@
 #include "GameNetwork/NetworkInterface.h"
 #include "GameNetwork/RankPointValue.h"
 #include "../OnlineServices_Init.h"
+#include "../OnlineServices_StatsInterface.h"
 
 //-----------------------------------------------------------------------------
 // DEFINES ////////////////////////////////////////////////////////////////////
@@ -1672,19 +1673,28 @@ GameSlot *lSlot = game->getSlot(game->getLocalSlotNum());
 		m_playerNames[netSlot]->winSetEnabledTextColors(houseColor, m_playerNames[netSlot]->winGetEnabledTextBorderColor());
 
 		// Get the stats for the player
-		// TODO_NGMP: Impl
-		/*
+#if defined(GENERALS_ONLINE)
+		PSPlayerStats stats = PSPlayerStats();
+		NGMP_OnlineServices_StatsInterface* pStatsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_StatsInterface>();
+		if (pStatsInterface != nullptr)
+		{
+			// Data should be in cache from lobby joins, so we can do this synchronously
+			pStatsInterface->getPlayerStatsFromCache(slot->getProfileID(), &stats);
+		}
+#else
 		PSPlayerStats stats = TheGameSpyPSMessageQueue->findPlayerStatsByID(slot->getProfileID());
+#endif
+
 		DEBUG_LOG(("LoadScreen - populating info for %ls(%d) - stats returned id %d",
 			slot->getName().str(), slot->getProfileID(), stats.id));
 
+#if defined(GENERALS_ONLINE)
+		Bool isPreorder = false;
+#else
 		Bool isPreorder = TheGameSpyInfo->didPlayerPreorder(stats.id);
+#endif
 		Int rankPoints = CalculateRank(stats);
 		Int favSide = GetFavoriteSide(stats);
-		*/
-		Bool isPreorder = true;
-		Int rankPoints = 0;
-		Int favSide = 0;
 
 		const Image *preorderImg = TheMappedImageCollection->findImageByName("OfficersClubsmall");
 		if (!isPreorder)
@@ -1697,9 +1707,7 @@ GameSlot *lSlot = game->getSlot(game->getLocalSlotNum());
 
 		// pop wins and losses
 		Int numLosses = 0;
-		Int numWins = 0;
-		// TODO_NGMP
-		/*
+
 		PerGeneralMap::iterator it;
 		for(it = stats.losses.begin(); it != stats.losses.end(); ++it)
 		{
@@ -1710,16 +1718,13 @@ GameSlot *lSlot = game->getSlot(game->getLocalSlotNum());
 		{
 			numWins += it->second;
 		}
-		*/
 		formatString.format(L"%d/%d", numWins, numLosses);
 		GadgetStaticTextSetText(m_playerWinLosses[netSlot], formatString);
 		m_playerWinLosses[netSlot]->winSetEnabledTextColors(houseColor, m_playerWinLosses[netSlot]->winGetEnabledTextBorderColor());
 		// favoriteFaction
-			Int numGames = 0;
-		//Int favorite = 0;
+		Int numGames = 0;
+		Int favorite = 0;
 
-		// TODO_NGMP
-		/*
 		for(it =stats.games.begin(); it != stats.games.end(); ++it)
 		{
 			if(it->second >= numGames)
@@ -1728,7 +1733,6 @@ GameSlot *lSlot = game->getSlot(game->getLocalSlotNum());
 				favorite = it->first;
 			}
 		}
-		*/
 
 //		if(numGames == 0)
 //			GadgetStaticTextSetText(m_playerFavoriteFactions[netSlot], TheGameText->fetch("GUI:None"));
@@ -1749,8 +1753,7 @@ GameSlot *lSlot = game->getSlot(game->getLocalSlotNum());
 		// disconnects
 		numGames = 0;
 
-		// TODO_NGMP
-		/*
+
 		for(it =stats.discons.begin(); it != stats.discons.end(); ++it)
 		{
 			numGames += it->second;
@@ -1760,7 +1763,6 @@ GameSlot *lSlot = game->getSlot(game->getLocalSlotNum());
 			numGames += it->second;
 		}
 		numGames += GetAdditionalDisconnectsFromUserFile(stats.id);
-		*/
 
 		formatString.format(L"%d", numGames);
 		GadgetStaticTextSetText(m_playerTotalDisconnects[netSlot], formatString);
