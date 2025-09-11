@@ -81,6 +81,7 @@ public:
 	virtual Bool	isClippingEnabled( void ) 	{ return m_isClippedEnabled; }
 	virtual void	enableClipping( Bool onoff )		{ m_isClippedEnabled = onoff; }
 
+	virtual void step(); ///< Do one fixed time step
 	virtual void draw( void );  ///< redraw the entire display
 
 	/// @todo Replace these light management routines with a LightManager singleton

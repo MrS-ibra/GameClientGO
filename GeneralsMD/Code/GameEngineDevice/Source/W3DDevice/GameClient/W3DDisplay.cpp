@@ -113,10 +113,6 @@ static void drawFramerateBar(void);
 
 
 // DEFINE AND ENUMS ///////////////////////////////////////////////////////////
-#define DEFAULT_DISPLAY_BIT_DEPTH 32
-#define MIN_DISPLAY_BIT_DEPTH 16
-#define MIN_DISPLAY_RESOLUTION_X 800
-#define MIN_DISPLAY_RESOLUTION_Y 600
 
 #define no_SAMPLE_DYNAMIC_LIGHT	1
 #ifdef SAMPLE_DYNAMIC_LIGHT
@@ -483,7 +479,7 @@ inline Bool isResolutionSupported(const ResolutionDescClass &res)
 {
 	static const Int minBitDepth = 24;
 
-	return res.Width >= MIN_DISPLAY_RESOLUTION_X && res.BitDepth >= minBitDepth;
+	return res.Width >= DEFAULT_DISPLAY_WIDTH && res.BitDepth >= minBitDepth;
 }
 
 /*Return number of screen modes supported by the current device*/
@@ -765,15 +761,15 @@ void W3DDisplay::init( void )
 				// if the custom resolution did not succeed. This is unlikely to happen but is possible
 				// if the user writes an unsupported resolution in the Option Preferences or if the
 				// graphics adapter does not support the minimum display resolution to begin with.
-				Int xres = MIN_DISPLAY_RESOLUTION_X;
-				Int yres = MIN_DISPLAY_RESOLUTION_Y;
+				Int xres = DEFAULT_DISPLAY_WIDTH;
+				Int yres = DEFAULT_DISPLAY_HEIGHT;
 				Int bitDepth = DEFAULT_DISPLAY_BIT_DEPTH;
 				Int displayModeCount = getDisplayModeCount();
 				Int displayModeIndex = 0;
 				for (; displayModeIndex < displayModeCount; ++displayModeIndex)
 				{
 					getDisplayModeDescription(displayModeIndex, &xres, &yres, &bitDepth);
-					if (xres * yres >= MIN_DISPLAY_RESOLUTION_X * MIN_DISPLAY_RESOLUTION_Y)
+					if (xres * yres >= DEFAULT_DISPLAY_WIDTH * DEFAULT_DISPLAY_HEIGHT)
 						break; // Is good enough. Use it.
 				}
 				TheWritableGlobalData->m_xResolution = xres;
@@ -1695,6 +1691,12 @@ Int W3DDisplay::getLastFrameDrawCalls()
 	return Debug_Statistics::Get_Draw_Calls();
 }
 
+//=============================================================================
+void W3DDisplay::step()
+{
+	stepViews();
+}
+
 //DECLARE_PERF_TIMER(BigAssRenderLoop)
 
 // W3DDisplay::draw ===========================================================
@@ -1704,7 +1706,6 @@ Int W3DDisplay::getLastFrameDrawCalls()
 void W3DDisplay::draw( void )
 {
 	//USE_PERF_TIMER(W3DDisplay_draw)
-	static UnsignedInt syncTime = 0;
 
 	extern HWND ApplicationHWnd;
 	if (ApplicationHWnd && ::IsIconic(ApplicationHWnd)) {
@@ -1749,10 +1750,6 @@ AGAIN:
     	TheInGameUI->message( UnicodeString( L"-stats is running, at interval: %d." ), TheGlobalData->m_statsInterval );
     }
   }
-
-
-
-
 #endif
 
 	// compute debug statistics for display later
@@ -1793,21 +1790,14 @@ AGAIN:
   	//
 	//PredictiveLODOptimizerClass::Optimize_LODs( 5000 );
 
-	Bool freezeTime = TheTacticalView->isTimeFrozen() && !TheTacticalView->isCameraMovementFinished();
-	freezeTime = freezeTime || TheScriptEngine->isTimeFrozenDebug() || TheScriptEngine->isTimeFrozenScript();
-	freezeTime = freezeTime || TheGameLogic->isGamePaused();
-
-	// hack to let client spin fast in network games but still do effects at the same pace. -MDC
-	static UnsignedInt lastFrame = ~0;
-	freezeTime = freezeTime || (lastFrame == TheGameClient->getFrame());
-	lastFrame = TheGameClient->getFrame();
+	Bool freezeTime = TheGameEngine->isTimeFrozen() || TheGameEngine->isGameHalted();
 
 	/// @todo: I'm assuming the first view is our main 3D view.
 	W3DView *primaryW3DView=(W3DView *)getFirstView();
+
 	if (!freezeTime && TheScriptEngine->isTimeFast())
 	{
 		primaryW3DView->updateCameraMovements();  // Update camera motion effects.
-		syncTime += TheW3DFrameLengthInMsec;
 		return;
 	}
 
@@ -1836,21 +1826,11 @@ AGAIN:
 		}
 	}
 
-	if (!freezeTime)
-	{
-		/// @todo Decouple framerate from timestep
-		// for now, use constant time steps to avoid animations running independent of framerate
-		syncTime += TheW3DFrameLengthInMsec;
-		// allow W3D to update its internals
-		//	WW3D::Sync( GetTickCount() );
-	}
-	WW3D::Sync( syncTime );
+	WW3D::Add_Frame_Time(TheGameEngine->getLogicTimeStepMilliseconds());
 
-	// Fast & Frozen time limits the time to 33 fps.
-	Int minTime = 30;
-	static Int prevTime = timeGetTime(), now;
-
+	static Int now;
 	now=timeGetTime();
+
 	if (TheTacticalView->getTimeMultiplier()>1)
 	{
 		static Int timeMultiplierCounter = 1;
@@ -1860,30 +1840,8 @@ AGAIN:
 		timeMultiplierCounter = TheTacticalView->getTimeMultiplier();
 		// limit the framerate, because while fast time is on, the game logic is running as fast as it can.
 	}
-	else
-	{
-		now = timeGetTime();
-		prevTime = now - minTime;		 // do the first frame immediately.
-	}
-
 
 	do {
-
-		{
-
-#if !defined(GENERALS_ONLINE_RUN_FAST)
-			if(TheGlobalData->m_loadScreenRender != TRUE)
-			{
-
-				// limit the framerate
-				while(TheGlobalData->m_useFpsLimit && (now - prevTime) < minTime-1)
-				{
-					now = timeGetTime();
-				}
-				prevTime = now;
-			}
-#endif
-		}
 
 		// update all views of the world - recomputes data which will affect drawing
 		if (DX8Wrapper::_Get_D3D_Device8() && (DX8Wrapper::_Get_D3D_Device8()->TestCooperativeLevel()) == D3D_OK)

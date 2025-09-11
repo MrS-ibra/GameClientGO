@@ -330,8 +330,10 @@ Call team->setActive() when all members are added. */
 Team *TeamFactory::createInactiveTeam(const AsciiString& name)
 {
 	TeamPrototype *tp = findTeamPrototype(name);
-	if (!tp)
-		throw ERROR_BAD_ARG;
+	if (!tp) {
+		DEBUG_CRASH(( "Team prototype '%s' does not exist", name.str() ));
+		return NULL;
+	}
 
 	Team *t = NULL;
 	if (tp->getIsSingleton())
@@ -362,9 +364,11 @@ Team *TeamFactory::createInactiveTeam(const AsciiString& name)
 // ------------------------------------------------------------------------
 Team *TeamFactory::createTeam(const AsciiString& name)
 {
-	Team *t = NULL;
-	t = createInactiveTeam(name);
-	t->setActive();
+	Team *t = createInactiveTeam(name);
+
+	if (t)
+		t->setActive();
+
 	return t;
 }
 
@@ -845,19 +849,13 @@ TeamPrototype::~TeamPrototype()
 	if (m_factory)
 		m_factory->removeTeamPrototypeFromList(this);
 
-	if (m_productionConditionScript)
-	{
-		deleteInstance(m_productionConditionScript);
-	}
+	deleteInstance(m_productionConditionScript);
 	m_productionConditionScript = NULL;
 
 	for (Int i = 0; i < MAX_GENERIC_SCRIPTS; ++i)
 	{
-		if (m_genericScriptsToRun[i])
-		{
-			deleteInstance(m_genericScriptsToRun[i]);
-			m_genericScriptsToRun[i] = NULL;
-		}
+		deleteInstance(m_genericScriptsToRun[i]);
+		m_genericScriptsToRun[i] = NULL;
 	}
 }
 

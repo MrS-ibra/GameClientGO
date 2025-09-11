@@ -135,25 +135,14 @@ GlobalLanguage::~GlobalLanguage()
 
 void GlobalLanguage::init( void )
 {
+	{
+		AsciiString fname;
+		fname.format("Data\\%s\\Language", GetRegistryLanguage().str());
 
-	INI ini;
-	AsciiString fname;
-	fname.format("Data\\%s\\Language.ini", GetRegistryLanguage().str());
-
-	OSVERSIONINFO	osvi;
-	osvi.dwOSVersionInfoSize=sizeof(OSVERSIONINFO);
-
-	//GS NOTE: Must call doesFileExist in either case so that NameKeyGenerator will stay in sync
-	AsciiString tempName;
-	tempName.format("Data\\%s\\Language9x.ini", GetRegistryLanguage().str());
-	bool isExist = TheFileSystem->doesFileExist(tempName.str());
-	if (GetVersionEx(&osvi)  &&  osvi.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS  && isExist)
-	{	//check if we're running Win9x variant since they may need different fonts
-		fname = tempName;
+		INI ini;
+		ini.loadFileDirectory( fname, INI_LOAD_OVERWRITE, NULL );
 	}
 
-
-	ini.load( fname, INI_LOAD_OVERWRITE, NULL );
 	StringListIt it = m_localFonts.begin();
 	while( it != m_localFonts.end())
 	{
@@ -191,7 +180,7 @@ void GlobalLanguage::parseFontFileName( INI *ini, void * instance, void *store, 
 
 Int GlobalLanguage::adjustFontSize(Int theFontSize)
 {
-	Real adjustFactor = TheGlobalData->m_xResolution/800.0f;
+	Real adjustFactor = TheGlobalData->m_xResolution / (Real)DEFAULT_DISPLAY_WIDTH;
 	adjustFactor = 1.0f + (adjustFactor-1.0f) * m_resolutionFontSizeAdjustment;
 	if (adjustFactor<1.0f) adjustFactor = 1.0f;
 	if (adjustFactor>2.0f) adjustFactor = 2.0f;

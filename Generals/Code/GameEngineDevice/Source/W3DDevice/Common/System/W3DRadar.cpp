@@ -42,6 +42,7 @@
 #include "GameLogic/Module/StealthUpdate.h"
 
 #include "GameClient/Color.h"
+#include "GameClient/ControlBar.h"
 #include "GameClient/Display.h"
 #include "GameClient/GameClient.h"
 #include "GameClient/GameWindow.h"
@@ -143,8 +144,8 @@ void W3DRadar::deleteResources( void )
 	if( m_terrainTexture )
 		m_terrainTexture->Release_Ref();
 	m_terrainTexture = NULL;
-	if( m_terrainImage )
-		deleteInstance(m_terrainImage);
+
+	deleteInstance(m_terrainImage);
 	m_terrainImage = NULL;
 
 	//
@@ -153,8 +154,8 @@ void W3DRadar::deleteResources( void )
 	if( m_overlayTexture )
 		m_overlayTexture->Release_Ref();
 	m_overlayTexture = NULL;
-	if( m_overlayImage )
-		deleteInstance(m_overlayImage);
+
+	deleteInstance(m_overlayImage);
 	m_overlayImage = NULL;
 
 	//
@@ -163,8 +164,8 @@ void W3DRadar::deleteResources( void )
 	if( m_shroudTexture )
 		m_shroudTexture->Release_Ref();
 	m_shroudTexture = NULL;
-	if( m_shroudImage )
-		deleteInstance(m_shroudImage);
+
+	deleteInstance(m_shroudImage);
 	m_shroudImage = NULL;
 
 }  // end deleteResources
@@ -696,7 +697,7 @@ void W3DRadar::renderObjectList( const RadarObject *listHead, TextureClass *text
 			if( !stealth )
 				continue;
 
-      if ( ThePlayerList->getLocalPlayer()->getRelationship(obj->getTeam()) == ENEMIES )
+      if ( TheControlBar->getCurrentlyViewedPlayerRelationship(obj->getTeam()) == ENEMIES )
         if( !obj->testStatus( OBJECT_STATUS_DETECTED ) && !stealth->isDisguised() )
 				  skip = TRUE;
 

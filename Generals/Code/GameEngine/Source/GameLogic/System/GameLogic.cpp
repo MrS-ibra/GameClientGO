@@ -241,6 +241,7 @@ GameLogic::GameLogic( void )
 	m_pauseInput = FALSE;
 	m_inputEnabledMemory = TRUE;
 	m_mouseVisibleMemory = TRUE;
+	m_logicTimeScaleEnabledMemory = FALSE;
 	m_loadScreen = NULL;
 	m_forceGameStartByTimeOut = FALSE;
 #ifdef DUMP_PERF_STATS
@@ -406,6 +407,8 @@ void GameLogic::init( void )
 	m_pauseInput = FALSE;
 	m_inputEnabledMemory = TRUE;
 	m_mouseVisibleMemory = TRUE;
+	m_logicTimeScaleEnabledMemory = FALSE;
+
 	for(Int i = 0; i < MAX_SLOTS; ++i)
 	{
 		m_progressComplete[i] = FALSE;
@@ -447,6 +450,8 @@ void GameLogic::reset( void )
 	m_pauseInput = FALSE;
 	m_inputEnabledMemory = TRUE;
 	m_mouseVisibleMemory = TRUE;
+	m_logicTimeScaleEnabledMemory = FALSE;
+
 	setFPMode();
 
 	// destroy all objects
@@ -982,6 +987,16 @@ void GameLogic::deleteLoadScreen( void )
 void GameLogic::setGameLoading( Bool loading )
 {
 	m_loadingScene = loading;
+}
+
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+void GameLogic::setGameMode( GameMode mode )
+{
+	GameMode prev = m_gameMode;
+	m_gameMode = mode;
+
+	TheMouse->onGameModeChanged(prev, mode);
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -2085,6 +2100,13 @@ void GameLogic::startNewGame( Bool saveGame )
 	if (TheGameSpyInfo)
 		TheGameSpyInfo->updateAdditionalGameSpyDisconnections(1);
 
+
+  if ( isInReplayGame() && TheInGameUI && TheGameText )
+  {
+		TheInGameUI->messageNoFormat( TheGameText->FETCH_OR_SUBSTITUTE( "GUI:FastForwardInstructions", L"Press F to toggle Fast Forward" ) );
+  }
+
+
 }  // end startNewGame
 
 //-----------------------------------------------------------------------------------------
@@ -2149,6 +2171,9 @@ void GameLogic::loadMapINI( AsciiString mapName )
 		INI ini;
 		ini.load( AsciiString(fullFledgeFilename), INI_LOAD_CREATE_OVERRIDES, NULL );
 	}
+
+	// TheSuperHackers @todo Implement ini load directory for map folder.
+	// Requires adjustments in map transfer.
 
 	sprintf(fullFledgeFilename, "%s\\solo.ini", filename);
 	if (TheFileSystem->doesFileExist(fullFledgeFilename)) {
@@ -3133,29 +3158,12 @@ void GameLogic::update( void )
 	}
 
 	// send the current time to the GameClient
-	DEBUG_ASSERTCRASH(TheGameLogic == this, ("hmm, TheGameLogic is not right"));
 	UnsignedInt now = TheGameLogic->getFrame();
 	TheGameClient->setFrame(now);
 
 	// update (execute) scripts
 	{
 		TheScriptEngine->UPDATE();
-	}
-
-	Bool freezeTime = TheTacticalView->isTimeFrozen() && !TheTacticalView->isCameraMovementFinished();
-	freezeTime = freezeTime || TheScriptEngine->isTimeFrozenDebug() || TheScriptEngine->isTimeFrozenScript();
-
-	if (freezeTime)
-	{
-		if (TheCommandList->containsMessageOfType(GameMessage::MSG_CLEAR_GAME_DATA))
-		{
-			TheScriptEngine->forceUnfreezeTime();
-		}
-		else
-		{
-			/// @todo - make sure this never happens during a network game.  jba.
-			return;
-		}
 	}
 
 	// Note - TerrainLogic update needs to happen after ScriptEngine update, but before object updates.  jba.
@@ -3638,6 +3646,17 @@ UnsignedInt GameLogic::getCRC( Int mode, AsciiString deepCRCFileName )
 }
 
 // ------------------------------------------------------------------------------------------------
+void GameLogic::exitGame()
+{
+	// TheSuperHackers @fix The logic update must not be halted to process the game exit message.
+	setGamePaused(FALSE);
+	TheScriptEngine->forceUnfreezeTime();
+	TheScriptEngine->doUnfreezeTime();
+
+	TheMessageStream->appendMessage(GameMessage::MSG_CLEAR_GAME_DATA);
+}
+
+// ------------------------------------------------------------------------------------------------
 /** A new GameLogic object has been constructed, therefore create
  * a corresponding drawable and bind them together. */
 // ------------------------------------------------------------------------------------------------
@@ -3692,11 +3711,17 @@ Bool GameLogic::isGamePaused( void )
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
-void GameLogic::setGamePausedInFrame( UnsignedInt frame )
+void GameLogic::setGamePausedInFrame( UnsignedInt frame, Bool disableLogicTimeScale )
 {
 	if (frame >= m_frame)
 	{
 		m_pauseFrame = frame;
+
+		if (disableLogicTimeScale)
+		{
+			m_logicTimeScaleEnabledMemory = TheGameEngine->isLogicTimeScaleEnabled();
+			TheGameEngine->enableLogicTimeScale(FALSE);
+		}
 	}
 }
 
@@ -3728,6 +3753,12 @@ void GameLogic::setGamePaused( Bool paused, Bool pauseMusic, Bool pauseInput )
 void GameLogic::pauseGameLogic(Bool paused)
 {
 	m_gamePaused = paused;
+
+	if (!paused && m_logicTimeScaleEnabledMemory)
+	{
+		m_logicTimeScaleEnabledMemory = FALSE;
+		TheGameEngine->enableLogicTimeScale(TRUE);
+	}
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -3792,6 +3823,8 @@ void GameLogic::pauseGameInput(Bool paused)
 		return;
 
 	m_pauseInput = paused;
+
+	TheMouse->onGamePaused(paused);
 
 	if(paused)
 	{

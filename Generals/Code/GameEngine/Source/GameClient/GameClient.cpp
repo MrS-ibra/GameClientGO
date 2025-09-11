@@ -183,6 +183,7 @@ GameClient::~GameClient()
 	delete TheFontLibrary;
 	TheFontLibrary = NULL;
 
+	TheMouse->reset();
 	delete TheMouse;
 	TheMouse = NULL;
 
@@ -240,7 +241,7 @@ void GameClient::init( void )
 
 	INI ini;
 	// Load the DrawGroupInfo here, before the Display Manager is loaded.
-	ini.load("Data\\INI\\DrawGroupInfo.ini", INI_LOAD_OVERWRITE, NULL);
+	ini.loadFileDirectory("Data\\INI\\DrawGroupInfo", INI_LOAD_OVERWRITE, NULL);
 
 	// Override the ini values with localized versions:
 	if (TheGlobalLanguageData && TheGlobalLanguageData->m_drawGroupInfoFont.name.isNotEmpty())
@@ -601,16 +602,8 @@ void GameClient::update( void )
 		TheVideoPlayer->UPDATE();
 	}
 
-	Bool freezeTime = TheTacticalView->isTimeFrozen() && !TheTacticalView->isCameraMovementFinished();
-	freezeTime = freezeTime || TheScriptEngine->isTimeFrozenDebug();
-	freezeTime = freezeTime || TheScriptEngine->isTimeFrozenScript();
-	freezeTime = freezeTime || TheGameLogic->isGamePaused();
+	const Bool freezeTime = TheGameEngine->isTimeFrozen() || TheGameEngine->isGameHalted();
 	Int localPlayerIndex = ThePlayerList ? ThePlayerList->getLocalPlayer()->getPlayerIndex() : 0;
-
-	// hack to let client spin fast in network games but still do effects at the same pace. -MDC
-	static UnsignedInt lastFrame = ~0;
-	freezeTime = freezeTime || (lastFrame == m_frame);
-	lastFrame = m_frame;
 
 	if (!freezeTime)
 	{
@@ -733,6 +726,11 @@ void GameClient::update( void )
 		TheInGameUI->UPDATE();
 	}
 }  // end update
+
+void GameClient::step()
+{
+	TheDisplay->step();
+}
 
 void GameClient::updateHeadless()
 {

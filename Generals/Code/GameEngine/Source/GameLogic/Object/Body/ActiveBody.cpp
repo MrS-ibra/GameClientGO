@@ -593,7 +593,9 @@ void ActiveBody::attemptHealing( DamageInfo *damageInfo )
 		//(object pointer loses scope as soon as atteptdamage's caller ends)
 		m_lastDamageInfo = *damageInfo;
 		m_lastDamageCleared = false;
+#if RETAIL_COMPATIBLE_BUG
 		m_lastDamageTimestamp = TheGameLogic->getFrame();
+#endif
 		m_lastHealingTimestamp = TheGameLogic->getFrame();
 
 		// if our health has gone UP then do run the damage module callback
@@ -1070,29 +1072,32 @@ void ActiveBody::setIndestructible( Bool indestructible )
 
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
-void ActiveBody::onVeterancyLevelChanged( VeterancyLevel oldLevel, VeterancyLevel newLevel )
+void ActiveBody::onVeterancyLevelChanged( VeterancyLevel oldLevel, VeterancyLevel newLevel, Bool provideFeedback )
 {
 	if (oldLevel == newLevel)
 		return;
 
 	if (oldLevel < newLevel)
 	{
-		AudioEventRTS veterancyChanged;
-		switch (newLevel)
+		if (provideFeedback)
 		{
-			case LEVEL_VETERAN:
-				veterancyChanged = *getObject()->getTemplate()->getSoundPromotedVeteran();
-				break;
-			case LEVEL_ELITE:
-				veterancyChanged = *getObject()->getTemplate()->getSoundPromotedElite();
-				break;
-			case LEVEL_HEROIC:
-				veterancyChanged = *getObject()->getTemplate()->getSoundPromotedHero();
-				break;
-		}
+			AudioEventRTS veterancyChanged;
+			switch (newLevel)
+			{
+				case LEVEL_VETERAN:
+					veterancyChanged = *getObject()->getTemplate()->getSoundPromotedVeteran();
+					break;
+				case LEVEL_ELITE:
+					veterancyChanged = *getObject()->getTemplate()->getSoundPromotedElite();
+					break;
+				case LEVEL_HEROIC:
+					veterancyChanged = *getObject()->getTemplate()->getSoundPromotedHero();
+					break;
+			}
 
-		veterancyChanged.setObjectID(getObject()->getID());
-		TheAudio->addAudioEvent(&veterancyChanged);
+			veterancyChanged.setObjectID(getObject()->getID());
+			TheAudio->addAudioEvent(&veterancyChanged);
+		}
 
 		//Also mark the UI dirty -- incase the object is selected or contained.
 		Object *obj = getObject();

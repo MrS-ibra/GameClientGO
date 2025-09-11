@@ -157,6 +157,29 @@ void ControlBar::markUIDirty( void )
 #endif
 }
 
+Player* ControlBar::getCurrentlyViewedPlayer()
+{
+	if (TheControlBar->isObserverControlBarOn())
+		return TheControlBar->getObserverLookAtPlayer();
+
+	return ThePlayerList->getLocalPlayer();
+}
+
+Relationship ControlBar::getCurrentlyViewedPlayerRelationship(const Team* team)
+{
+	if (Player* player = getCurrentlyViewedPlayer())
+		return player->getRelationship(team);
+
+	return NEUTRAL;
+}
+
+AsciiString ControlBar::getCurrentlyViewedPlayerSide()
+{
+	if (Player* player = getCurrentlyViewedPlayer())
+		player->getSide();
+
+	return ThePlayerList->getLocalPlayer()->getSide();
+}
 
 void ControlBar::populatePurchaseScience( Player* player )
 {
@@ -1027,11 +1050,11 @@ void ControlBar::init( void )
 	INI ini;
 	m_sideSelectAnimateDown = FALSE;
 	// load the command buttons
-	ini.load( AsciiString( "Data\\INI\\Default\\CommandButton.ini" ), INI_LOAD_OVERWRITE, NULL );
-	ini.load( AsciiString( "Data\\INI\\CommandButton.ini" ), INI_LOAD_OVERWRITE, NULL );
+	ini.loadFileDirectory( AsciiString( "Data\\INI\\Default\\CommandButton" ), INI_LOAD_OVERWRITE, NULL );
+	ini.loadFileDirectory( AsciiString( "Data\\INI\\CommandButton" ), INI_LOAD_OVERWRITE, NULL );
 
 	// load the command sets
-	ini.load( AsciiString( "Data\\INI\\CommandSet.ini" ), INI_LOAD_OVERWRITE, NULL );
+	ini.loadFileDirectory( AsciiString( "Data\\INI\\CommandSet" ), INI_LOAD_OVERWRITE, NULL );
 
 	// post process step after loading the command buttons and command sets
 	postProcessCommands();
@@ -1414,7 +1437,6 @@ void ControlBar::update( void )
 			populateObserverInfoWindow();
 
 		Drawable *drawToEvaluateFor = NULL;
-		Bool multiSelect = FALSE;
 		if( TheInGameUI->getSelectCount() > 1 )
 		{
 			// Attempt to isolate a Drawable here to evaluate
@@ -1423,17 +1445,21 @@ void ControlBar::update( void )
 			// but is represented in the UI as a single unit,
 			// so we must isolate and evaluate only the Nexus
 			drawToEvaluateFor = TheGameClient->findDrawableByID( TheInGameUI->getSoloNexusSelectedDrawableID() ) ;
-			multiSelect = ( drawToEvaluateFor == NULL );
-
 		}
 		else // get the first and only drawble in the selection list
 			// TheSuperHackers @fix Mauller 07/04/2025 The first access to this can return an empty list
 			if (!TheInGameUI->getAllSelectedDrawables()->empty()) {
 				drawToEvaluateFor = TheInGameUI->getAllSelectedDrawables()->front();
-				Object *obj = drawToEvaluateFor ? drawToEvaluateFor->getObject() : NULL;
-				setPortraitByObject( obj );
 			}
 
+		Object* obj = drawToEvaluateFor ? drawToEvaluateFor->getObject() : NULL;
+		setPortraitByObject(obj);
+
+		const Coord3D* exitPosition = NULL;
+		if (obj && obj->getControllingPlayer() == getCurrentlyViewedPlayer() && obj->getObjectExitInterface())
+			exitPosition = obj->getObjectExitInterface()->getRallyPoint();
+
+		showRallyPoint(exitPosition);
 		return;
 	}
 
@@ -2670,58 +2696,53 @@ void ControlBar::setPortraitByObject( Object *obj )
 /** Show a rally point marker at the world location specified.  If no location is specified
 	* any marker that we might have visible is hidden */
 // ------------------------------------------------------------------------------------------------
-void ControlBar::showRallyPoint( const Coord3D *loc )
+void ControlBar::showRallyPoint(const Coord3D* loc)
 {
-
 	// if loc is NULL, destroy any rally point drawble we have shown
-	if( loc == NULL )
+	if (loc == NULL)
 	{
-
 		// destroy rally point drawable if present
-		if( m_rallyPointDrawableID != INVALID_DRAWABLE_ID )
-			TheGameClient->destroyDrawable( TheGameClient->findDrawableByID( m_rallyPointDrawableID ) );
+		if (m_rallyPointDrawableID != INVALID_DRAWABLE_ID)
+			TheGameClient->destroyDrawable(TheGameClient->findDrawableByID(m_rallyPointDrawableID));
+
 		m_rallyPointDrawableID = INVALID_DRAWABLE_ID;
+		return;
+	}
 
-	}  // end if
-	else
+	Drawable* marker = NULL;
+
+	// create a rally point drawble if necessary
+	if (m_rallyPointDrawableID == INVALID_DRAWABLE_ID)
 	{
-		Drawable *marker = NULL;
-
-		// create a rally point drawble if necessary
-		if( m_rallyPointDrawableID == INVALID_DRAWABLE_ID )
+		const ThingTemplate* ttn = TheThingFactory->findTemplate("RallyPointMarker");
+		marker = TheThingFactory->newDrawable(ttn);
+		DEBUG_ASSERTCRASH(marker, ("showRallyPoint: Unable to create rally point drawable"));
+		if (marker)
 		{
+			marker->setDrawableStatus(DRAWABLE_STATUS_NO_SAVE);
+			m_rallyPointDrawableID = marker->getID();
+		}
+	}
+	else
+		marker = TheGameClient->findDrawableByID(m_rallyPointDrawableID);
 
-			const ThingTemplate* ttn = TheThingFactory->findTemplate("RallyPointMarker");
-			marker = TheThingFactory->newDrawable( ttn );
-			DEBUG_ASSERTCRASH( marker, ("showRallyPoint: Unable to create rally point drawable") );
-			if (marker)
-			{
-				marker->setDrawableStatus(DRAWABLE_STATUS_NO_SAVE);
-				m_rallyPointDrawableID = marker->getID();
-			}
+	// sanity
+	DEBUG_ASSERTCRASH(marker, ("showRallyPoint: No rally point marker found"));
 
-		}  // end if
-		else
-			marker = TheGameClient->findDrawableByID( m_rallyPointDrawableID );
+	// set the position of the rally point drawble to the position passed in
+	marker->setPosition(loc);
+	marker->setOrientation(TheGlobalData->m_downwindAngle); // To blow down wind -- ML
 
-		// sanity
-		DEBUG_ASSERTCRASH( marker, ("showRallyPoint: No rally point marker found" ) );
-
-		// set the position of the rally point drawble to the position passed in
-		marker->setPosition( loc );
-		marker->setOrientation( TheGlobalData->m_downwindAngle );//To blow down wind -- ML
-
-		// set the marker colors to that of the local player
-		Player *player = ThePlayerList->getLocalPlayer();
-
+	// set the marker colors to that of the local player
+	Player* player = TheControlBar->getCurrentlyViewedPlayer();
+	if (player)
+	{
 		if (TheGlobalData->m_timeOfDay == TIME_OF_DAY_NIGHT)
-			marker->setIndicatorColor( player->getPlayerNightColor() );
+			marker->setIndicatorColor(player->getPlayerNightColor());
 		else
-			marker->setIndicatorColor( player->getPlayerColor() );
-
-	}  // end else
-
-}  // end showRallyPoint
+			marker->setIndicatorColor(player->getPlayerColor());
+	}
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Show a rally point marker at the world location specified.  If no location is specified

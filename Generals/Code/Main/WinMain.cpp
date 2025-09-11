@@ -76,9 +76,6 @@ const Char *g_strFile = "data\\Generals.str";
 const Char *g_csfFile = "data\\%s\\Generals.csf";
 const char *gAppPrefix = ""; /// So WB can have a different debug log file name.
 
-#define DEFAULT_XRESOLUTION 800
-#define DEFAULT_YRESOLUTION 600
-
 static Bool gInitializing = false;
 static Bool gDoPaint = true;
 static Bool isWinMainActive = false;
@@ -383,27 +380,43 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 				if( TheKeyboard )
 					TheKeyboard->resetKeys();
 
-				if (TheWin32Mouse)
-					TheWin32Mouse->lostFocus(FALSE);
+				if (TheMouse)
+					TheMouse->regainFocus();
 
 				break;
 
 			}  // end set focus
 
 			//-------------------------------------------------------------------------
+			case WM_MOVE:
+			{
+				if (TheMouse)
+					TheMouse->refreshCursorCapture();
+
+				break;
+			}
+
+			//-------------------------------------------------------------------------
 			case WM_SIZE:
+			{
 				// When W3D initializes, it resizes the window.  So stop repainting.
 				if (!gInitializing)
 					gDoPaint = false;
+
+				if (TheMouse)
+					TheMouse->refreshCursorCapture();
+
 				break;
+			}
 
 			//-------------------------------------------------------------------------
 			case WM_KILLFOCUS:
 			{
 				if (TheKeyboard )
 					TheKeyboard->resetKeys();
-				if (TheWin32Mouse)
-					TheWin32Mouse->lostFocus(TRUE);
+
+				if (TheMouse)
+					TheMouse->loseFocus();
 
 				break;
 			}
@@ -438,27 +451,20 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 			{
 				Int active = LOWORD( wParam );
 
-				//
-				// when window is becoming deactivated we must release mouse cursor
-				// locks on our region, otherwise set the mouse limit region again
-				// which will clip the cursor to our window
-				//
 				if( active == WA_INACTIVE )
 				{
-
-					ClipCursor( NULL );
 					if (TheAudio)
 						TheAudio->loseFocus();
-				}  // end if
+				}
 				else
 				{
-					if( TheMouse )
-						TheMouse->setMouseLimits();
-
 					if (TheAudio)
 						TheAudio->regainFocus();
 
-				}  // end else
+					// Cursor can only be captured after one of the activation events.
+					if (TheMouse)
+						TheMouse->refreshCursorCapture();
+				}
 				break;
 
 			}  // end case activate
@@ -570,7 +576,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 						Int savContext = ::SaveDC(dc);
 						HDC tmpDC = ::CreateCompatibleDC(dc);
 						HBITMAP savBitmap = (HBITMAP)::SelectObject(tmpDC, gLoadScreenBitmap);
-						::BitBlt(dc, 0, 0, DEFAULT_XRESOLUTION, DEFAULT_YRESOLUTION, tmpDC, 0, 0, SRCCOPY);
+						::BitBlt(dc, 0, 0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, tmpDC, 0, 0, SRCCOPY);
 						::SelectObject(tmpDC, savBitmap);
 						::DeleteDC(tmpDC);
 						::RestoreDC(dc, savContext);
@@ -652,8 +658,8 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 static Bool initializeAppWindows( HINSTANCE hInstance, Int nCmdShow, Bool runWindowed )
 {
 	DWORD windowStyle;
-	Int startWidth = DEFAULT_XRESOLUTION,
-			startHeight = DEFAULT_YRESOLUTION;
+	Int startWidth = DEFAULT_DISPLAY_WIDTH,
+			startHeight = DEFAULT_DISPLAY_HEIGHT;
 
 	// register the window class
 
@@ -679,8 +685,8 @@ static Bool initializeAppWindows( HINSTANCE hInstance, Int nCmdShow, Bool runWin
 	AdjustWindowRect (&rect, windowStyle, FALSE);
 	if (runWindowed) {
 		// Makes the normal debug 800x600 window center in the screen.
-		startWidth = DEFAULT_XRESOLUTION;
-		startHeight= DEFAULT_YRESOLUTION;
+		startWidth = DEFAULT_DISPLAY_WIDTH;
+		startHeight= DEFAULT_DISPLAY_HEIGHT;
 	}
 
 	gInitializing = true;
@@ -729,6 +735,15 @@ static Bool initializeAppWindows( HINSTANCE hInstance, Int nCmdShow, Bool runWin
 // Necessary to allow memory managers and such to have useful critical sections
 static CriticalSection critSec1, critSec2, critSec3, critSec4, critSec5;
 
+// UnHandledExceptionFilter ===================================================
+/** Handler for unhandled win32 exceptions. */
+//=============================================================================
+static LONG WINAPI UnHandledExceptionFilter( struct _EXCEPTION_POINTERS* e_info )
+{
+	DumpExceptionInfo( e_info->ExceptionRecord->ExceptionCode, e_info );
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+
 // WinMain ====================================================================
 /** Application entry point */
 //=============================================================================
@@ -738,7 +753,7 @@ Int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	Int exitcode = 1;
 	try {
 
-		_set_se_translator( DumpExceptionInfo ); // Hook that allows stack trace.
+		SetUnhandledExceptionFilter( UnHandledExceptionFilter );
 		//
 		// there is something about checkin in and out the .dsp and .dsw files
 		// that blows the working directory information away on each of the

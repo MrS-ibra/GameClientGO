@@ -71,7 +71,7 @@ enum BuildableStatus CPP_11(: Int);
 typedef const CommandButton* ConstCommandButtonPtr;
 
 // What kind of game we're in.
-enum
+enum GameMode CPP_11(: Int)
 {
 	GAME_SINGLE_PLAYER,
 	GAME_LAN,
@@ -116,7 +116,7 @@ public:
 
 	void processCommandList( CommandList *list );		///< process the command list
 
-	void prepareNewGame( Int gameMode, GameDifficulty diff, Int rankPoints );						///< prepare for new game
+	void prepareNewGame( GameMode gameMode, GameDifficulty diff, Int rankPoints );						///< prepare for new game
 
 	void logicMessageDispatcher( GameMessage *msg,
 																			 void *userData );	///< Logic command list processing
@@ -162,9 +162,10 @@ public:
 	void deleteLoadScreen( void );
 
 	void setGameLoading( Bool loading );
-	void setGameMode( Int mode );
-	Int getGameMode( void );
-	Bool isInGame( void );
+	void setGameMode( GameMode mode );
+	GameMode getGameMode( void );
+
+	Bool isInGame( void ); // Includes Shell Game
 	Bool isInLanGame( void );
 	Bool isInSinglePlayerGame( void );
 	Bool isInSkirmishGame( void );
@@ -172,6 +173,9 @@ public:
 	Bool isInInternetGame( void );
 	Bool isInShellGame( void );
 	Bool isInMultiplayerGame( void );
+
+	static Bool isInInteractiveGame(GameMode mode) { return mode != GAME_NONE && mode != GAME_SHELL; }
+
 	Bool isLoadingGame();
 	void enableScoring(Bool score) { m_isScoringEnabled = score; }
 	Bool isScoringEnabled() const { return m_isScoringEnabled; }
@@ -193,6 +197,7 @@ public:
 	void updateObjectsChangedTriggerAreas(void) {m_frameObjectsChangedTriggerAreas = m_frame;}
 	UnsignedInt getFrameObjectsChangedTriggerAreas(void) {return m_frameObjectsChangedTriggerAreas;}
 
+	void exitGame();
 	void clearGameData(Bool showScoreScreen = TRUE);														///< Clear the game data
 	void closeWindows( void );
 
@@ -201,7 +206,7 @@ public:
 
 	void bindObjectAndDrawable(Object* obj, Drawable* draw);
 
-	void setGamePausedInFrame( UnsignedInt frame );
+	void setGamePausedInFrame( UnsignedInt frame, Bool disableLogicTimeScale );
 	UnsignedInt getGamePauseFrame() const { return m_pauseFrame; }
 	void setGamePaused( Bool paused, Bool pauseMusic = TRUE, Bool pauseInput = TRUE );
 	Bool isGamePaused( void );
@@ -335,7 +340,7 @@ private:
 	virtual TerrainLogic *createTerrainLogic( void );
 	virtual GhostObjectManager *createGhostObjectManager(void);
 
-	Int m_gameMode;
+	GameMode m_gameMode;
 	Int m_rankLevelLimit;
 
 	LoadScreen *getLoadScreen( Bool saveGame );
@@ -348,6 +353,7 @@ private:
 	Bool m_pauseInput;
 	Bool m_inputEnabledMemory;// Latches used to remember what to restore to after we unpause
 	Bool m_mouseVisibleMemory;
+	Bool m_logicTimeScaleEnabledMemory;
 
 	Bool m_progressComplete[MAX_SLOTS];
 	enum { PROGRESS_COMPLETE_TIMEOUT = 60000 };							///< Timeout we wait for when we've completed our Load
@@ -386,12 +392,11 @@ inline void GameLogic::setHeight( Real height ) { m_height = height; }
 inline Real GameLogic::getHeight( void ) { return m_height; }
 inline UnsignedInt GameLogic::getFrame( void ) { return m_frame; }
 
-inline Bool GameLogic::isInGame( void ) { return !(m_gameMode == GAME_NONE); }
-inline void GameLogic::setGameMode( Int mode ) { m_gameMode = mode; }
-inline Int  GameLogic::getGameMode( void ) { return m_gameMode; }
+inline Bool GameLogic::isInGame( void ) { return m_gameMode != GAME_NONE; }
+inline GameMode GameLogic::getGameMode( void ) { return m_gameMode; }
 inline Bool GameLogic::isInLanGame( void ) { return (m_gameMode == GAME_LAN); }
 inline Bool GameLogic::isInSkirmishGame( void ) { return (m_gameMode == GAME_SKIRMISH); }
-inline Bool GameLogic::isInMultiplayerGame( void ) { return ((m_gameMode == GAME_LAN) || (m_gameMode == GAME_INTERNET)) ; }
+inline Bool GameLogic::isInMultiplayerGame( void ) { return (m_gameMode == GAME_LAN) || (m_gameMode == GAME_INTERNET) ; }
 inline Bool GameLogic::isInReplayGame( void ) { return (m_gameMode == GAME_REPLAY); }
 inline Bool GameLogic::isInInternetGame( void ) { return (m_gameMode == GAME_INTERNET); }
 inline Bool GameLogic::isInShellGame( void ) { return (m_gameMode == GAME_SHELL); }

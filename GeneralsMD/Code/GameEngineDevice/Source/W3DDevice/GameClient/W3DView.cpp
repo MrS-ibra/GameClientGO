@@ -38,6 +38,7 @@
 
 // USER INCLUDES //////////////////////////////////////////////////////////////////////////////////
 #include "Common/BuildAssistant.h"
+#include "Common/GameEngine.h"
 #include "Common/GlobalData.h"
 #include "Common/Module.h"
 #include "Common/RandomValue.h"
@@ -107,7 +108,7 @@ class NGMP_OnlineServices_LobbyInterface;
 
 
 // 30 fps
-Int TheW3DFrameLengthInMsec = 1000/LOGICFRAMES_PER_SECOND; // default is 33msec/frame == 30fps. but we may change it depending on sys config.
+Real TheW3DFrameLengthInMsec = MSEC_PER_LOGICFRAME_REAL; // default is 33msec/frame == 30fps. but we may change it depending on sys config.
 static const Int MAX_REQUEST_CACHE_SIZE = 40;	// Any size larger than 10, or examine code below for changes. jkmcd.
 static const Real DRAWABLE_OVERSCAN = 75.0f;  ///< 3D world coords of how much to overscan in the 3D screen region
 
@@ -415,7 +416,8 @@ void W3DView::buildCameraTransform( Matrix3D *transform )
 	transform->Look_At( sourcePos, targetPos, 0 );
 
 	//WST 11/12/2002 New camera shaker system
-	CameraShakerSystem.Timestep(1.0f/30.0f);
+	// TheSuperHackers @tweak The camera shaker is now decoupled from the render update.
+	CameraShakerSystem.Timestep(TheGameEngine->getLogicTimeStepMilliseconds());
 	CameraShakerSystem.Update_Camera_Shaker(sourcePos, &m_shakerAngles);
 	transform->Rotate_X(m_shakerAngles.X);
 	transform->Rotate_Y(m_shakerAngles.Y);
@@ -705,7 +707,7 @@ void W3DView::reset( void )
 static void drawDrawable( Drawable *draw, void *userData )
 {
 
-	draw->draw( (View *)userData );
+	draw->draw();
 
 }  // end drawDrawable
 
@@ -1060,7 +1062,9 @@ Bool W3DView::updateCameraMovements()
 		didUpdate = true;
 	} else if (m_doingMoveCameraOnWaypointPath) {
 		m_previousLookAtPosition = *getPosition();
-		moveAlongWaypointPath(TheW3DFrameLengthInMsec);
+		// TheSuperHackers @tweak The scripted camera movement is now decoupled from the render update.
+		// The scripted camera will still move when the time is frozen, but not when the game is halted.
+		moveAlongWaypointPath(TheGameEngine->getLogicTimeStepMilliseconds(GameEngine::IgnoreFrozenTime));
 		didUpdate = true;
 	}
 	if (m_doingScriptedCameraLock)
@@ -1082,6 +1086,35 @@ Bool W3DView::updateCameraMovements()
 void W3DView::updateView(void)
 {
 	UPDATE();
+}
+
+// TheSuperHackers @tweak xezon 12/08/2025 The camera shaker is no longer tied to the render
+// update. The shake does sharp shakes on every fixed time step, and is not intended to have
+// linear interpolation during the render update.
+void W3DView::stepView()
+{
+	//
+	// Process camera shake
+	//
+	if (m_shakeIntensity > 0.01f)
+	{
+		m_shakeOffset.x = m_shakeIntensity * m_shakeAngleCos;
+		m_shakeOffset.y = m_shakeIntensity * m_shakeAngleSin;
+
+		// fake a stiff spring/damper
+		const Real dampingCoeff = 0.75f;
+		m_shakeIntensity *= dampingCoeff;
+
+		// spring is so "stiff", it pulls 180 degrees opposite each frame
+		m_shakeAngleCos = -m_shakeAngleCos;
+		m_shakeAngleSin = -m_shakeAngleSin;
+	}
+	else
+	{
+		m_shakeIntensity = 0.0f;
+		m_shakeOffset.x = 0.0f;
+		m_shakeOffset.y = 0.0f;
+	}
 }
 
 //DECLARE_PERF_TIMER(W3DView_updateView)
@@ -1296,28 +1329,10 @@ void W3DView::update(void)
 	}
 	//
 	// Process camera shake
-	/// @todo Make this framerate-independent
 	//
 	if (m_shakeIntensity > 0.01f)
 	{
-		m_shakeOffset.x = m_shakeIntensity * m_shakeAngleCos;
-		m_shakeOffset.y = m_shakeIntensity * m_shakeAngleSin;
-
-		// fake a stiff spring/damper
-		const Real dampingCoeff = 0.75f;
-		m_shakeIntensity *= dampingCoeff;
-
-		// spring is so "stiff", it pulls 180 degrees opposite each frame
-		m_shakeAngleCos = -m_shakeAngleCos;
-		m_shakeAngleSin = -m_shakeAngleSin;
-
 		recalcCamera = true;
-	}
-	else
-	{
-		m_shakeIntensity = 0.0f;
-		m_shakeOffset.x = 0.0f;
-		m_shakeOffset.y = 0.0f;
 	}
 
 	//Process New C3 Camera Shaker system
@@ -1333,9 +1348,10 @@ void W3DView::update(void)
 	 * underground or higher than the max allowed height.  When the camera is at rest (not
 	 * scrolling), the zoom will move toward matching the desired height.
 	 */
+	// TheSuperHackers @tweak Can now also zoom when the game is paused.
 	m_terrainHeightUnderCamera = getHeightAroundPos(m_pos.x, m_pos.y);
 	m_currentHeightAboveGround = m_cameraOffset.z * m_zoom - m_terrainHeightUnderCamera;
-	if (TheTerrainLogic && TheGlobalData && TheInGameUI && m_okToAdjustHeight && !TheGameLogic->isGamePaused())
+	if (TheTerrainLogic && TheGlobalData && TheInGameUI && m_okToAdjustHeight)
 	{
 		Real desiredHeight = (m_terrainHeightUnderCamera + m_heightAboveGround);
 		Real desiredZoom = desiredHeight / m_cameraOffset.z;
@@ -1383,7 +1399,7 @@ void W3DView::update(void)
 
 
 #ifdef DO_SEISMIC_SIMULATIONS
-  // Give the terrain a chance to refresh animaing (Seismic) regions, if any.
+  // Give the terrain a chance to refresh animating (Seismic) regions, if any.
   TheTerrainVisual->updateSeismicSimulations();
 #endif
 
@@ -1392,8 +1408,7 @@ void W3DView::update(void)
 
 	// render all of the visible Drawables
 	/// @todo this needs to use a real region partition or something
-	if (WW3D::Get_Frame_Time())	//make sure some time actually elapsed
-		TheGameClient->iterateDrawablesInRegion( &axisAlignedRegion, drawDrawable, this );
+	TheGameClient->iterateDrawablesInRegion( &axisAlignedRegion, drawDrawable, NULL );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1801,32 +1816,36 @@ void W3DView::setSnapMode( CameraLockType lockType, Real lockDist )
 }
 
 //-------------------------------------------------------------------------------------------------
-/** Scroll the view by the given delta in SCREEN COORDINATES, this interface
-	* assumes we will be scrolling along the X,Y plane */
+// Scroll the view by the given delta in SCREEN COORDINATES, this interface
+// assumes we will be scrolling along the X,Y plane
+// 
+// TheSuperHackers @bugfix Now rotates the view plane on the Z axis only to properly discard the
+// camera pitch. The aspect ratio also no longer modifies the vertical scroll speed.
 //-------------------------------------------------------------------------------------------------
 void W3DView::scrollBy( Coord2D *delta )
 {
 	// if we haven't moved, ignore
 	if( delta && (delta->x != 0 || delta->y != 0) )
 	{
-		const Real SCROLL_RESOLUTION = 250.0f;
+		CONSTEXPR const Real SCROLL_RESOLUTION = 250.0f;
 
 		Vector3 world, worldStart, worldEnd;
-		Vector2 screen, start, end;
+		Vector2 start, end;
 
 		m_scrollAmount = *delta;
 
-		screen.X = delta->x;
-		screen.Y = delta->y;
-
 		start.X = getWidth();
 		start.Y = getHeight();
-		Real aspect = getHeight() == 0 ? 1 : getWidth()/getHeight();
-		end.X = start.X + delta->x * SCROLL_RESOLUTION;
-		end.Y = start.Y + delta->y * SCROLL_RESOLUTION*aspect;
 
-		m_3DCamera->Device_To_World_Space( start, &worldStart );
-		m_3DCamera->Device_To_World_Space( end, &worldEnd );
+		end.X = start.X + delta->x * SCROLL_RESOLUTION;
+		end.Y = start.Y + delta->y * SCROLL_RESOLUTION;
+
+		m_3DCamera->Device_To_View_Space( start, &worldStart );
+		m_3DCamera->Device_To_View_Space( end, &worldEnd );
+
+		const Real zRotation = m_3DCamera->Get_Transform().Get_Z_Rotation();
+		worldStart.Rotate_Z(zRotation);
+		worldEnd.Rotate_Z(zRotation);
 
 		world.X = worldEnd.X - worldStart.X;
 		world.Y = worldEnd.Y - worldStart.Y;
@@ -3125,7 +3144,7 @@ void W3DView::pitchCameraOneFrame(void)
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
-void W3DView::moveAlongWaypointPath(Int milliseconds)
+void W3DView::moveAlongWaypointPath(Real milliseconds)
 {
 	m_mcwpInfo.elapsedTimeMilliseconds += milliseconds;
 	if (TheGlobalData->m_disableCameraMovement) {

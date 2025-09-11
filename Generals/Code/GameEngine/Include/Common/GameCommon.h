@@ -65,6 +65,7 @@
 // ----------------------------------------------------------------------------------------------
 enum
 {
+	BaseFps = 30, // The historic base frame rate for this game. This value must never change.
 	LOGICFRAMES_PER_SECOND = 30,
 	MSEC_PER_SECOND = 1000
 };
@@ -467,6 +468,7 @@ enum WhichTurretType CPP_11(: Int)
 
 // ------------------------------------------------------------------------
 // this normalizes an angle to the range -PI...PI.
+// TheSuperHackers @todo DO NOT USE THIS FUNCTION! Use WWMath::Normalize_Angle instead. Delete this.
 extern Real normalizeAngle(Real angle);
 
 // ------------------------------------------------------------------------

@@ -799,6 +799,7 @@ void StartPatchCheck( void )
 #if defined(USE_TEST_ENV)
 			bNeedsUpdate = false;
 #endif
+
 			cantConnectBeforeOnline = !bSuccess;
 			mustDownloadPatch = bNeedsUpdate;
 

@@ -32,6 +32,7 @@
 
 #include "Common/AudioAffect.h"
 #include "Common/ActionManager.h"
+#include "Common/FrameRateLimit.h"
 #include "Common/GameAudio.h"
 #include "Common/GameEngine.h"
 #include "Common/GameType.h"
@@ -185,6 +186,91 @@ Bool hasThingsInProduction(PlayerType playerType)
 }
 
 #endif // defined(RTS_DEBUG) || defined(_ALLOW_DEBUG_CHEATS_IN_RELEASE)
+
+
+bool changeMaxRenderFps(FpsValueChange change)
+{
+	UnsignedInt maxRenderFps = TheGameEngine->getFramesPerSecondLimit();
+	maxRenderFps = RenderFpsPreset::changeFpsValue(maxRenderFps, change);
+
+	TheGameEngine->setFramesPerSecondLimit(maxRenderFps);
+	TheWritableGlobalData->m_useFpsLimit = (maxRenderFps != RenderFpsPreset::UncappedFpsValue);
+
+	UnicodeString message;
+
+	if (TheWritableGlobalData->m_useFpsLimit)
+	{
+		message = TheGameText->FETCH_OR_SUBSTITUTE_FORMAT("GUI:SetMaxRenderFps", L"Max Render FPS is %u", maxRenderFps);
+	}
+	else
+	{
+		message = TheGameText->FETCH_OR_SUBSTITUTE_FORMAT("GUI:SetUncappedRenderFps", L"Max Render FPS is uncapped");
+	}
+
+	TheInGameUI->messageNoFormat(message);
+
+	return true;
+}
+
+bool changeLogicTimeScale(FpsValueChange change)
+{
+	if (TheNetwork != NULL)
+		return false;
+
+	const UnsignedInt maxRenderFps = TheGameEngine->getFramesPerSecondLimit();
+	UnsignedInt maxRenderRemainder = LogicTimeScaleFpsPreset::StepFpsValue;
+	maxRenderRemainder -= maxRenderFps % LogicTimeScaleFpsPreset::StepFpsValue;
+	maxRenderRemainder %= LogicTimeScaleFpsPreset::StepFpsValue;
+
+	UnsignedInt logicTimeScaleFps = TheGameEngine->getLogicTimeScaleFps();
+	// Set the value to the max render fps value plus a bit when time scale is
+	// disabled. This ensures that the time scale does not re-enable with a
+	// 'surprise' value.
+	if (!TheGameEngine->isLogicTimeScaleEnabled())
+	{
+		logicTimeScaleFps = maxRenderFps + maxRenderRemainder;
+	}
+	// Ceil the value at the max render fps value plus a bit so that the next fps
+	// value decrease would undercut the max render fps at the correct step value.
+	// Example: render fps 72 -> logic value ceiled to 75 -> decreased to 70.
+	logicTimeScaleFps = min(logicTimeScaleFps, maxRenderFps + maxRenderRemainder);
+	logicTimeScaleFps = LogicTimeScaleFpsPreset::changeFpsValue(logicTimeScaleFps, change);
+
+	// Set value before potentially disabling it.
+	if (TheGameEngine->isLogicTimeScaleEnabled())
+	{
+		TheGameEngine->setLogicTimeScaleFps(logicTimeScaleFps);
+	}
+
+	TheGameEngine->enableLogicTimeScale(logicTimeScaleFps < maxRenderFps);
+
+	// Set value after potentially enabling it.
+	if (TheGameEngine->isLogicTimeScaleEnabled())
+	{
+		TheGameEngine->setLogicTimeScaleFps(logicTimeScaleFps);
+	}
+
+	logicTimeScaleFps = TheGameEngine->getLogicTimeScaleFps();
+	const UnsignedInt actualLogicTimeScaleFps = TheGameEngine->getActualLogicTimeScaleFps();
+	const Real actualLogicTimeScaleRatio = TheGameEngine->getActualLogicTimeScaleRatio();
+
+	UnicodeString message;
+
+	if (TheGameEngine->isLogicTimeScaleEnabled())
+	{
+		message = TheGameText->FETCH_OR_SUBSTITUTE_FORMAT("GUI:SetLogicTimeScaleFps", L"Logic Time Scale FPS is %u (actual %u, ratio %.02f)",
+			logicTimeScaleFps, actualLogicTimeScaleFps, actualLogicTimeScaleRatio);
+	}
+	else
+	{
+		message = TheGameText->FETCH_OR_SUBSTITUTE_FORMAT("GUI:SetUncappedLogicTimeScaleFps", L"Logic Time Scale FPS is uncapped (actual %u, ratio %.02f)",
+			actualLogicTimeScaleFps, actualLogicTimeScaleRatio);
+	}
+
+	TheInGameUI->messageNoFormat(message);
+
+	return true;
+}
 
 
 static Bool isSystemMessage( const GameMessage *msg );
@@ -857,7 +943,7 @@ void findCommandCenterOrMostExpensiveBuilding(Object* obj, void* vccl)
 
 static void viewCommandCenter( void )
 {
-	Player* localPlayer = ThePlayerList->getLocalPlayer();
+	Player* localPlayer = TheControlBar->getCurrentlyViewedPlayer();
 	if (!localPlayer)
 		return;
 
@@ -899,7 +985,7 @@ void amIAHero(Object* obj, void* heroHolder)
 
 static Object *iNeedAHero( void )
 {
-	Player* localPlayer = ThePlayerList->getLocalPlayer();
+	Player* localPlayer = TheControlBar->getCurrentlyViewedPlayer();
 	if (!localPlayer)
 		return NULL;
 
@@ -2882,6 +2968,15 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 		}	// end select previous worker
 
 		//-----------------------------------------------------------------------------------------
+		case GameMessage::MSG_META_SELECT_NEXT_IDLE_WORKER:
+		{
+			TheInGameUI->selectNextIdleWorker();
+
+			disp = DESTROY_MESSAGE;
+			break;
+		}
+
+		//-----------------------------------------------------------------------------------------
 		case GameMessage::MSG_META_SELECT_HERO:
 		{
 			// if there is nothing on the screen, bail
@@ -3177,6 +3272,46 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 			break;
 
 		//-----------------------------------------------------------------------------------------
+		case GameMessage::MSG_META_INCREASE_MAX_RENDER_FPS:
+		{
+			if (changeMaxRenderFps(FpsValueChange_Increase))
+			{
+				disp = DESTROY_MESSAGE;
+			}
+			break;
+		}
+
+		//-----------------------------------------------------------------------------------------
+		case GameMessage::MSG_META_DECREASE_MAX_RENDER_FPS:
+		{
+			if (changeMaxRenderFps(FpsValueChange_Decrease))
+			{
+				disp = DESTROY_MESSAGE;
+			}
+			break;
+		}
+
+		//-----------------------------------------------------------------------------------------
+		case GameMessage::MSG_META_INCREASE_LOGIC_TIME_SCALE:
+		{
+			if (changeLogicTimeScale(FpsValueChange_Increase))
+			{
+				disp = DESTROY_MESSAGE;
+			}
+			break;
+		}
+
+		//-----------------------------------------------------------------------------------------
+		case GameMessage::MSG_META_DECREASE_LOGIC_TIME_SCALE:
+		{
+			if (changeLogicTimeScale(FpsValueChange_Decrease))
+			{
+				disp = DESTROY_MESSAGE;
+			}
+			break;
+		}
+
+		//-----------------------------------------------------------------------------------------
 		case GameMessage::MSG_META_TOGGLE_LOWER_DETAILS:
 		{
 			if (TheGlobalData)
@@ -3305,7 +3440,10 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 #endif
 				{
 					TheWritableGlobalData->m_TiVOFastMode = 1 - TheGlobalData->m_TiVOFastMode;
-					TheInGameUI->messageNoFormat( TheGlobalData->m_TiVOFastMode ? TheGameText->fetch("GUI:FF_ON") : TheGameText->fetch("GUI:FF_OFF") );
+					TheInGameUI->messageNoFormat( TheGlobalData->m_TiVOFastMode
+						? TheGameText->FETCH_OR_SUBSTITUTE("GUI:FF_ON", L"Fast Forward is on")
+						: TheGameText->FETCH_OR_SUBSTITUTE("GUI:FF_OFF", L"Fast Forward is off")
+					);
 				}
 			}  // end if
 
@@ -3340,7 +3478,7 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 #endif
 			{
 				TheGameLogic->setGamePaused(FALSE);
-				TheGameLogic->setGamePausedInFrame(TheGameLogic->getFrame() + 1);
+				TheGameLogic->setGamePausedInFrame(TheGameLogic->getFrame() + 1, TRUE);
 			}
 			break;
 		}
@@ -3602,6 +3740,26 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 		}
 
 		// --------------------------------------------------------------------------------------------
+		case GameMessage::MSG_CREATE_TEAM0:
+		case GameMessage::MSG_CREATE_TEAM1:
+		case GameMessage::MSG_CREATE_TEAM2:
+		case GameMessage::MSG_CREATE_TEAM3:
+		case GameMessage::MSG_CREATE_TEAM4:
+		case GameMessage::MSG_CREATE_TEAM5:
+		case GameMessage::MSG_CREATE_TEAM6:
+		case GameMessage::MSG_CREATE_TEAM7:
+		case GameMessage::MSG_CREATE_TEAM8:
+		case GameMessage::MSG_CREATE_TEAM9:
+		{
+			Int playerIndex = msg->getPlayerIndex();
+			Player* player = ThePlayerList->getNthPlayer(playerIndex);
+			if (player && player->isLocalPlayer())
+				player->processCreateTeamGameMessage(t - GameMessage::MSG_CREATE_TEAM0, msg);
+
+			break;
+		}
+
+		// --------------------------------------------------------------------------------------------
 		case GameMessage::MSG_CREATE_SELECTED_GROUP:
 		case GameMessage::MSG_SELECT_TEAM0:
 		case GameMessage::MSG_SELECT_TEAM1:
@@ -3795,6 +3953,14 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 					Drawable *draw = TheTacticalView->pickDrawable(&msg->getArgument(0)->pixelRegion.lo,
 																													TheInGameUI->isInForceAttackMode(),
 																													(PickType) pickType);
+					
+					// TheSuperHackers @bugfix Stubbjax 07/08/2025 Prevent dead units blocking positional context commands
+					Object* obj = draw ? draw->getObject() : NULL;
+					if (!obj || (obj->isEffectivelyDead() && !obj->isKindOf(KINDOF_ALWAYS_SELECTABLE)))
+					{
+						draw = NULL;
+					}
+
 					if (TheInGameUI->isInForceAttackMode()) {
 						evaluateForceAttack( draw, &pos, DO_COMMAND );
 					} else {
@@ -3866,6 +4032,13 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 				Drawable *draw = TheTacticalView->pickDrawable(&msg->getArgument(0)->pixelRegion.lo,
 																												TheInGameUI->isInForceAttackMode(),
 																												(PickType) pickType);
+				
+				// TheSuperHackers @bugfix Stubbjax 07/08/2025 Prevent dead units blocking positional context commands
+				Object* obj = draw ? draw->getObject() : NULL;
+				if (!obj || (obj->isEffectivelyDead() && !obj->isKindOf(KINDOF_ALWAYS_SELECTABLE)))
+				{
+					draw = NULL;
+				}
 
 				if (TheInGameUI->isInForceAttackMode()) {
 					evaluateForceAttack( draw, &pos, DO_COMMAND );

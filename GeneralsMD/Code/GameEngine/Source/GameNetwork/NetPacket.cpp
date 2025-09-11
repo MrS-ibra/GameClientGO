@@ -44,11 +44,10 @@ NetCommandRef * NetPacket::ConstructNetCommandMsgFromRawData(UnsignedByte *data,
 	UnsignedByte relay = 0;
 
 	Int offset = 0;
-	Bool notDone = TRUE;
 	NetCommandRef *ref = NULL;
 	NetCommandMsg *msg = NULL;
 
-	while ((offset < (Int)dataLength) && notDone) {
+	while (offset < (Int)dataLength) {
 
 		switch (data[offset]) {
 
@@ -169,7 +168,7 @@ NetCommandRef * NetPacket::ConstructNetCommandMsgFromRawData(UnsignedByte *data,
 				msg = readFrameResendRequestMessage(data, offset);
 				break;
 
-			} // switch (commandType)
+			}
 
 			msg->setExecutionFrame(frame);
 			msg->setID(commandID);
@@ -183,12 +182,11 @@ NetCommandRef * NetPacket::ConstructNetCommandMsgFromRawData(UnsignedByte *data,
 			msg->detach();
 			msg = NULL;
 
-			notDone = FALSE;
-			break; // case 'D'
+			return ref;
 
-		} // switch (data[offset])
+		}
 
-	} // while
+	}
 
 	return ref;
 }
@@ -1080,8 +1078,7 @@ void NetPacket::FillBufferWithGameCommand(UnsignedByte *buffer, NetCommandRef *m
 
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket::addGameMessage - added game message, frame %d, player %d, command ID %d", m_lastFrame, m_lastPlayerID, m_lastCommandID));
 
-	if (gmsg)
-		deleteInstance(gmsg);
+	deleteInstance(gmsg);
 	gmsg = NULL;
 }
 
@@ -2077,10 +2074,8 @@ NetPacket::NetPacket(TransportMessage *msg) {
  * Destructor
  */
 NetPacket::~NetPacket() {
-	if (m_lastCommand != NULL) {
-		deleteInstance(m_lastCommand);
-		m_lastCommand = NULL;
-	}
+	deleteInstance(m_lastCommand);
+	m_lastCommand = NULL;
 }
 
 /**
@@ -2103,10 +2098,9 @@ void NetPacket::init() {
 }
 
 void NetPacket::reset() {
-	if (m_lastCommand != NULL) {
-		deleteInstance(m_lastCommand);
-		m_lastCommand = NULL;
-	}
+	deleteInstance(m_lastCommand);
+	m_lastCommand = NULL;
+
 	init();
 }
 
@@ -2272,10 +2266,8 @@ Bool NetPacket::addFrameResendRequestCommand(NetCommandRef *msg) {
 		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket::addFrameResendRequest - added frame resend request command from player %d for frame %d, command id = %d", m_lastPlayerID, frameToResend, m_lastCommandID));
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -2383,10 +2375,8 @@ Bool NetPacket::addDisconnectScreenOffCommand(NetCommandRef *msg) {
 		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket::addDisconnectScreenOff - added disconnect screen off command from player %d for frame %d, command id = %d", m_lastPlayerID, newFrame, m_lastCommandID));
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -2492,10 +2482,8 @@ Bool NetPacket::addDisconnectFrameCommand(NetCommandRef *msg) {
 		m_packetLen += sizeof(disconnectFrame);
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -2600,10 +2588,8 @@ Bool NetPacket::addFileCommand(NetCommandRef *msg) {
 		m_packetLen += fileLength;
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -2705,10 +2691,8 @@ Bool NetPacket::addFileAnnounceCommand(NetCommandRef *msg) {
 		m_packetLen += sizeof(playerMask);
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -2810,10 +2794,8 @@ Bool NetPacket::addFileProgressCommand(NetCommandRef *msg) {
 		m_packetLen += sizeof(progress);
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -2942,10 +2924,8 @@ Bool NetPacket::addWrapperCommand(NetCommandRef *msg) {
 		m_packetLen += dataLength;
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -3041,10 +3021,8 @@ Bool NetPacket::addTimeOutGameStartMessage(NetCommandRef *msg) {
 		++m_packetLen;
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -3135,10 +3113,8 @@ Bool NetPacket::addLoadCompleteMessage(NetCommandRef *msg) {
 		++m_packetLen;
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -3221,10 +3197,8 @@ Bool NetPacket::addProgressMessage(NetCommandRef *msg) {
 		++m_packetLen;
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -3332,10 +3306,8 @@ Bool NetPacket::addDisconnectVoteCommand(NetCommandRef *msg) {
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket::addDisconnectVoteCommand - added disconnect vote command, player id %d command id %d, voted slot %d", m_lastPlayerID, m_lastCommandID, slot));
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -3431,10 +3403,8 @@ Bool NetPacket::addDisconnectChatCommand(NetCommandRef *msg) {
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket - added disconnect chat command"));
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -3548,10 +3518,8 @@ Bool NetPacket::addChatCommand(NetCommandRef *msg) {
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket - added chat command"));
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -3639,10 +3607,8 @@ Bool NetPacket::addPacketRouterAckCommand(NetCommandRef *msg) {
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket - added packet router ack command, player id %d", m_lastPlayerID));
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -3721,10 +3687,8 @@ Bool NetPacket::addPacketRouterQueryCommand(NetCommandRef *msg) {
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket - added packet router query command, player id %d", m_lastPlayerID));
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -3826,10 +3790,8 @@ Bool NetPacket::addDisconnectPlayerCommand(NetCommandRef *msg) {
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket::addDisconnectPlayerCommand - added disconnect player command, player id %d command id %d, disconnecting slot %d", m_lastPlayerID, m_lastCommandID, slot));
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -3911,10 +3873,8 @@ Bool NetPacket::addDisconnectKeepAliveCommand(NetCommandRef *msg) {
 		++m_packetLen;
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -3991,10 +3951,8 @@ Bool NetPacket::addKeepAliveCommand(NetCommandRef *msg) {
 		++m_packetLen;
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -4110,10 +4068,8 @@ Bool NetPacket::addRunAheadCommand(NetCommandRef *msg) {
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket - added run ahead command, frame %d, player id %d command id %d", m_lastFrame, m_lastPlayerID, m_lastCommandID));
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -4231,10 +4187,8 @@ Bool NetPacket::addDestroyPlayerCommand(NetCommandRef *msg) {
 		//DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket - added CRC:0x%8.8X info command, frame %d, player id %d command id %d", newCRC, m_lastFrame, m_lastPlayerID, m_lastCommandID));
 
 		++m_numCommands;
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -4343,10 +4297,7 @@ Bool NetPacket::addRunAheadMetricsCommand(NetCommandRef *msg) {
 		memcpy(m_packet + m_packetLen, &averageFps, sizeof(averageFps));
 		m_packetLen += sizeof(averageFps);
 
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -4462,10 +4413,7 @@ Bool NetPacket::addPlayerLeaveCommand(NetCommandRef *msg) {
 		memcpy(m_packet + m_packetLen, &leavingPlayerID, sizeof(UnsignedByte));
 		m_packetLen += sizeof(UnsignedByte);
 
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -4601,10 +4549,7 @@ Bool NetPacket::addFrameCommand(NetCommandRef *msg) {
 		// frameinfodebug
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("outgoing - added frame %d, player %d, command count = %d, command id = %d", cmdMsg->getExecutionFrame(), cmdMsg->getPlayerID(), cmdMsg->getCommandCount(), cmdMsg->getID()));
 
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -4707,9 +4652,8 @@ Bool NetPacket::addAckCommand(NetCommandRef *msg, UnsignedShort commandID, Unsig
 		m_packet[m_packetLen] = 'Z';
 		++m_packetLen;
 		++m_numCommands;
-		deleteInstance(m_lastCommand);
-		m_lastCommand = NULL;
 
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -4744,10 +4688,7 @@ Bool NetPacket::addAckCommand(NetCommandRef *msg, UnsignedShort commandID, Unsig
 		memcpy(m_packet + m_packetLen, &originalPlayerID, sizeof(UnsignedByte));
 		m_packetLen += sizeof(UnsignedByte);
 
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -4957,20 +4898,15 @@ Bool NetPacket::addGameCommand(NetCommandRef *msg) {
 
 		++m_numCommands;
 
-		if (m_lastCommand != NULL) {
-			deleteInstance(m_lastCommand);
-			m_lastCommand = NULL;
-		}
+		deleteInstance(m_lastCommand);
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
 		retval = TRUE;
 	}
 
-	if (gmsg) {
-		deleteInstance(gmsg);
-		gmsg = NULL;
-	}
+	deleteInstance(gmsg);
+	gmsg = NULL;
 
 	return retval;
 }
@@ -5024,7 +4960,7 @@ void NetPacket::writeGameMessageArgumentToPacket(GameMessageArgumentDataType typ
 		m_packetLen += sizeof(arg.wChar);
 		break;
 
-	} // switch(type)
+	}
 }
 
 /**
@@ -5102,7 +5038,7 @@ Bool NetPacket::isRoomForGameMessage(NetCommandRef *msg, GameMessage *gmsg) {
 			msglen += arg->getArgCount() * sizeof(WideChar);
 			break;
 
-		} // switch (type)
+		}
 
 		arg = arg->getNext();
 
@@ -5133,8 +5069,6 @@ NetCommandList * NetPacket::getCommandList() {
 	UnsignedByte commandType = 0;
 	UnsignedByte relay = 0;
 	NetCommandRef *lastCommand = NULL;
-	NetCommandRef *ref = NULL;
-	NetCommandMsg *msg = NULL;
 
 	Int i = 0;
 	while (i < m_packetLen) {
@@ -5166,11 +5100,10 @@ NetCommandList * NetPacket::getCommandList() {
 			memcpy(&commandID, m_packet + i, sizeof(UnsignedShort));
 			i += sizeof(UnsignedShort);
 			break;
-		case 'D':
+		case 'D': {
 			++i;
 
-			msg = NULL;
-			ref = NULL;
+			NetCommandMsg *msg = NULL;
 
 			//DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket::getCommandList() - command of type %d(%s)", commandType, GetAsciiNetCommandType((NetCommandType)commandType).str()));
 
@@ -5304,34 +5237,32 @@ NetCommandList * NetPacket::getCommandList() {
 			}
 
 			// add the message to the list.
-			ref = retval->addMessage(msg);
+			NetCommandRef *ref = retval->addMessage(msg);
 			if (ref != NULL) {
 				ref->setRelay(relay);
 			} else {
 				DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket::getCommandList - failed to set relay for message %d", msg->getID()));
 			}
 
-			if (lastCommand != NULL) {
-				deleteInstance(lastCommand);
-				lastCommand = NULL;
-			}
+			deleteInstance(lastCommand);
 			lastCommand = newInstance(NetCommandRef)(msg);
 
 			msg->detach();  // Need to detach from new NetCommandMsg created by the "readXMessage" above.
 
 			// since the message is part of the list now, we don't have to keep track of it.  So we'll just set it to NULL.
 			msg = NULL;
-			break; // switch(m_packet[i]) case 'D':
+			break;
+		}
 
-		case 'Z': // switch(m_packet[i])
+		case 'Z': {
 
 			++i;
 			// Repeat the last command, doing some funky cool byte-saving stuff
 			if (lastCommand == NULL) {
 				DEBUG_CRASH(("Got a repeat command with no command to repeat."));
 			}
-			msg = NULL;
-			ref = NULL;
+
+			NetCommandMsg *msg = NULL;
 
 			switch(commandType) {
 
@@ -5382,13 +5313,12 @@ NetCommandList * NetPacket::getCommandList() {
 			}
 
 			// add the message to the list.
-			ref = retval->addMessage(msg);
+			NetCommandRef* ref = retval->addMessage(msg);
 			if (ref != NULL) {
 				ref->setRelay(relay);
 			}
 
 			deleteInstance(lastCommand);
-			lastCommand = NULL;
 //			lastCommand = newInstance(NetCommandRef)(msg);
 			lastCommand = NEW_NETCOMMANDREF(msg);
 
@@ -5397,6 +5327,7 @@ NetCommandList * NetPacket::getCommandList() {
 			// since the message is part of the list now, we don't have to keep track of it.  So we'll just set it to NULL.
 			msg = NULL;
 			break;
+		}
 
 		default:
 			// we don't recognize this command, but we have to increment i so we don't fall into an infinite loop.
@@ -5410,10 +5341,9 @@ NetCommandList * NetPacket::getCommandList() {
 
 	}
 
-	if (lastCommand != NULL) {
-		deleteInstance(lastCommand);
-		lastCommand = NULL;
-	}
+	deleteInstance(lastCommand);
+	lastCommand = NULL;
+
 	return retval;
 }
 

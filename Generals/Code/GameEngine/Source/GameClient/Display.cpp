@@ -131,6 +131,14 @@ void Display::updateViews( void )
 
 }
 
+void Display::stepViews( void )
+{
+
+	for( View *v = m_viewList; v; v = v->getNextView() )
+		v->stepView();
+
+}
+
 /// Redraw the entire display
 void Display::draw( void )
 {
@@ -308,8 +316,7 @@ void Display::update( void )
 				if( m_elapsedCopywriteTime == 0 && m_elapsedCopywriteTime >= 0)
 				{
 					//display the copyrighttext;
-					if(m_copyrightDisplayString)
-						deleteInstance(m_copyrightDisplayString);
+					deleteInstance(m_copyrightDisplayString);
 					m_copyrightDisplayString = TheDisplayStringManager->newDisplayString();
 					m_copyrightDisplayString->setText(TheGameText->fetch("GUI:EACopyright"));
 					if (TheGlobalLanguageData && TheGlobalLanguageData->m_copyrightFont.name.isNotEmpty())

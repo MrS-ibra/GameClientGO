@@ -62,57 +62,39 @@
  */
 ConnectionManager::~ConnectionManager(void)
 {
-	if (m_localUser != NULL) {
-		deleteInstance(m_localUser);
-		m_localUser = NULL;
-	}
+	deleteInstance(m_localUser);
+	m_localUser = NULL;
 
-//	m_transport = NULL; // Network will delete transports; we just forget them
-	if (m_transport != NULL) {
-		delete m_transport;
-		m_transport = NULL;
-	}
+	// Network will delete transports; we just forget them
+	delete m_transport;
+	m_transport = NULL;
 
 	Int i = 0;
 	for (; i < MAX_SLOTS; ++i) {
-		if (m_frameData[i] != NULL) {
-			deleteInstance(m_frameData[i]);
-			m_frameData[i] = NULL;
-		}
+		deleteInstance(m_frameData[i]);
+		m_frameData[i] = NULL;
 	}
 
 	for (i = 0; i < NUM_CONNECTIONS; ++i) {
-		if (m_connections[i] != NULL) {
-			deleteInstance(m_connections[i]);
-			m_connections[i] = NULL;
-		}
+		deleteInstance(m_connections[i]);
+		m_connections[i] = NULL;
 	}
 
-	if (TheDisconnectMenu != NULL) {
-		// This is done here since TheDisconnectMenu should only be there if we are in a network game.
-		delete TheDisconnectMenu;
-		TheDisconnectMenu = NULL;
-	}
+	// This is done here since TheDisconnectMenu should only be there if we are in a network game.
+	delete TheDisconnectMenu;
+	TheDisconnectMenu = NULL;
 
-	if (m_disconnectManager != NULL) {
-		delete m_disconnectManager;
-		m_disconnectManager = NULL;
-	}
+	delete m_disconnectManager;
+	m_disconnectManager = NULL;
 
-	if (m_pendingCommands != NULL) {
-		deleteInstance(m_pendingCommands);
-		m_pendingCommands = NULL;
-	}
+	deleteInstance(m_pendingCommands);
+	m_pendingCommands = NULL;
 
-	if (m_relayedCommands != NULL) {
-		deleteInstance(m_relayedCommands);
-		m_relayedCommands = NULL;
-	}
+	deleteInstance(m_relayedCommands);
+	m_relayedCommands = NULL;
 
-	if (m_netCommandWrapperList != NULL) {
-		deleteInstance(m_netCommandWrapperList);
-		m_netCommandWrapperList = NULL;
-	}
+	deleteInstance(m_netCommandWrapperList);
+	m_netCommandWrapperList = NULL;
 
 	s_fileCommandMap.clear();
 	s_fileRecipientMaskMap.clear();
@@ -177,10 +159,8 @@ void ConnectionManager::init()
 	}
 
 	for (i = 0; i < MAX_SLOTS; ++i) {
-		if (m_frameData[i] != NULL) {
-			deleteInstance(m_frameData[i]);
-			m_frameData[i] = NULL;
-		}
+		deleteInstance(m_frameData[i]);
+		m_frameData[i] = NULL;
 	}
 
 //	m_averageFps = 30;			// since 30 fps is the desired rate, we'll start off at that.
@@ -231,18 +211,14 @@ void ConnectionManager::reset()
 
 	UnsignedInt i = 0;
 	for (; i < (UnsignedInt)NUM_CONNECTIONS; ++i) {
-		if (m_connections[i] != NULL) {
-			deleteInstance(m_connections[i]);
-			m_connections[i] = NULL;
-		}
+		deleteInstance(m_connections[i]);
+		m_connections[i] = NULL;
 	}
 
 	for (i=0; i<(UnsignedInt)MAX_SLOTS; ++i)
 	{
-		if (m_frameData[i] != NULL) {
-			deleteInstance(m_frameData[i]);
-			m_frameData[i] = NULL;
-		}
+		deleteInstance(m_frameData[i]);
+		m_frameData[i] = NULL;
 	}
 
 	if (m_pendingCommands == NULL) {
@@ -1308,9 +1284,15 @@ void ConnectionManager::updateRunAhead(Int oldRunAhead, Int frameRate, Bool didS
 				newRunAhead = MIN_RUNAHEAD; // make sure its at least MIN_RUNAHEAD.
 			}
 
-			if (newRunAhead > (MAX_FRAMES_AHEAD / 2)) {
-				newRunAhead = MAX_FRAMES_AHEAD / 2; // dont let run ahead get out of hand.
-			}
+			// TheSuperHackers @bugfix Mauller 21/08/2025 calculate the runahead so it always follows the latency
+			// The runahead should always be rounded up to the next integer value to prevent variations in latency from causing stutter
+			// The network slack pushes the runahead up to the next value when the latency is within the slack percentage of the current runahead
+			const Real runAheadSlackScale = 1.0f + ( (Real)TheGlobalData->m_networkRunAheadSlack / 100.0f );
+			newRunAhead = ceilf( getMaximumLatency() * runAheadSlackScale * (Real)minFps );
+
+			// TheSuperHackers @info if the runahead goes below 3 logic frames it can start to introduce stutter
+			// We also limit the upper range of the runahead to prevent it getting out of hand
+			newRunAhead = clamp<Int>(MIN_RUNAHEAD, newRunAhead, MAX_FRAMES_AHEAD / 2);
 
 			NetRunAheadCommandMsg *msg = newInstance(NetRunAheadCommandMsg);
 			msg->setPlayerID(m_localSlot);

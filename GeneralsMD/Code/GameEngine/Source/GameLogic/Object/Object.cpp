@@ -657,9 +657,7 @@ Object::~Object()
 	delete [] m_behaviors;
 	m_behaviors = NULL;
 
-	if( m_experienceTracker )
-		deleteInstance(m_experienceTracker);
-
+	deleteInstance(m_experienceTracker);
 	m_experienceTracker = NULL;
 
 	// we don't need to delete these, there were deleted on the m_behaviors list
@@ -3096,19 +3094,6 @@ void Object::onVeterancyLevelChanged( VeterancyLevel oldLevel, VeterancyLevel ne
 	if (body)
 		body->onVeterancyLevelChanged( oldLevel, newLevel, provideFeedback );
 
-	Bool hideAnimationForStealth = FALSE;
-	if( !isLocallyControlled() &&
-			testStatus( OBJECT_STATUS_STEALTHED ) &&
-			!testStatus( OBJECT_STATUS_DETECTED ) &&
-			!testStatus( OBJECT_STATUS_DISGUISED ) )
-	{
-		hideAnimationForStealth = TRUE;
-	}
-
-	Bool doAnimation = ( ! hideAnimationForStealth
-											&& (newLevel > oldLevel)
-											&& ( ! isKindOf(KINDOF_IGNORED_IN_GUI))); //First, we plan to do the animation if the level went up
-
 	switch (newLevel)
 	{
 		case LEVEL_REGULAR:
@@ -3118,7 +3103,6 @@ void Object::onVeterancyLevelChanged( VeterancyLevel oldLevel, VeterancyLevel ne
 			clearWeaponBonusCondition(WEAPONBONUSCONDITION_VETERAN);
 			clearWeaponBonusCondition(WEAPONBONUSCONDITION_ELITE);
 			clearWeaponBonusCondition(WEAPONBONUSCONDITION_HERO);
-			doAnimation = FALSE;//... but not if somehow up to Regular
 			break;
 		case LEVEL_VETERAN:
 			setWeaponSetFlag(WEAPONSET_VETERAN);
@@ -3146,7 +3130,15 @@ void Object::onVeterancyLevelChanged( VeterancyLevel oldLevel, VeterancyLevel ne
 			break;
 	}
 
-	if( doAnimation && TheGameLogic->getDrawIconUI() && provideFeedback )
+	Bool doAnimation = provideFeedback
+		&& newLevel > oldLevel
+		&& !isKindOf(KINDOF_IGNORED_IN_GUI)
+		&& (isLocallyControlled()
+			|| !testStatus(OBJECT_STATUS_STEALTHED)
+			|| testStatus(OBJECT_STATUS_DETECTED)
+			|| testStatus(OBJECT_STATUS_DISGUISED));
+
+	if( doAnimation && TheGameLogic->getDrawIconUI() )
 	{
 		if( TheAnim2DCollection && TheGlobalData->m_levelGainAnimationName.isEmpty() == FALSE )
 		{
@@ -3770,11 +3762,8 @@ void Object::updateObjValuesFromMapProperties(Dict* properties)
       audioToModify = NULL; // Belongs to TheAudio now
     }
 
-    if ( audioToModify != NULL )
-    {
-      deleteInstance(audioToModify);
-      audioToModify = NULL;
-    }
+    deleteInstance(audioToModify);
+    audioToModify = NULL;
 
     if ( soundEnabledExists && soundEnabled )
     {
@@ -5441,7 +5430,8 @@ void Object::doCommandButton( const CommandButton *commandButton, CommandSourceT
 					{
 						setWeaponLock( commandButton->getWeaponSlot(), LOCKED_TEMPORARILY );
 						//LOCATION BASED FIRE WEAPON
-						ai->aiAttackPosition( NULL, commandButton->getMaxShotsToFire(), cmdSource );
+						// TheSuperHackers @bugfix Caball009 09/08/2025 Position should be irrelevant, but aiAttackPosition requires a valid position pointer to avoid a crash.
+						ai->aiAttackPosition( getPosition(), commandButton->getMaxShotsToFire(), cmdSource );
 					}
 					else
 					{
@@ -5540,6 +5530,11 @@ void Object::doCommandButtonAtObject( const CommandButton *commandButton, Object
 		switch( commandButton->getCommandType() )
 		{
 			case GUI_COMMAND_COMBATDROP:
+#if RETAIL_COMPATIBLE_CRC
+				if (!obj)
+					return;
+#endif
+
 				if( ai )
 				{
 					ai->aiCombatDrop( obj, *(obj->getPosition()), cmdSource );
@@ -5547,6 +5542,11 @@ void Object::doCommandButtonAtObject( const CommandButton *commandButton, Object
 				return;
 			case GUI_COMMAND_SPECIAL_POWER:
 			{
+#if RETAIL_COMPATIBLE_CRC
+				if (!obj)
+					return;
+#endif
+				
 				if( commandButton->getSpecialPowerTemplate() )
 				{
 					CommandOption commandOptions = (CommandOption)(commandButton->getOptions() | COMMAND_FIRED_BY_SCRIPT);
