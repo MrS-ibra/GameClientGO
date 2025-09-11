@@ -2531,6 +2531,9 @@ WindowMsgHandledType WOLLobbyMenuSystem( GameWindow *window, UnsignedInt msg,
 				}
 				else if( controlID == GetGameListBoxID() )
 				{
+					// TODO_NGMP: enable right click for ladders again
+					break;
+
 					RightClickStruct *rc = (RightClickStruct *)mData2;
 					WindowLayout *rcLayout = NULL;
 					GameWindow *rcMenu;
