@@ -1223,11 +1223,12 @@ void ConnectionManager::updateRunAhead(Int oldRunAhead, Int frameRate, Bool didS
 //			if (didSelfSlug) {
 //				m_fpsAverages[m_localSlot] = frameRate;
 //			} else {
-				m_fpsAverages[m_localSlot] = m_frameMetrics.getAverageFPS();
-//			}
+			m_fpsAverages[m_localSlot] = m_frameMetrics.getAverageFPS();
+			//			}
 			if (didSelfSlug) {
 				//DEBUG_LOG(("ConnectionManager::updateRunAhead - local player run ahead metrics, fps = %d, actual fps = %d, latency = %f, didSelfSlug = true", m_fpsAverages[m_localSlot], m_frameMetrics.getAverageFPS(), m_latencyAverages[m_localSlot]));
-			} else {
+			}
+			else {
 				//DEBUG_LOG(("ConnectionManager::updateRunAhead - local player run ahead metrics, fps = %d, latency = %f, didSelfSlug = false", m_fpsAverages[m_localSlot], m_latencyAverages[m_localSlot]));
 			}
 			Int minFps;
@@ -1238,63 +1239,22 @@ void ConnectionManager::updateRunAhead(Int oldRunAhead, Int frameRate, Bool didS
 				// if the minimum fps is within 10% of the desired framerate, then keep the current minimum fps.
 				minFps = frameRate;
 			}
-			if (minFps < 5) {
-				minFps = 5; // Absolutely do not run below 5 fps.
-			}
 
-			// NGMP_NOTE: This math is wrong... it's determing minFPS from the render FPS, and then using that to determine newRunAhead (artificial delay_ below as a multiplier, so the higher the render framerate... the worse the 'lag'.
-			//				 It should actually be using the network logic framerate.
-#if defined(GENERALS_ONLINE)
-			if (minFps > TheNetwork->getFrameRate()) {
-				minFps = TheNetwork->getFrameRate(); // Cap to network tick rate
-			}
-#else
-			if (minFps > TheGlobalData->m_framesPerSecondLimit) {
-				minFps = TheGlobalData->m_framesPerSecondLimit; // Cap to 30 FPS.
-		}
-#endif
-
+			// TheSuperHackers @info this clamps the logic time scale fps in network games
+			minFps = clamp<Int>(MIN_LOGIC_FRAMES, minFps, TheGlobalData->m_framesPerSecondLimit);
 			DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("ConnectionManager::updateRunAhead - minFps after adjustment is %d", minFps));
-			Int newRunAhead = 0;
-
-#if defined(GENERALS_ONLINE)
-			float latency = getMaximumLatency() * (1.0f + TheGlobalData->m_networkRunAheadSlack / 100.0f);
-			newRunAhead = ceilf(latency * (Real)minFps);
-#else
-			newRunAhead = (Int)(ceil((getMaximumLatency() / 2.0) * (Real)minFps));
-#endif
-			NetworkLog(ELogVerbosity::LOG_RELEASE, "New run ahead is %d, formula is maxlat is %f (div 2: %f), minfps is %d", newRunAhead, getMaximumLatency(), getMaximumLatency() / 2.f, minFps);
-
-			if (getMaximumLatency() >= 0.4f)
-			{
-				NetworkLog(ELogVerbosity::LOG_RELEASE, "[ADV NET STATS] Writing advanced networking stats:");
-
-				std::map<int64_t, PlayerConnection>& connections = NGMP_OnlineServicesManager::GetNetworkMesh()->GetAllConnections();
-				for (auto& kvPair : connections)
-				{
-					PlayerConnection& conn = kvPair.second;
-
-					NetworkLog(ELogVerbosity::LOG_RELEASE, "[ADV NET STATS] Connection to user %lld: %s", kvPair.first, conn.GetStats().c_str());
-				}
-				NetworkLog(ELogVerbosity::LOG_RELEASE, "[ADV NET STATS] Advanced networking stats dumped");
-			}
-
-			
-			if (newRunAhead < MIN_RUNAHEAD) {
-				newRunAhead = MIN_RUNAHEAD; // make sure its at least MIN_RUNAHEAD.
-			}
 
 			// TheSuperHackers @bugfix Mauller 21/08/2025 calculate the runahead so it always follows the latency
 			// The runahead should always be rounded up to the next integer value to prevent variations in latency from causing stutter
 			// The network slack pushes the runahead up to the next value when the latency is within the slack percentage of the current runahead
-			const Real runAheadSlackScale = 1.0f + ( (Real)TheGlobalData->m_networkRunAheadSlack / 100.0f );
-			newRunAhead = ceilf( getMaximumLatency() * runAheadSlackScale * (Real)minFps );
+			const Real runAheadSlackScale = 1.0f + ((Real)TheGlobalData->m_networkRunAheadSlack / 100.0f);
+			Int newRunAhead = ceilf(getMaximumLatency() * runAheadSlackScale * (Real)minFps);
 
 			// TheSuperHackers @info if the runahead goes below 3 logic frames it can start to introduce stutter
 			// We also limit the upper range of the runahead to prevent it getting out of hand
 			newRunAhead = clamp<Int>(MIN_RUNAHEAD, newRunAhead, MAX_FRAMES_AHEAD / 2);
 
-			NetRunAheadCommandMsg *msg = newInstance(NetRunAheadCommandMsg);
+			NetRunAheadCommandMsg* msg = newInstance(NetRunAheadCommandMsg);
 			msg->setPlayerID(m_localSlot);
 			if (DoesCommandRequireACommandID(msg->getNetCommandType())) {
 				msg->setID(GenerateNextCommandID());
@@ -1312,7 +1272,8 @@ void ConnectionManager::updateRunAhead(Int oldRunAhead, Int frameRate, Bool didS
 			// out in the NetFrameCommandMsg.  sheesh.
 			if (nextExecutionFrame > (TheGameLogic->getFrame() + oldRunAhead)) {
 				msg->setExecutionFrame(nextExecutionFrame);
-			} else {
+			}
+			else {
 				msg->setExecutionFrame(TheGameLogic->getFrame() + oldRunAhead);
 			}
 
@@ -1335,7 +1296,7 @@ void ConnectionManager::updateRunAhead(Int oldRunAhead, Int frameRate, Bool didS
 			//DEBUG_LOG(("ConnectionManager::updateRunAhead - new run ahead = %d, new frame rate = %d, execution frame %d", newRunAhead, minFps, msg->getExecutionFrame()));
 			sendLocalCommand(msg, 0xff ^ (1 << minFpsPlayer)); // Send the packet to everyone but the lowest FPS player.
 
-			NetRunAheadCommandMsg *msg2 = newInstance(NetRunAheadCommandMsg);
+			NetRunAheadCommandMsg* msg2 = newInstance(NetRunAheadCommandMsg);
 			msg2->setPlayerID(m_localSlot);
 			if (DoesCommandRequireACommandID(msg2->getNetCommandType())) {
 				/*
@@ -1353,12 +1314,13 @@ void ConnectionManager::updateRunAhead(Int oldRunAhead, Int frameRate, Bool didS
 				 * when the commands are copied places for the disconnect screen they will be seen as the
 				 * same command, and all will be good.
 				 */
-//				msg2->setID(GenerateNextCommandID());
+				 //				msg2->setID(GenerateNextCommandID());
 				msg2->setID(msg->getID());
 			}
 			if (nextExecutionFrame > (TheGameLogic->getFrame() + oldRunAhead)) {
 				msg2->setExecutionFrame(nextExecutionFrame);
-			} else {
+			}
+			else {
 				msg2->setExecutionFrame(TheGameLogic->getFrame() + oldRunAhead);
 			}
 
@@ -1369,20 +1331,10 @@ void ConnectionManager::updateRunAhead(Int oldRunAhead, Int frameRate, Bool didS
 				newMinFps = minFps + 1;
 			}
 
-#if defined(GENERALS_ONLINE_RUN_FAST)
-			if (newMinFps > 60) {
-				newMinFps = 60; // Cap FPS to 60.
-			}
-#elif defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
-			if (newMinFps > GENERALS_ONLINE_HIGH_FPS_LIMIT) {
-				newMinFps = GENERALS_ONLINE_HIGH_FPS_LIMIT;
-			}
 
-#else
-			if(newMinFps > 30) {
-				newMinFps = 30; // Cap FPS to 30.
+			if (newMinFps > TheNetwork->getFrameRate()) {
+				newMinFps = TheNetwork->getFrameRate(); // Cap FPS to network frame rate.
 			}
-#endif
 			msg2->setRunAhead(newRunAhead);
 			msg2->setFrameRate(newMinFps);
 
@@ -1390,37 +1342,26 @@ void ConnectionManager::updateRunAhead(Int oldRunAhead, Int frameRate, Bool didS
 
 			msg->detach();
 			msg2->detach();
-		} else {
+		}
+		else {
 			// We are not the packet router, send our metrics info to the packet router.
-			NetRunAheadMetricsCommandMsg *msg = newInstance(NetRunAheadMetricsCommandMsg);
+			NetRunAheadMetricsCommandMsg* msg = newInstance(NetRunAheadMetricsCommandMsg);
 			msg->setPlayerID(m_localSlot);
 			if (DoesCommandRequireACommandID(msg->getNetCommandType())) {
 				msg->setID(GenerateNextCommandID());
 			}
-
-#if defined(GENERALS_ONLINE)
-			if (TheNGMPGame != nullptr)
-			{
-				msg->setAverageLatency(m_frameMetrics.getAverageLatency());
-
-			}
-			else
-			{
-				msg->setAverageLatency(m_frameMetrics.getAverageLatency());
-			}
-#else
 			msg->setAverageLatency(m_frameMetrics.getAverageLatency());
-#endif
 
 			// see above for explanation.
 //			if (didSelfSlug) {
 //				msg->setAverageFps(frameRate);
 //			} else {
-				msg->setAverageFps(m_frameMetrics.getAverageFPS());
-//			}
+			msg->setAverageFps(m_frameMetrics.getAverageFPS());
+			//			}
 			if (didSelfSlug) {
 				//DEBUG_LOG(("ConnectionManager::updateRunAhead - average latency = %f, average fps = %d, actual fps = %d, didSelfSlug = true", m_frameMetrics.getAverageLatency(), m_frameMetrics.getAverageFPS(), m_frameMetrics.getAverageFPS()));
-			} else {
+			}
+			else {
 				//DEBUG_LOG(("ConnectionManager::updateRunAhead - average latency = %f, average fps = %d, didSelfSlug = false", m_frameMetrics.getAverageLatency(), m_frameMetrics.getAverageFPS()));
 			}
 			m_connections[m_packetRouterSlot]->sendNetCommandMsg(msg, 1 << m_packetRouterSlot);
