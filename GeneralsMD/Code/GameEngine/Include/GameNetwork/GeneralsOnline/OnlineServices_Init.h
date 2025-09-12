@@ -289,6 +289,8 @@ public:
 		}
 	}
 
+	void CommitReplay(File* pFile);
+
 	static NGMP_OnlineServicesManager* GetInstance()
 	{
 		return m_pOnlineServicesManager;
@@ -389,6 +391,8 @@ public:
 	void LaunchPatcher();
 	void StartDownloadUpdate(std::function<void(void)> cb);
 	void ContinueUpdate();
+
+	std::vector<unsigned char> CaptureScreenshot();
 
 	/*
 	NGMP_OnlineServices_AuthInterface* GetAuthInterface() const { return m_pAuthInterface; }

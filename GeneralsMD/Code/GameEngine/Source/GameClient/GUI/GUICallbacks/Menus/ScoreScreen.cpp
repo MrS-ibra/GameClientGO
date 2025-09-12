@@ -157,6 +157,10 @@ static Bool s_needToFinishSinglePlayerInit = FALSE;
 static Bool buttonIsFinishCampaign = FALSE;
 static WindowLayout *s_blankLayout = NULL;
 
+#if defined(GENERALS_ONLINE)
+static uint64_t currentMatchID = 0;
+#endif
+
 void initSkirmish( void );
 void initLANMultiPlayer(void);
 void initInternetMultiPlayer(void);
@@ -586,6 +590,12 @@ WindowMsgHandledType ScoreScreenSystem( GameWindow *window, UnsignedInt msg,
 						{
 							CheckForCDAtGameStart( startNextCampaignGame );
 						}
+					}
+					else if (screenType == SCORESCREEN_INTERNET)
+					{
+						AsciiString strMatchURL;
+						strMatchURL.format("https://www.playgenerals.online/viewmatch?match=%" PRIu64, currentMatchID);
+						ShellExecuteA(NULL, "open", strMatchURL.str(), NULL, NULL, SW_SHOWNORMAL);
 					}
 				}
 			}
@@ -1069,14 +1079,52 @@ void initInternetMultiPlayer(void)
 	if(staticTextGameSaved)
 		staticTextGameSaved->winHide(TRUE);
 	if (buttonContinue)
+#if defined(GENERALS_ONLINE)
+		buttonContinue->winHide(FALSE);
+#else
 		buttonContinue->winHide(TRUE);
+#endif
 	if (textEntryChat)
 		textEntryChat->winHide(TRUE);
 	if (buttonEmote)
 		buttonEmote->winHide(TRUE);
 	if (listboxChatWindowScoreScreen)
 		listboxChatWindowScoreScreen->winHide(FALSE);
-	
+
+	// Leave the lobby
+#if defined(GENERALS_ONLINE)
+	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+	if (pLobbyInterface != nullptr)
+	{
+		// populate match info
+		if (pLobbyInterface->IsInLobby())
+		{
+			LobbyEntry& lobby = pLobbyInterface->GetCurrentLobby();
+
+ 			UnicodeString strMatchID;
+ 			strMatchID.format(L"\nMatch ID: %" PRIu64, lobby.match_id);
+ 
+ 			UnicodeString strMatchURL;
+ 			strMatchURL.format(L"\nView match data, participants, replays, anti-cheat data: https://www.playgenerals.online/viewmatch?match=%" PRIu64, lobby.match_id);
+
+			UnicodeString strMatchURL2;
+			strMatchURL2.format(L"\nThis match was ID #%" PRIu64 ". View match data, participants, replays, anti - cheat data at: https://www.playgenerals.online/viewmatch?match=%" PRIu64 " or press 'view online' below", lobby.match_id);
+
+			staticTextGameSaved->winSetText(strMatchURL2);
+			buttonContinue->winSetText(UnicodeString(L"VIEW MATCH ONLINE"));
+
+			// store, we'll need it later
+			currentMatchID = lobby.match_id;
+
+ 			GadgetListBoxAddEntryText(listboxAcademyWindowScoreScreen, strMatchID, GameSpyColor[GSCOLOR_DEFAULT], -1);
+ 			GadgetListBoxAddEntryText(listboxAcademyWindowScoreScreen, strMatchURL, GameSpyColor[GSCOLOR_DEFAULT], -1);
+
+		}
+
+		pLobbyInterface->LeaveCurrentLobby();
+	}
+#endif
+
 	//Provide academy advice in internet games.
 	if( listboxAcademyWindowScoreScreen )
 		listboxAcademyWindowScoreScreen->winHide( FALSE );

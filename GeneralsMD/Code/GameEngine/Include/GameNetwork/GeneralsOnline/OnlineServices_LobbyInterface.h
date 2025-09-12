@@ -53,6 +53,8 @@ struct LobbyEntry
 	uint32_t exe_crc;
 	uint32_t ini_crc;
 
+	uint64_t match_id = 0;
+
 	int rng_seed = -1;
 
 	bool passworded;

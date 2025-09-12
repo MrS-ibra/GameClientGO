@@ -732,6 +732,18 @@ void RecorderClass::stopRecording() {
 			m_wasDesync = FALSE;
 		}
 	}
+
+#if defined(GENERALS_ONLINE)
+	if (TheNGMPGame != nullptr)
+	{
+		NGMP_OnlineServicesManager* pOnlineServicesMgr = NGMP_OnlineServicesManager::GetInstance();
+		if (pOnlineServicesMgr != nullptr)
+		{
+			pOnlineServicesMgr->CommitReplay(m_file);
+		}
+	}
+#endif
+
 	if (m_file != NULL) {
 		m_file->close();
 		m_file = NULL;

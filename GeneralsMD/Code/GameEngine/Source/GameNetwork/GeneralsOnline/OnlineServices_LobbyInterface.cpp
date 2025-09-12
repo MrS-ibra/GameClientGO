@@ -525,6 +525,7 @@ void NGMP_OnlineServices_LobbyInterface::SearchForLobbies(std::function<void()> 
 				lobbyEntryIter["MaximumCameraHeight"].get_to(lobbyEntry.max_cam_height);
 				lobbyEntryIter["ExeCRC"].get_to(lobbyEntry.exe_crc);
 				lobbyEntryIter["IniCRC"].get_to(lobbyEntry.ini_crc);
+				lobbyEntryIter["MatchID"].get_to(lobbyEntry.match_id);
 
 				// correct map path
 				if (lobbyEntry.map_official)
@@ -663,6 +664,7 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 						lobbyEntryIter["MaximumCameraHeight"].get_to(lobbyEntry.max_cam_height);
 						lobbyEntryIter["ExeCRC"].get_to(lobbyEntry.exe_crc);
 						lobbyEntryIter["IniCRC"].get_to(lobbyEntry.ini_crc);
+						lobbyEntryIter["MatchID"].get_to(lobbyEntry.match_id);
 
 						// correct map path
 						if (lobbyEntry.map_official)

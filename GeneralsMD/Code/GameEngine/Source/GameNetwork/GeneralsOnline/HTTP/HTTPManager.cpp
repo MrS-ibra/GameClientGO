@@ -88,7 +88,7 @@ void HTTPManager::Tick()
 			// find the associated request
 			for (HTTPRequest* pRequest : m_vecRequestsInFlight)
 			{
-				if (pRequest->EasyHandleMatches(pCurlHandle))
+				if (pRequest != nullptr && pRequest->EasyHandleMatches(pCurlHandle))
 				{
 					pRequest->Threaded_SetComplete(m->data.result);
 					vecItemsToRemove.push_back(pRequest);

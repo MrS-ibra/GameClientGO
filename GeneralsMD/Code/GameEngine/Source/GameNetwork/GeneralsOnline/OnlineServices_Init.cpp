@@ -12,6 +12,13 @@
 #include "Common/MultiplayerSettings.h"
 #include "../../GameSpyOverlay.h"
 #include "GameClient/Display.h"
+#include "surfaceclass.h"
+#include "dx8wrapper.h"
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "GameNetwork/GeneralsOnline/Vendor/stb_image/stb_image_write.h"
+#include "GameNetwork/GeneralsOnline/Vendor/stb_image/stb_image_resize.h"
 
 extern "C"
 {
@@ -114,6 +121,33 @@ std::string NGMP_OnlineServicesManager::GetAPIEndpoint(const char* szEndpoint)
 	{
 		return std::format("https://api.playgenerals.online/env/prod/contract/1/{}", szEndpoint);
 	}
+}
+
+
+void NGMP_OnlineServicesManager::CommitReplay(File* pFile)
+{
+	std::vector<unsigned char> replayData;
+	if (pFile)
+	{
+		Int fileSize = pFile->size();
+
+		if (fileSize > 0)
+		{
+			pFile->seek(0, File::seekMode::START);
+			replayData.resize(fileSize);
+			pFile->read(replayData.data(), fileSize);
+		}
+	}
+
+	std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("MatchReplay");
+	std::map<std::string, std::string> mapHeaders;
+
+	std::string strPostData = Base64Encode(replayData);
+
+	NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPUTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, strPostData.c_str(), [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
+		{
+
+		});
 }
 
 void NGMP_OnlineServicesManager::Shutdown()
@@ -268,6 +302,78 @@ void NGMP_OnlineServicesManager::ContinueUpdate()
 		m_updateCompleteCallback();
 	}
 	
+}
+
+
+std::vector<unsigned char> NGMP_OnlineServicesManager::CaptureScreenshot()
+{
+	std::vector<unsigned char> vecData;
+
+	SurfaceClass* surface = DX8Wrapper::_Get_DX8_Back_Buffer();
+
+	SurfaceClass::SurfaceDescription surfaceDesc;
+	surface->Get_Description(surfaceDesc);
+
+	SurfaceClass* surfaceCopy = NEW_REF(SurfaceClass, (DX8Wrapper::_Create_DX8_Surface(surfaceDesc.Width, surfaceDesc.Height, surfaceDesc.Format)));
+	DX8Wrapper::_Copy_DX8_Rects(surface->Peek_D3D_Surface(), NULL, 0, surfaceCopy->Peek_D3D_Surface(), NULL);
+
+	HRESULT hr;
+
+	D3DDISPLAYMODE mode;
+	if (FAILED(hr = DX8Wrapper::_Get_D3D_Device8()->GetDisplayMode(&mode)))
+		return vecData;
+
+	LPDIRECT3DSURFACE8 surf;
+	if (FAILED(hr = DX8Wrapper::_Get_D3D_Device8()->CreateImageSurface(mode.Width, mode.Height,
+		D3DFMT_A8R8G8B8, &surf)))
+		return vecData;
+
+	if (FAILED(hr = DX8Wrapper::_Get_D3D_Device8()->GetFrontBuffer(surf))) {
+		surf->Release();
+		return vecData;
+	}
+
+	int pitch = 0;
+	void* pBits = surfaceCopy->Lock(&pitch);
+
+	unsigned char* rgbData = new unsigned char[surfaceDesc.Width * surfaceDesc.Height * 3];
+
+	int width = surfaceDesc.Width;
+	int height = surfaceDesc.Height;
+	for (int y = 0; y < height; ++y) {
+		uint8_t* row = (uint8_t*)pBits + y * pitch;
+		for (int x = 0; x < width; ++x) {
+			int srcIndex = x * 4;
+			int dstIndex = (y * width + x) * 3;
+
+			rgbData[dstIndex + 0] = row[srcIndex + 2]; // R
+			rgbData[dstIndex + 1] = row[srcIndex + 1]; // G
+			rgbData[dstIndex + 2] = row[srcIndex + 0]; // B
+		}
+	}
+
+	// resize
+	const int new_width = 844;
+	const int new_height = 506;
+	const int channels = 3;
+	unsigned char* resized = new unsigned char[new_width * new_height * channels];
+
+	stbir_resize_uint8(rgbData, surfaceDesc.Width, surfaceDesc.Height, 0,
+		resized, new_width, new_height, 0,
+		channels
+	);
+	// end resize
+
+	stbi_write_jpg_to_func([](void* context, void* data, int size)
+		{
+			std::vector<unsigned char>* buffer = static_cast<std::vector<unsigned char>*>(context);
+			buffer->insert(buffer->end(), (unsigned char*)data, (unsigned char*)data + size);
+		}, &vecData, new_width, new_height, 3, resized, 0);
+	
+	// release the image surface
+	surf->Release();
+
+	return vecData;
 }
 
 void NGMP_OnlineServicesManager::CancelUpdate()
