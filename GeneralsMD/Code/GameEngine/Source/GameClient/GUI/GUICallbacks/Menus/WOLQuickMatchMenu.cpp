@@ -1093,6 +1093,8 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 
 #if defined(GENERALS_ONLINE)
 	buttonStart->winEnable(TRUE);
+	buttonStart->winSetText(UnicodeString(L"START MATCHMAKING"));
+	buttonStop->winSetText(UnicodeString(L"CANCEL MATCHMAKING"));
 	buttonBuddies->winEnable(FALSE);
 	buttonBack->winEnable(TRUE);
 #endif
