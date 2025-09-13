@@ -398,7 +398,7 @@ public:
 	void StartDownloadUpdate(std::function<void(void)> cb);
 	void ContinueUpdate();
 
-	static std::vector<unsigned char> CaptureScreenshot(bool bResizeForTransmit);
+	static void CaptureScreenshot(bool bResizeForTransmit, std::function<void(std::vector<unsigned char>)> cbOnDataAvailable);
 	static void CaptureScreenshotToDisk();
 
 	/*

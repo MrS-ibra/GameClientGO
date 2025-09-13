@@ -81,36 +81,40 @@ void NGMP_OnlineServicesManager::GetAndParseServiceConfig(std::function<void(voi
 
 void NGMP_OnlineServicesManager::CaptureScreenshotToDisk()
 {
-	std::vector<unsigned char> vecBuffer = NGMP_OnlineServicesManager::CaptureScreenshot(false);
+	// create dirs
+	std::string strScreenshotsDir = std::format("{}/GeneralsOnlineScreenshots/", TheGlobalData->getPath_UserData().str());
 
-	if (!vecBuffer.empty())
+	if (!std::filesystem::exists(strScreenshotsDir))
 	{
-		char GameDir[MAX_PATH + 1] = {};
-		::GetCurrentDirectoryA(MAX_PATH + 1u, GameDir);
-		std::string strScreenshotsDir = std::format("{}/GeneralsOnlineScreenshots/", TheGlobalData->getPath_UserData().str());
+		std::filesystem::create_directory(strScreenshotsDir);
+	}
 
-		if (!std::filesystem::exists(strScreenshotsDir))
-		{
-			std::filesystem::create_directory(strScreenshotsDir);
-		}
+	// calculate path
+	auto now = std::chrono::system_clock::now();
+	auto in_time_t = std::chrono::system_clock::to_time_t(now);
+	std::stringstream ss;
+	ss << std::put_time(std::localtime(&in_time_t), "GeneralsOnline_Screenshot_%Y-%m-%d-%H-%M-%S.jpg");
 
-		// write to disk
-		auto now = std::chrono::system_clock::now();
-		auto in_time_t = std::chrono::system_clock::to_time_t(now);
-		std::stringstream ss;
-		ss << std::put_time(std::localtime(&in_time_t), "GeneralsOnline_Screenshot_%Y-%m-%d-%H-%M-%S.jpg");
+	std::string strFilePath = std::format("{}/{}", strScreenshotsDir.c_str(), ss.str().c_str());
 
-		std::string strFilePath = std::format("{}/{}", strScreenshotsDir.c_str(), ss.str().c_str());
-
-		FILE* pFile = fopen(strFilePath.c_str(), "wb");
-		fwrite(vecBuffer.data(), sizeof(uint8_t), vecBuffer.size(), pFile);
-		fclose(pFile);
-
-		// UI output (if ingame)
+	// do UI output immediately on mainthread (if ingame)
+	if (TheInGameUI != nullptr)
+	{
 		UnicodeString ufileName;
 		ufileName.translate(AsciiString(strFilePath.c_str()));
 		TheInGameUI->message(TheGameText->fetch("GUI:ScreenCapture"), ufileName.str());
 	}
+
+	NGMP_OnlineServicesManager::CaptureScreenshot(false, [strFilePath](std::vector<unsigned char> vecBuffer)
+		{
+			if (!vecBuffer.empty())
+			{
+				// write to disk
+				FILE* pFile = fopen(strFilePath.c_str(), "wb");
+				fwrite(vecBuffer.data(), sizeof(uint8_t), vecBuffer.size(), pFile);
+				fclose(pFile);
+			}
+		});
 }
 
 NGMP_OnlineServicesManager* NGMP_OnlineServicesManager::m_pOnlineServicesManager = nullptr;
@@ -341,9 +345,13 @@ void NGMP_OnlineServicesManager::ContinueUpdate()
 }
 
 
-std::vector<unsigned char> NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit)
+void NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit, std::function<void(std::vector<unsigned char>)> cbOnDataAvailable)
 {
-	std::vector<unsigned char> vecData;
+	// no callback, nothing to do
+	if (cbOnDataAvailable == nullptr)
+	{
+		return;
+	}
 
 	SurfaceClass* surface = DX8Wrapper::_Get_DX8_Back_Buffer();
 
@@ -357,18 +365,28 @@ std::vector<unsigned char> NGMP_OnlineServicesManager::CaptureScreenshot(bool bR
 
 	D3DDISPLAYMODE mode;
 	if (FAILED(hr = DX8Wrapper::_Get_D3D_Device8()->GetDisplayMode(&mode)))
-		return vecData;
+	{
+		cbOnDataAvailable(std::vector<unsigned char>());
+		return;
+	}
 
 	LPDIRECT3DSURFACE8 surf;
 	if (FAILED(hr = DX8Wrapper::_Get_D3D_Device8()->CreateImageSurface(mode.Width, mode.Height,
 		D3DFMT_A8R8G8B8, &surf)))
-		return vecData;
+	{
+		cbOnDataAvailable(std::vector<unsigned char>());
+		return;
+	}
 
 	if (FAILED(hr = DX8Wrapper::_Get_D3D_Device8()->GetFrontBuffer(surf))) {
 		surf->Release();
-		return vecData;
+		{
+			cbOnDataAvailable(std::vector<unsigned char>());
+			return;
+		}
 	}
 
+	// gather all our data
 	int pitch = 0;
 	void* pBits = surfaceCopy->Lock(&pitch);
 
@@ -376,49 +394,60 @@ std::vector<unsigned char> NGMP_OnlineServicesManager::CaptureScreenshot(bool bR
 
 	int width = surfaceDesc.Width;
 	int height = surfaceDesc.Height;
-	for (int y = 0; y < height; ++y) {
-		uint8_t* row = (uint8_t*)pBits + y * pitch;
-		for (int x = 0; x < width; ++x) {
-			int srcIndex = x * 4;
-			int dstIndex = (y * width + x) * 3;
 
-			rgbData[dstIndex + 0] = row[srcIndex + 2]; // R
-			rgbData[dstIndex + 1] = row[srcIndex + 1]; // G
-			rgbData[dstIndex + 2] = row[srcIndex + 0]; // B
-		}
-	}
-
-	// resize
-	unsigned char* pBufferToWrite = rgbData;
-	if (bResizeForTransmit)
-	{
-		int new_width = 844;
-		int new_height = 506;
-		int channels = 3;
-		unsigned char* resized = new unsigned char[new_width * new_height * channels];
-
-		stbir_resize_uint8(rgbData, surfaceDesc.Width, surfaceDesc.Height, 0,
-			resized, new_width, new_height, 0,
-			channels
-		);
-
-		// update data
-		width = new_width;
-		height = new_height;
-		pBufferToWrite = resized;
-	}
-	// end resize
-
-	stbi_write_jpg_to_func([](void* context, void* data, int size)
-		{
-			std::vector<unsigned char>* buffer = static_cast<std::vector<unsigned char>*>(context);
-			buffer->insert(buffer->end(), (unsigned char*)data, (unsigned char*)data + size);
-		}, &vecData, width, height, 3, pBufferToWrite, bResizeForTransmit ? 0 : 50);
-	
 	// release the image surface
 	surf->Release();
 
-	return vecData;
+	// process on thread
+	std::thread* pNewThread = new std::thread([cbOnDataAvailable, width, height, pBits, pitch, rgbData, bResizeForTransmit]()
+		{
+			std::vector<unsigned char> vecData;
+
+			int finalWidth = width;
+			int finalHeight = height;
+
+			for (int y = 0; y < height; ++y) {
+				uint8_t* row = (uint8_t*)pBits + y * pitch;
+				for (int x = 0; x < width; ++x) {
+					int srcIndex = x * 4;
+					int dstIndex = (y * width + x) * 3;
+
+					rgbData[dstIndex + 0] = row[srcIndex + 2]; // R
+					rgbData[dstIndex + 1] = row[srcIndex + 1]; // G
+					rgbData[dstIndex + 2] = row[srcIndex + 0]; // B
+				}
+			}
+
+			// resize
+			unsigned char* pBufferToWrite = rgbData;
+			if (bResizeForTransmit)
+			{
+				int new_width = 844;
+				int new_height = 506;
+				int channels = 3;
+				unsigned char* resized = new unsigned char[new_width * new_height * channels];
+
+				stbir_resize_uint8(rgbData, width, height, 0,
+					resized, new_width, new_height, 0,
+					channels
+				);
+
+				// update data
+				finalWidth = new_width;
+				finalHeight = new_height;
+				pBufferToWrite = resized;
+			}
+			// end resize
+
+			stbi_write_jpg_to_func([](void* context, void* data, int size)
+				{
+					std::vector<unsigned char>* buffer = static_cast<std::vector<unsigned char>*>(context);
+					buffer->insert(buffer->end(), (unsigned char*)data, (unsigned char*)data + size);
+				}, &vecData, finalWidth, finalHeight, 3, pBufferToWrite, bResizeForTransmit ? 0 : 90);
+
+			cbOnDataAvailable(vecData);
+		});
+	SetThreadDescription(static_cast<HANDLE>(pNewThread->native_handle()), L"SCREENSHOT THREAD");
 }
 
 void NGMP_OnlineServicesManager::CancelUpdate()

@@ -611,26 +611,27 @@ void WebSocket::Tick()
 									{
 										NetworkLog(ELogVerbosity::LOG_RELEASE, "[PROBE] GOT PROBE REQUEST!");
 
-										std::vector<unsigned char> vecData = NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshot(true);
+										NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshot(true, [](std::vector<unsigned char> vecData)
+										{
+											nlohmann::json j;
+											j["img"] = nullptr;
+											j["imgres"] = -1;
 
-										nlohmann::json j;
-										j["img"] = nullptr;
-										j["imgres"] = -1;
+											// send screenshot
+											std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("MatchUpdate");
+											std::map<std::string, std::string> mapHeaders;
 
-										// send screenshot
-										std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("MatchUpdate");
-										std::map<std::string, std::string> mapHeaders;
+											// encode body
+											j["img"] = Base64Encode(vecData);
+											j["imgres"] = 1;
 
-										// encode body
-										j["img"] = Base64Encode(vecData);
-										j["imgres"] = 1;
+											std::string strPostData = j.dump();
 
-										std::string strPostData = j.dump();
+											NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPUTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, strPostData.c_str(), [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
+												{
 
-										NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPUTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, strPostData.c_str(), [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
-											{
-
-											});
+												});
+										});
 									}
 									break;
 
