@@ -1105,6 +1105,13 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 //-------------------------------------------------------------------------------------------------
 static void shutdownComplete( WindowLayout *layout )
 {
+#if defined(GENERALS_ONLINE)
+	NGMP_OnlineServices_MatchmakingInterface* pMatchmakingInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_MatchmakingInterface>();
+	if (pMatchmakingInterface != nullptr)
+	{
+		pMatchmakingInterface->CancelMatchmaking();
+	}
+#endif
 
 	isShuttingDown = false;
 
