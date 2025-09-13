@@ -402,7 +402,7 @@ void PopupHostGameInit( WindowLayout *layout, void *userData )
 	// hide password for streams
 	EntryData* e = (EntryData*)textEntryGamePassword->winGetUserData();
 	e->secretText = true;
-	e->maxTextLen = 16;
+	e->maxTextLen = GENERALS_ONLINE_LOBBY_MAX_PASSWORD_LENGTH;
 #endif
 
 }

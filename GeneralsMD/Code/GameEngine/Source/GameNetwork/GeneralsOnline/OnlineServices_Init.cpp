@@ -605,6 +605,26 @@ void WebSocket::Shutdown()
 	Disconnect();
 }
 
+void WebSocket::SendData_ChangeLobbyPassword(UnicodeString& strNewPassword)
+{
+	nlohmann::json j;
+	j["msg_id"] = EWebSocketMessageID::LOBBY_CHANGE_PASSWORD;
+	j["new_password"] = to_utf8(strNewPassword.str());
+	std::string strBody = j.dump();
+
+	Send(strBody.c_str());
+}
+
+
+void WebSocket::SendData_RemoveLobbyPassword()
+{
+	nlohmann::json j;
+	j["msg_id"] = EWebSocketMessageID::LOBBY_REMOVE_PASSWORD;
+	std::string strBody = j.dump();
+
+	Send(strBody.c_str());
+}
+
 void WebSocket::SendData_ChangeName(UnicodeString& strNewName)
 {
 	nlohmann::json j;
@@ -662,7 +682,6 @@ void WebSocket::SendData_StartGame()
 	std::string strBody = j.dump();
 	Send(strBody.c_str());
 }
-
 
 void WebSocket::SendData_CountdownStarted()
 {

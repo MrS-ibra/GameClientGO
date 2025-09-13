@@ -3353,6 +3353,78 @@ Bool handleGameSetupSlashCommands(UnicodeString uText)
 
 		return TRUE;
 	}
+	else if (token == "setpassword" && uText.getLength() > 13)
+	{
+		UnicodeString newPassword(uText.str() + 13); // skip the /setpassword and space
+
+		NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+		NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
+		if (pLobbyInterface != nullptr && pAuthInterface != nullptr)
+		{
+			LobbyEntry& theLobby = pLobbyInterface->GetCurrentLobby();
+
+			// This is just done clientside to show an error message, server validates it also
+			if (theLobby.owner == pAuthInterface->GetUserID())
+			{
+				if (newPassword.getLength() == 0 || newPassword.getLength() > GENERALS_ONLINE_LOBBY_MAX_PASSWORD_LENGTH)
+				{
+					UnicodeString errorMsg;
+					errorMsg.format(L"The new password must be between 1 and %d characters.", GENERALS_ONLINE_LOBBY_MAX_PASSWORD_LENGTH);
+					GadgetListBoxAddEntryText(listboxGameSetupChat, errorMsg, GameMakeColor(255, 0, 0, 255), -1, -1);
+				}
+				else
+				{
+					WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();
+					if (pWS != nullptr)
+					{
+						pWS->SendData_ChangeLobbyPassword(newPassword);
+
+						GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"The lobby password has been updated. You can remove the password by using /removepassword"), GameMakeColor(0, 255, 0, 255), -1, -1);
+					}
+				}
+			}
+			else
+			{
+				GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"You are not the lobby owner."), GameMakeColor(255, 0, 0, 255), -1, -1);
+			}
+		}
+
+		return TRUE; // was a slash command
+	}
+	else if (token == "removepassword" || token == "clearpassword" || token == "resetpassword")
+	{
+		NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+		NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
+		if (pLobbyInterface != nullptr && pAuthInterface != nullptr)
+		{
+			LobbyEntry& theLobby = pLobbyInterface->GetCurrentLobby();
+
+			// This is just done clientside to show an error message, server validates it also
+			if (theLobby.owner == pAuthInterface->GetUserID())
+			{
+				if (theLobby.passworded)
+				{
+					WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();
+					if (pWS != nullptr)
+					{
+						pWS->SendData_RemoveLobbyPassword();
+
+						GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"The lobby password has been removed. You can set a password using /setpassword <password>"), GameMakeColor(0, 255, 0, 255), -1, -1);
+					}
+				}
+				else
+				{
+					GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"The lobby is not passworded. You can set a password using /setpassword <password>"), GameMakeColor(255, 0, 0, 255), -1, -1);
+				}
+			}
+			else
+			{
+				GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"You are not the lobby owner."), GameMakeColor(255, 0, 0, 255), -1, -1);
+			}
+		}
+
+		return TRUE; // was a slash command
+	}
 	else if (token == "connections" || token == "conns" || token == "c")
 	{
 		// TODO_NGMP: Disable this on retail builds

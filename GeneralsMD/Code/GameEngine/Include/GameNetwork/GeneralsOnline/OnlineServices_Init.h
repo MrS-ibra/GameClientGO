@@ -51,7 +51,9 @@ enum EWebSocketMessageID
 	MATCHMAKING_ACTION_JOIN_PREARRANGED_LOBBY = 20,
 	MATCHMAKING_ACTION_START_GAME = 21,
 	MATCHMAKING_MESSAGE = 22,
-	START_GAME_COUNTDOWN_STARTED = 23
+	START_GAME_COUNTDOWN_STARTED = 23,
+	LOBBY_REMOVE_PASSWORD = 24,
+	LOBBY_CHANGE_PASSWORD = 25
 };
 
 enum class EQoSRegions
@@ -167,6 +169,10 @@ public:
 	void SendData_RequestSignalling(int64_t targetUserID);
 	void SendData_Signalling(int64_t targetUserID, std::vector<uint8_t> vecPayload);
 	void SendData_StartGame();
+
+	void SendData_ChangeLobbyPassword(UnicodeString& strNewPassword);
+	void SendData_RemoveLobbyPassword();
+
 
 	void SendData_CountdownStarted();
 

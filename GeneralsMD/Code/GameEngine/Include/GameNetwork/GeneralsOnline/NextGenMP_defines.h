@@ -6,6 +6,8 @@
 
 //#define USE_PORT_MAPPER 1
 
+#define GENERALS_ONLINE_LOBBY_MAX_PASSWORD_LENGTH 16
+
 #if !defined(_DEBUG)
 //#define USE_TEST_ENV 1
 #endif
