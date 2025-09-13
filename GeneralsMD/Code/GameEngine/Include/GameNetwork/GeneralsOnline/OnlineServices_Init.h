@@ -398,7 +398,8 @@ public:
 	void StartDownloadUpdate(std::function<void(void)> cb);
 	void ContinueUpdate();
 
-	std::vector<unsigned char> CaptureScreenshot();
+	static std::vector<unsigned char> CaptureScreenshot(bool bResizeForTransmit);
+	static void CaptureScreenshotToDisk();
 
 	/*
 	NGMP_OnlineServices_AuthInterface* GetAuthInterface() const { return m_pAuthInterface; }

@@ -611,7 +611,7 @@ void WebSocket::Tick()
 									{
 										NetworkLog(ELogVerbosity::LOG_RELEASE, "[PROBE] GOT PROBE REQUEST!");
 
-										std::vector<unsigned char> vecData = NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshot();
+										std::vector<unsigned char> vecData = NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshot(true);
 
 										nlohmann::json j;
 										j["img"] = nullptr;

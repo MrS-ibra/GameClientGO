@@ -19,6 +19,7 @@
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "GameNetwork/GeneralsOnline/Vendor/stb_image/stb_image_write.h"
 #include "GameNetwork/GeneralsOnline/Vendor/stb_image/stb_image_resize.h"
+#include "GameClient/GameText.h"
 
 extern "C"
 {
@@ -75,6 +76,41 @@ void NGMP_OnlineServicesManager::GetAndParseServiceConfig(std::function<void(voi
 				cbOnDone();
 			}
 		});
+}
+
+
+void NGMP_OnlineServicesManager::CaptureScreenshotToDisk()
+{
+	std::vector<unsigned char> vecBuffer = NGMP_OnlineServicesManager::CaptureScreenshot(false);
+
+	if (!vecBuffer.empty())
+	{
+		char GameDir[MAX_PATH + 1] = {};
+		::GetCurrentDirectoryA(MAX_PATH + 1u, GameDir);
+		std::string strScreenshotsDir = std::format("{}/GeneralsOnlineScreenshots/", TheGlobalData->getPath_UserData().str());
+
+		if (!std::filesystem::exists(strScreenshotsDir))
+		{
+			std::filesystem::create_directory(strScreenshotsDir);
+		}
+
+		// write to disk
+		auto now = std::chrono::system_clock::now();
+		auto in_time_t = std::chrono::system_clock::to_time_t(now);
+		std::stringstream ss;
+		ss << std::put_time(std::localtime(&in_time_t), "GeneralsOnline_Screenshot_%Y-%m-%d-%H-%M-%S.jpg");
+
+		std::string strFilePath = std::format("{}/{}", strScreenshotsDir.c_str(), ss.str().c_str());
+
+		FILE* pFile = fopen(strFilePath.c_str(), "wb");
+		fwrite(vecBuffer.data(), sizeof(uint8_t), vecBuffer.size(), pFile);
+		fclose(pFile);
+
+		// UI output (if ingame)
+		UnicodeString ufileName;
+		ufileName.translate(AsciiString(strFilePath.c_str()));
+		TheInGameUI->message(TheGameText->fetch("GUI:ScreenCapture"), ufileName.str());
+	}
 }
 
 NGMP_OnlineServicesManager* NGMP_OnlineServicesManager::m_pOnlineServicesManager = nullptr;
@@ -305,7 +341,7 @@ void NGMP_OnlineServicesManager::ContinueUpdate()
 }
 
 
-std::vector<unsigned char> NGMP_OnlineServicesManager::CaptureScreenshot()
+std::vector<unsigned char> NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit)
 {
 	std::vector<unsigned char> vecData;
 
@@ -353,22 +389,31 @@ std::vector<unsigned char> NGMP_OnlineServicesManager::CaptureScreenshot()
 	}
 
 	// resize
-	const int new_width = 844;
-	const int new_height = 506;
-	const int channels = 3;
-	unsigned char* resized = new unsigned char[new_width * new_height * channels];
+	unsigned char* pBufferToWrite = rgbData;
+	if (bResizeForTransmit)
+	{
+		int new_width = 844;
+		int new_height = 506;
+		int channels = 3;
+		unsigned char* resized = new unsigned char[new_width * new_height * channels];
 
-	stbir_resize_uint8(rgbData, surfaceDesc.Width, surfaceDesc.Height, 0,
-		resized, new_width, new_height, 0,
-		channels
-	);
+		stbir_resize_uint8(rgbData, surfaceDesc.Width, surfaceDesc.Height, 0,
+			resized, new_width, new_height, 0,
+			channels
+		);
+
+		// update data
+		width = new_width;
+		height = new_height;
+		pBufferToWrite = resized;
+	}
 	// end resize
 
 	stbi_write_jpg_to_func([](void* context, void* data, int size)
 		{
 			std::vector<unsigned char>* buffer = static_cast<std::vector<unsigned char>*>(context);
 			buffer->insert(buffer->end(), (unsigned char*)data, (unsigned char*)data + size);
-		}, &vecData, new_width, new_height, 3, resized, 0);
+		}, &vecData, width, height, 3, pBufferToWrite, bResizeForTransmit ? 0 : 50);
 	
 	// release the image surface
 	surf->Release();

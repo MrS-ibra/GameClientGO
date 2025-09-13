@@ -87,6 +87,7 @@
 #include "GameNetwork/GameInfo.h"
 #include "GameNetwork/GameSpyOverlay.h"
 #include "GameNetwork/GameSpy/BuddyThread.h"
+#include "../OnlineServices_Init.h"
 
 
 
@@ -3730,11 +3731,29 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 			break;
 		}
 
+#if defined(GENERALS_ONLINE)
+		case GameMessage::MSG_RAW_KEY_UP:
+		{
+			int key = msg->getArgument(0)->integer;
+
+			if (key == KEY_F11)
+			{
+				NGMP_OnlineServicesManager::CaptureScreenshotToDisk();
+
+				disp = DESTROY_MESSAGE;
+				break;
+			}
+		}
+#endif
 		// --------------------------------------------------------------------------------------------
 		case GameMessage::MSG_META_TAKE_SCREENSHOT:
 		{
+#if defined(GENERALS_ONLINE)
+			NGMP_OnlineServicesManager::CaptureScreenshotToDisk();
+#else
 			if (TheDisplay)
 				TheDisplay->takeScreenShot();
+#endif
 			disp = DESTROY_MESSAGE;
 			break;
 		}
