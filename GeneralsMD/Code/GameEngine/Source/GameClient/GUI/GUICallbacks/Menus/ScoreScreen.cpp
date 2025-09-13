@@ -594,7 +594,11 @@ WindowMsgHandledType ScoreScreenSystem( GameWindow *window, UnsignedInt msg,
 					else if (screenType == SCORESCREEN_INTERNET)
 					{
 						AsciiString strMatchURL;
+#if defined(USE_TEST_ENV)
+						strMatchURL.format("https://www.playgenerals.online/viewmatch?match=%" PRIu64 "&env=test", currentMatchID);
+#else
 						strMatchURL.format("https://www.playgenerals.online/viewmatch?match=%" PRIu64, currentMatchID);
+#endif
 						ShellExecuteA(NULL, "open", strMatchURL.str(), NULL, NULL, SW_SHOWNORMAL);
 					}
 				}
@@ -1105,12 +1109,12 @@ void initInternetMultiPlayer(void)
  			strMatchID.format(L"\nMatch ID: %" PRIu64, lobby.match_id);
  
  			UnicodeString strMatchURL;
- 			strMatchURL.format(L"\nView match data, participants, replays, anti-cheat data: https://www.playgenerals.online/viewmatch?match=%" PRIu64, lobby.match_id);
+#if defined(USE_TEST_ENV)
+ 			strMatchURL.format(L"\nView match data, participants, replays, anti-cheat data: https://www.playgenerals.online/viewmatch?match=%" PRIu64 "&env=test", lobby.match_id);
+#else
+			strMatchURL.format(L"\nView match data, participants, replays, anti-cheat data: https://www.playgenerals.online/viewmatch?match=%" PRIu64, lobby.match_id);
+#endif
 
-			UnicodeString strMatchURL2;
-			strMatchURL2.format(L"\nThis match was ID #%" PRIu64 ". View match data, participants, replays, anti - cheat data at: https://www.playgenerals.online/viewmatch?match=%" PRIu64 " or press 'view online' below", lobby.match_id);
-
-			staticTextGameSaved->winSetText(strMatchURL2);
 			buttonContinue->winSetText(UnicodeString(L"VIEW MATCH ONLINE"));
 
 			// store, we'll need it later
