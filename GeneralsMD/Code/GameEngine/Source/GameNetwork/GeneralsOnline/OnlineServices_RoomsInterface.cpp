@@ -655,12 +655,14 @@ void WebSocket::Tick()
 											NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
 											if (pLobbyInterface != nullptr)
 											{
+												pLobbyInterface->InvokeMatchmakingMatchFoundCallback();
+
 												// TODO_QUICKMATCH: Only if really in quickmatch
 
 												// basic info needed to join
 												LobbyEntry lobbyEntry;
 												lobbyEntry.lobbyID = mmEvent.lobby_id;
-												lobbyEntry.map_path = "Maps\\Homeland Alliance\\Homeland Alliance.map";
+												lobbyEntry.map_path = "Maps\\Alpine Assault\\Alpine Assault.map";
 
 												pLobbyInterface->JoinLobby(lobbyEntry, std::string());
 											}

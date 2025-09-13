@@ -108,6 +108,21 @@ public:
 		m_fnCallbackMatchmakingStartGame = cb;
 	}
 
+	std::function<void()> m_fnCallbackMatchmakingMatchFound = nullptr;
+	void RegisterForMatchmakingMatchFoundCallback(std::function<void()> cb)
+	{
+		m_fnCallbackMatchmakingMatchFound = cb;
+	}
+
+	void InvokeMatchmakingMatchFoundCallback()
+	{
+		if (m_fnCallbackMatchmakingMatchFound != nullptr)
+		{
+			m_fnCallbackMatchmakingMatchFound();
+		}
+	}
+	
+
 	// updates
 	void UpdateCurrentLobby_Map(AsciiString strMap, AsciiString strMapPath, bool bIsOfficial, int newMaxPlayers);
 	void UpdateCurrentLobby_LimitSuperweapons(bool bLimitSuperweapons);

@@ -581,7 +581,7 @@ static void populateQuickMatchMapSelectListbox( QuickMatchPreferences& pref )
 	// TODO_QUICKMATCH
 	//std::list<AsciiString> maps = TheGameSpyConfig->getQMMaps();
 	std::list<AsciiString> maps;
-	maps.push_back(AsciiString("Maps\\Homeland Alliance\\Homeland Alliance.map"));
+	maps.push_back(AsciiString("Maps\\Alpine Assault\\Alpine Assault.map"));
 
 	// enable/disable box based on ladder status
 	Int index;
@@ -747,111 +747,35 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 				GadgetListBoxSetItemData(quickmatchTextWindow, (void*)-1, index);
 			});
 
+		pLobbyInterface->RegisterForMatchmakingMatchFoundCallback([]()
+			{
+				buttonStop->winEnable(FALSE);
+			});
+
 		pLobbyInterface->RegisterForMatchmakingStartGameCallback([]()
 			{
-				buttonWiden->winEnable(FALSE);
+				NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+				NGMPGame* myGame = pLobbyInterface == nullptr ? nullptr : pLobbyInterface->GetCurrentGame();
 
-				////TheNGMPGame->enterGame();
-				//TheNGMPGame->setSeed(12356);
+				if (pLobbyInterface == nullptr || !myGame || !myGame->isInGame())
+					return;
 
-				// TODO_QUICKMATCH
-				//TheGameSpyGame->markGameAsQM();
+				if (!TheNGMPGame)
+					return;
 
-				// TODO_QUICKMATCH
-				//const LadderInfo* info = getLadderInfo();
-
-				Int i;
-				Int numPlayers = 0;
-				for (i = 0; i < MAX_SLOTS; ++i)
-				{
-					//TheNGMPGame->getSlot(i);
-					// TODO_QUICKMATCH
-					//if (!resp.stagingRoomPlayerNames[i].empty())
-					//	++numPlayers;
-				}
-
-				// TODO_QUICKMATCH
-				// TODO_QUICKMATCH
-				//std::list<AsciiString> maps = TheGameSpyConfig->getQMMaps();
-				std::list<AsciiString> maps;
-				maps.push_back(AsciiString("Maps\\Homeland Alliance\\Homeland Alliance.map"));
-
-				for (std::list<AsciiString>::const_iterator it = maps.begin(); it != maps.end(); ++it)
-				{
-					AsciiString theMap = *it;
-					theMap.toLower();
-					const MapMetaData* md = TheMapCache->findMap(theMap);
-					if (md && md->m_numPlayers >= numPlayers)
-					{
-						TheNGMPGame->setMap(*it);
-
-						// TODO_QUICKMATCH
-						//if (resp.qmStatus.mapIdx-- == 0)
-						//	break;
-					}
-				}
-
-				// TODO_QUICKMATCH: Create and join a lobby instead
-				// create our mesh
-				//if (pLobbyInterface != nullptr)
-				{
-					//pLobbyInterface->CreateMesh();
-				}
-
-
-				Int numPlayersPerTeam = numPlayers / 2;
-				DEBUG_ASSERTCRASH(numPlayersPerTeam, ("0 players per team???"));
-				if (!numPlayersPerTeam)
-					numPlayersPerTeam = 1;
-
-				for (i = 0; i < MAX_SLOTS; ++i)
-				{
-					NGMPGameSlot* slot = (NGMPGameSlot*)TheNGMPGame->getSlot(i);
-
-					////slot->setMapAvailability(TRUE);
-
-					// TODO_QUICKMATCH
-					//if (resp.stagingRoomPlayerNames[i].empty())
-					if (false)
-					{
-						//slot->setState(SLOT_CLOSED);
-					}
-					else if (slot->getState() == SLOT_PLAYER)
-					{
-						// TODO_QUICKMATCH
-						//AsciiString aName = resp.stagingRoomPlayerNames[i].c_str();
-						//AsciiString aName;
-						//aName.format("QM User %d", i);
-						//UnicodeString uName;
-						//uName.translate(aName);
-						//slot->setState(SLOT_PLAYER, uName, 0);
-
-						// TODO_QUICKMATCH
-						slot->setColor(i);
-						
-						// TODO_QUICKMATCH
-						slot->setStartPos(i);
-						slot->setPlayerTemplate(5+i);
-						//slot->setProfileID(0);
-						slot->setNATBehavior((FirewallHelperClass::FirewallBehaviorType)0);
-						//slot->setLocale("");
-						slot->setTeamNumber(i / numPlayersPerTeam);
-
-						slot->setMapAvailability(true);
-
-						// TODO_QUICKMATCH
-						if (i == 0)
-							TheNGMPGame->setGameName(UnicodeString(L"Quickmatch"));
-					}
-				}
-
-				//DEBUG_LOG(("Starting a QM game: options=[%s]", GameInfoToAsciiString(TheGameSpyGame).str()));
+				// TODO_NGMP
 				//SendStatsToOtherPlayers(TheNGMPGame);
-				TheNGMPGame->startGame(0);
-				GameWindow* buttonBuddies = TheWindowManager->winGetWindowFromId(NULL, buttonBuddiesID);
-				if (buttonBuddies)
-					buttonBuddies->winEnable(FALSE);
+
+				// we've started, there's no going back
+				// i.e. disable the back button.
+				buttonBack->winEnable(FALSE);
+				GameWindow* buttonBuddy = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("GameSpyGameOptionsMenu.wnd:ButtonCommunicator"));
+				if (buttonBuddy)
+					buttonBuddy->winEnable(FALSE);
 				GameSpyCloseOverlay(GSOVERLAY_BUDDY);
+
+				*TheNGMPGame = *myGame;
+				TheNGMPGame->startGame(0);
 			});
 
 		pLobbyInterface->RegisterForJoinLobbyCallback([](EJoinLobbyResult result)
@@ -1166,6 +1090,12 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 	UpdateStartButton();
 	TheTransitionHandler->setGroup("WOLQuickMatchMenuFade");
 	isInInit= FALSE;
+
+#if defined(GENERALS_ONLINE)
+	buttonStart->winEnable(TRUE);
+	buttonBuddies->winEnable(FALSE);
+	buttonBack->winEnable(TRUE);
+#endif
 } // WOLQuickMatchMenuInit
 
 //-------------------------------------------------------------------------------------------------
