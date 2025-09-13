@@ -398,6 +398,11 @@ void PopupHostGameInit( WindowLayout *layout, void *userData )
 	checkBoxAllowObservers->winSetPosition(xStats, yObs);
 	checkBoxAllowObservers->winHide(false);
 	GadgetCheckBoxSetChecked(checkBoxAllowObservers, true);
+
+	// hide password for streams
+	EntryData* e = (EntryData*)textEntryGamePassword->winGetUserData();
+	e->secretText = true;
+	e->maxTextLen = 16;
 #endif
 
 }
