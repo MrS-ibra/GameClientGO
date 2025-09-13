@@ -89,6 +89,8 @@ private:
 	uint16_t m_proxyPort;
 
 	std::vector<HTTPRequest*> m_vecRequestsInFlight = std::vector<HTTPRequest*>();
+
+	std::recursive_mutex m_Mutex;
 };
 
 

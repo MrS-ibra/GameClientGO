@@ -82,7 +82,7 @@ void NGMP_OnlineServicesManager::GetAndParseServiceConfig(std::function<void(voi
 void NGMP_OnlineServicesManager::CaptureScreenshotToDisk()
 {
 	// create dirs
-	std::string strScreenshotsDir = std::format("{}/GeneralsOnlineScreenshots/", TheGlobalData->getPath_UserData().str());
+	std::string strScreenshotsDir = std::format("{}\\GeneralsOnlineScreenshots\\", TheGlobalData->getPath_UserData().str());
 
 	if (!std::filesystem::exists(strScreenshotsDir))
 	{
@@ -95,7 +95,7 @@ void NGMP_OnlineServicesManager::CaptureScreenshotToDisk()
 	std::stringstream ss;
 	ss << std::put_time(std::localtime(&in_time_t), "GeneralsOnline_Screenshot_%Y-%m-%d-%H-%M-%S.jpg");
 
-	std::string strFilePath = std::format("{}/{}", strScreenshotsDir.c_str(), ss.str().c_str());
+	std::string strFilePath = std::format("{}\\{}", strScreenshotsDir.c_str(), ss.str().c_str());
 
 	// do UI output immediately on mainthread (if ingame)
 	if (TheInGameUI != nullptr)
@@ -399,7 +399,7 @@ void NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit, std:
 	surf->Release();
 
 	// process on thread
-	std::thread* pNewThread = new std::thread([cbOnDataAvailable, width, height, pBits, pitch, rgbData, bResizeForTransmit]()
+	new std::thread([cbOnDataAvailable, width, height, pBits, pitch, rgbData, bResizeForTransmit]()
 		{
 			std::vector<unsigned char> vecData;
 
@@ -447,7 +447,6 @@ void NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit, std:
 
 			cbOnDataAvailable(vecData);
 		});
-	SetThreadDescription(static_cast<HANDLE>(pNewThread->native_handle()), L"SCREENSHOT THREAD");
 }
 
 void NGMP_OnlineServicesManager::CancelUpdate()

@@ -623,7 +623,11 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 						Int savContext = ::SaveDC(dc);
 						HDC tmpDC = ::CreateCompatibleDC(dc);
 						HBITMAP savBitmap = (HBITMAP)::SelectObject(tmpDC, gLoadScreenBitmap);
+#if defined(GENERALS_ONLINE)
+						::BitBlt(dc, 0, 0, DEFAULT_DISPLAY_WIDTH_SPLASH, DEFAULT_DISPLAY_HEIGHT_SPLASH, tmpDC, 0, 0, SRCCOPY);
+#else
 						::BitBlt(dc, 0, 0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, tmpDC, 0, 0, SRCCOPY);
+#endif
 						::SelectObject(tmpDC, savBitmap);
 						::DeleteDC(tmpDC);
 						::RestoreDC(dc, savContext);
@@ -705,8 +709,14 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 static Bool initializeAppWindows( HINSTANCE hInstance, Int nCmdShow, Bool runWindowed )
 {
 	DWORD windowStyle;
+
+#if defined(GENERALS_ONLINE)
+	Int startWidth = DEFAULT_DISPLAY_WIDTH_SPLASH,
+		startHeight = DEFAULT_DISPLAY_HEIGHT_SPLASH;
+#else
 	Int startWidth = DEFAULT_DISPLAY_WIDTH,
 			startHeight = DEFAULT_DISPLAY_HEIGHT;
+#endif
 
 	// register the window class
 
@@ -732,8 +742,14 @@ static Bool initializeAppWindows( HINSTANCE hInstance, Int nCmdShow, Bool runWin
 	AdjustWindowRect (&rect, windowStyle, FALSE);
 	if (runWindowed) {
 		// Makes the normal debug 800x600 window center in the screen.
+
+#if defined(GENERALS_ONLINE)
+		startWidth = DEFAULT_DISPLAY_WIDTH_SPLASH;
+		startHeight = DEFAULT_DISPLAY_HEIGHT_SPLASH;
+#else
 		startWidth = DEFAULT_DISPLAY_WIDTH;
 		startHeight= DEFAULT_DISPLAY_HEIGHT;
+#endif
 	}
 
 	gInitializing = true;

@@ -8,6 +8,8 @@ HTTPManager::HTTPManager() noexcept
 
 void HTTPManager::SendGETRequest(const char* szURI, EIPProtocolVersion protover, std::map<std::string, std::string>& inHeaders, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback, std::function<void(size_t bytesReceived)> progressCallback, int timeoutMS)
 {
+	std::scoped_lock<std::recursive_mutex> lock(m_Mutex);
+
 	HTTPRequest* pRequest = PlatformCreateRequest(EHTTPVerb::HTTP_VERB_GET, protover, szURI, inHeaders, completionCallback, progressCallback, timeoutMS);
 
 	// start immediately
@@ -17,6 +19,8 @@ void HTTPManager::SendGETRequest(const char* szURI, EIPProtocolVersion protover,
 
 void HTTPManager::SendPOSTRequest(const char* szURI, EIPProtocolVersion protover, std::map<std::string, std::string>& inHeaders, const char* szPostData, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback, std::function<void(size_t bytesReceived)> progressCallback, int timeoutMS)
 {
+	std::scoped_lock<std::recursive_mutex> lock(m_Mutex);
+
 	HTTPRequest* pRequest = PlatformCreateRequest(EHTTPVerb::HTTP_VERB_POST, protover, szURI, inHeaders, completionCallback, progressCallback, timeoutMS);
 	pRequest->SetPostData(szPostData);
 
@@ -27,6 +31,8 @@ void HTTPManager::SendPOSTRequest(const char* szURI, EIPProtocolVersion protover
 
 void HTTPManager::SendPUTRequest(const char* szURI, EIPProtocolVersion protover, std::map<std::string, std::string>& inHeaders, const char* szData, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback, std::function<void(size_t bytesReceived)> progressCallback /*= nullptr*/, int timeoutMS)
 {
+	std::scoped_lock<std::recursive_mutex> lock(m_Mutex);
+
 	HTTPRequest* pRequest = PlatformCreateRequest(EHTTPVerb::HTTP_VERB_PUT, protover, szURI, inHeaders, completionCallback, progressCallback, timeoutMS);
 	pRequest->SetPostData(szData);
 
@@ -37,6 +43,8 @@ void HTTPManager::SendPUTRequest(const char* szURI, EIPProtocolVersion protover,
 
 void HTTPManager::SendDELETERequest(const char* szURI, EIPProtocolVersion protover, std::map<std::string, std::string>& inHeaders, const char* szData, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback, std::function<void(size_t bytesReceived)> progressCallback /*= nullptr*/, int timeoutMS)
 {
+	std::scoped_lock<std::recursive_mutex> lock(m_Mutex);
+
 	HTTPRequest* pRequest = PlatformCreateRequest(EHTTPVerb::HTTP_VERB_DELETE, protover, szURI, inHeaders, completionCallback, progressCallback, timeoutMS);
 	pRequest->SetPostData(szData);
 
@@ -70,6 +78,8 @@ void HTTPManager::Initialize()
 
 void HTTPManager::Tick()
 {
+	std::scoped_lock<std::recursive_mutex> lock(m_Mutex);
+
 	// perform and poll
 	int numReqs = 0;
 	curl_multi_perform(m_pCurl, &numReqs);
