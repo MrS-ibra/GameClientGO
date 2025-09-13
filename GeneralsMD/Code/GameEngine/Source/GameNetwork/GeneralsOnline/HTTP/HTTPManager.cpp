@@ -12,9 +12,7 @@ void HTTPManager::SendGETRequest(const char* szURI, EIPProtocolVersion protover,
 
 	HTTPRequest* pRequest = PlatformCreateRequest(EHTTPVerb::HTTP_VERB_GET, protover, szURI, inHeaders, completionCallback, progressCallback, timeoutMS);
 
-	// start immediately
-	pRequest->StartRequest();
-	m_vecRequestsInFlight.push_back(pRequest);
+	m_vecRequestsPendingStart.push_back(pRequest);
 }
 
 void HTTPManager::SendPOSTRequest(const char* szURI, EIPProtocolVersion protover, std::map<std::string, std::string>& inHeaders, const char* szPostData, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback, std::function<void(size_t bytesReceived)> progressCallback, int timeoutMS)
@@ -24,9 +22,7 @@ void HTTPManager::SendPOSTRequest(const char* szURI, EIPProtocolVersion protover
 	HTTPRequest* pRequest = PlatformCreateRequest(EHTTPVerb::HTTP_VERB_POST, protover, szURI, inHeaders, completionCallback, progressCallback, timeoutMS);
 	pRequest->SetPostData(szPostData);
 
-	// start immediately
-	pRequest->StartRequest();
-	m_vecRequestsInFlight.push_back(pRequest);
+	m_vecRequestsPendingStart.push_back(pRequest);
 }
 
 void HTTPManager::SendPUTRequest(const char* szURI, EIPProtocolVersion protover, std::map<std::string, std::string>& inHeaders, const char* szData, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback, std::function<void(size_t bytesReceived)> progressCallback /*= nullptr*/, int timeoutMS)
@@ -36,9 +32,7 @@ void HTTPManager::SendPUTRequest(const char* szURI, EIPProtocolVersion protover,
 	HTTPRequest* pRequest = PlatformCreateRequest(EHTTPVerb::HTTP_VERB_PUT, protover, szURI, inHeaders, completionCallback, progressCallback, timeoutMS);
 	pRequest->SetPostData(szData);
 
-	// start immediately
-	pRequest->StartRequest();
-	m_vecRequestsInFlight.push_back(pRequest);
+	m_vecRequestsPendingStart.push_back(pRequest);
 }
 
 void HTTPManager::SendDELETERequest(const char* szURI, EIPProtocolVersion protover, std::map<std::string, std::string>& inHeaders, const char* szData, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback, std::function<void(size_t bytesReceived)> progressCallback /*= nullptr*/, int timeoutMS)
@@ -48,9 +42,7 @@ void HTTPManager::SendDELETERequest(const char* szURI, EIPProtocolVersion protov
 	HTTPRequest* pRequest = PlatformCreateRequest(EHTTPVerb::HTTP_VERB_DELETE, protover, szURI, inHeaders, completionCallback, progressCallback, timeoutMS);
 	pRequest->SetPostData(szData);
 
-	// start immediately
-	pRequest->StartRequest();
-	m_vecRequestsInFlight.push_back(pRequest);
+	m_vecRequestsPendingStart.push_back(pRequest);
 }
 
 void HTTPManager::Shutdown()
@@ -79,6 +71,14 @@ void HTTPManager::Initialize()
 void HTTPManager::Tick()
 {
 	std::scoped_lock<std::recursive_mutex> lock(m_Mutex);
+
+	// start anything needing starting
+	for (HTTPRequest* pRequest : m_vecRequestsPendingStart)
+	{
+		pRequest->StartRequest();
+		m_vecRequestsInFlight.push_back(pRequest);
+	}
+	m_vecRequestsPendingStart.clear();
 
 	// perform and poll
 	int numReqs = 0;
@@ -113,4 +113,16 @@ void HTTPManager::Tick()
 		m_vecRequestsInFlight.erase(std::remove(m_vecRequestsInFlight.begin(), m_vecRequestsInFlight.end(), pRequestToDestroy));
 		delete pRequestToDestroy;
 	}
+}
+
+void HTTPManager::AddHandleToMulti(CURL* pNewHandle)
+{
+	std::scoped_lock<std::recursive_mutex> lock(m_Mutex);
+	curl_multi_add_handle(m_pCurl, pNewHandle);
+}
+
+void HTTPManager::RemoveHandleFromMulti(CURL* pHandleToRemove)
+{
+	std::scoped_lock<std::recursive_mutex> lock(m_Mutex);
+	curl_multi_remove_handle(m_pCurl, pHandleToRemove);
 }

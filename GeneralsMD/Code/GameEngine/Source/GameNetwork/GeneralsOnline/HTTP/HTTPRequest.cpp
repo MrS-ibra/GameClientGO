@@ -36,9 +36,8 @@ HTTPRequest::HTTPRequest(EHTTPVerb httpVerb, EIPProtocolVersion protover, const 
 HTTPRequest::~HTTPRequest()
 {
 	HTTPManager* pHTTPManager = NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager();
-	CURLM* pMultiHandle = pHTTPManager->GetMultiHandle();
+	pHTTPManager->RemoveHandleFromMulti(m_pCURL);
 
-	curl_multi_remove_handle(pMultiHandle, m_pCURL);
 	curl_easy_cleanup(m_pCURL);
 
 	m_vecBuffer.clear();
@@ -157,8 +156,7 @@ void HTTPRequest::PlatformStartRequest()
 	if (m_pCURL)
 	{
 		HTTPManager* pHTTPManager = static_cast<HTTPManager*>(NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager());
-		CURLM* pMultiHandle = pHTTPManager->GetMultiHandle();
-		curl_multi_add_handle(pMultiHandle, m_pCURL);
+		pHTTPManager->AddHandleToMulti(m_pCURL);
 
 		curl_easy_setopt(m_pCURL, CURLOPT_URL, m_strURI.c_str());
 		curl_easy_setopt(m_pCURL, CURLOPT_FOLLOWLOCATION, 1L);
