@@ -704,7 +704,6 @@ void WOLWelcomeMenuInit( WindowLayout *layout, void *userData )
 
 	// TODO_NGMP: disable things we havent implemented yet
 #if !_DEBUG
-	buttonQuickMatch->winEnable(false);
 	buttonBuddies->winEnable(false);
 #endif
 #else
