@@ -3741,8 +3741,9 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 				NGMP_OnlineServicesManager::CaptureScreenshotToDisk();
 
 				disp = DESTROY_MESSAGE;
-				break;
 			}
+
+			break;
 		}
 #endif
 		// --------------------------------------------------------------------------------------------
