@@ -1105,14 +1105,6 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 //-------------------------------------------------------------------------------------------------
 static void shutdownComplete( WindowLayout *layout )
 {
-#if defined(GENERALS_ONLINE)
-	NGMP_OnlineServices_MatchmakingInterface* pMatchmakingInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_MatchmakingInterface>();
-	if (pMatchmakingInterface != nullptr)
-	{
-		pMatchmakingInterface->CancelMatchmaking();
-	}
-#endif
-
 	isShuttingDown = false;
 
 	// hide the layout
@@ -1137,6 +1129,22 @@ void WOLQuickMatchMenuShutdown( WindowLayout *layout, void *userData )
 {
 #if !defined(GENERALS_ONLINE)
 	TheGameSpyInfo->unregisterTextWindow(quickmatchTextWindow);
+#endif
+
+#if defined(GENERALS_ONLINE)
+	NGMP_OnlineServices_MatchmakingInterface* pMatchmakingInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_MatchmakingInterface>();
+	if (pMatchmakingInterface != nullptr)
+	{
+		pMatchmakingInterface->CancelMatchmaking();
+	}
+
+	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+	if (pLobbyInterface != nullptr)
+	{
+		pLobbyInterface->DeregisterForMatchmakingMessageCallback();
+		pLobbyInterface->DeRegisterForMatchmakingMatchFoundCallback();
+		pLobbyInterface->DeregisterForMatchmakingStartGameCallback();
+	}
 #endif
 
 	if (!TheGameEngine->getQuitting())

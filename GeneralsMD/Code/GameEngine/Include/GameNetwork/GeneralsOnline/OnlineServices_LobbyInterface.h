@@ -86,6 +86,12 @@ public:
 	{
 		m_fnCallbackMatchmakingMessage = cb;
 	}
+
+	void DeregisterForMatchmakingMessageCallback()
+	{
+		m_fnCallbackMatchmakingMessage = nullptr;
+	}
+
 	void InvokeMatchmakingMessageCallback(std::string str)
 	{
 		if (m_fnCallbackMatchmakingMessage != nullptr)
@@ -108,10 +114,20 @@ public:
 		m_fnCallbackMatchmakingStartGame = cb;
 	}
 
+	void DeregisterForMatchmakingStartGameCallback()
+	{
+		m_fnCallbackMatchmakingStartGame = nullptr;
+	}
+
 	std::function<void()> m_fnCallbackMatchmakingMatchFound = nullptr;
 	void RegisterForMatchmakingMatchFoundCallback(std::function<void()> cb)
 	{
 		m_fnCallbackMatchmakingMatchFound = cb;
+	}
+
+	void DeRegisterForMatchmakingMatchFoundCallback()
+	{
+		m_fnCallbackMatchmakingMatchFound = nullptr;
 	}
 
 	void InvokeMatchmakingMatchFoundCallback()
