@@ -246,6 +246,38 @@ void NGMP_OnlineServices_StatsInterface::UpdateMyStats(PSPlayerStats stats)
 		});
 }
 
+void NGMP_OnlineServices_StatsInterface::CommitMyOutcome(ScoreKeeper* pScoreKeeper, bool bWon)
+{
+	if (pScoreKeeper == nullptr)
+	{
+		return;
+	}
+
+	nlohmann::json j;
+	j["buildings_built"] = pScoreKeeper->getTotalBuildingsBuilt();
+	j["buildings_killed"] = pScoreKeeper->getTotalBuildingsDestroyed();
+	j["buildings_lost"] = pScoreKeeper->getTotalBuildingsLost();
+	j["units_built"] = pScoreKeeper->getTotalUnitsBuilt();
+	j["units_killed"] = pScoreKeeper->getTotalUnitsDestroyed();
+	j["units_lost"] = pScoreKeeper->getTotalUnitsLost();
+	j["total_money"] = pScoreKeeper->getTotalMoneyEarned();
+	j["won"] = bWon;
+
+	std::string strPostData = j.dump();
+
+	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+	if (pLobbyInterface != nullptr)
+	{
+		std::string strURI = std::format("{}/Outcome", NGMP_OnlineServicesManager::GetAPIEndpoint("Lobby"));
+		std::map<std::string, std::string> mapHeaders;
+
+		NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPOSTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, strPostData.c_str(), [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
+			{
+
+			});
+	}
+}
+
 std::string NGMP_OnlineServices_StatsInterface::JSONSerialize(PSPlayerStats stats)
 {
 	nlohmann::json j;

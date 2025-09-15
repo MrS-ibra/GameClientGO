@@ -471,6 +471,8 @@ public:
 
 	void UpdateMyStats(PSPlayerStats stats);
 
+	void CommitMyOutcome(ScoreKeeper* pScoreKeeper, bool bWon);
+
 private:
 	std::string JSONSerialize(PSPlayerStats stats);
 

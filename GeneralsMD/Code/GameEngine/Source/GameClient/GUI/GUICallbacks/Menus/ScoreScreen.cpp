@@ -1849,9 +1849,14 @@ winName.format("ScoreScreen.wnd:StaticTextScore%d", pos);
 							}
 						}
 
+						ScoreKeeper* s = player->getScoreKeeper();
 						if (!anyNonAI)
 						{
 							// play against all ai players -- no stats to gather.
+
+							// even though we don't want to register stats, we still want to register the match outcome, since we started it on the backend, it needs finishing too
+							pStatsInterface->CommitMyOutcome(s, TheVictoryConditions->isLocalAlliedVictory());
+
 							return;
 						}
 
@@ -1859,6 +1864,10 @@ winName.format("ScoreScreen.wnd:StaticTextScore%d", pos);
 						{
 							// Holy mis-implemented, Batman, You get no stats for _any_ AI, not _all_ AI.  
 							// No wonder we fired the whole department.
+
+							// even though we don't want to register stats, we still want to register the match outcome, since we started it on the backend, it needs finishing too
+							pStatsInterface->CommitMyOutcome(s, TheVictoryConditions->isLocalAlliedVictory());
+
 							return;
 						}
 
@@ -1885,6 +1894,10 @@ winName.format("ScoreScreen.wnd:StaticTextScore%d", pos);
 						if (!sawEndOfGame)
 						{
 							DEBUG_LOG(("Not sending results - we didn't finish a game. %d\n", TheVictoryConditions->getEndFrame()));
+
+							// even though we don't want to register stats, we still want to register the match outcome, since we started it on the backend, it needs finishing too
+							pStatsInterface->CommitMyOutcome(s, TheVictoryConditions->isLocalAlliedVictory());
+
 							return;
 						}
 
@@ -1986,7 +1999,6 @@ winName.format("ScoreScreen.wnd:StaticTextScore%d", pos);
 							++stats.wins[ptIdx];
 						}
 
-						ScoreKeeper* s = player->getScoreKeeper();
 						stats.buildingsBuilt[ptIdx] += s->getTotalBuildingsBuilt();
 						stats.buildingsKilled[ptIdx] += s->getTotalBuildingsDestroyed();
 						stats.buildingsLost[ptIdx] += s->getTotalBuildingsLost();
@@ -2163,11 +2175,11 @@ winName.format("ScoreScreen.wnd:StaticTextScore%d", pos);
 					}
 #else
 
-						NGMP_OnlineServices_StatsInterface* pStatsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_StatsInterface>();
-						if (pStatsInterface != nullptr)
-						{
-							pStatsInterface->UpdateMyStats(stats);
-						}
+						pStatsInterface->UpdateMyStats(stats);
+						bool bEndedNormally = !gameEndedInDisconnect && !TheNetwork->sawCRCMismatch() && sawEndOfGame;
+						pStatsInterface->CommitMyOutcome(s, TheVictoryConditions->isLocalAlliedVictory());
+
+						
 
 						}, EStatsRequestPolicy::CACHED_ONLY); // NOTE: we really need the latest stats here, but this could cause a UI delay...
 #endif
