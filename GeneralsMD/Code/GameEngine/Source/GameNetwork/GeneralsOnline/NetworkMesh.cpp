@@ -386,7 +386,10 @@ public:
 		WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();
 		if (pWS != nullptr)
 		{
-			std::scoped_lock<std::recursive_mutex> lock(pWS->GetLock());
+			if (!pWS->AcquireLock())
+			{
+				return;
+			}
 
 			// If we're getting backed up, delete the oldest entries.  Remember,
 			// we are only required to do best-effort delivery.  And old signals are the
@@ -402,6 +405,8 @@ public:
 			newEntry.target_user_id = target_user_id;
 			newEntry.vecPayload = vecPayload;
 			m_queueSend.push_back(newEntry);
+
+			pWS->ReleaseLock();
 		}
 	}
 
@@ -437,7 +442,10 @@ public:
 		WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();
 		if (pWS != nullptr)
 		{
-			pWS->GetLock().lock();
+			if (!pWS->AcquireLock())
+			{
+				return;
+			}
 
 			// Drain the socket
 			// Flush send queue
@@ -452,7 +460,7 @@ public:
 			// TODO_NGMP: Avoid copy
 			std::queue<std::vector<uint8_t>> pendingSignals = pWS->m_pendingSignals;
 			pWS->m_pendingSignals = std::queue<std::vector<uint8_t>>();
-			pWS->GetLock().unlock();
+			pWS->ReleaseLock();
 
 			// Now dispatch any buffered signals
 			if (!pendingSignals.empty())

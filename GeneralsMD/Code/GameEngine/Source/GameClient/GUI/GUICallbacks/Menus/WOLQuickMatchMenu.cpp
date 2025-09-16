@@ -754,14 +754,22 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 
 		pLobbyInterface->RegisterForMatchmakingStartGameCallback([]()
 			{
+				NetworkLog(ELogVerbosity::LOG_DEBUG, "[QUICKMATCH] GOT START GAME EVENT");
 				NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
 				NGMPGame* myGame = pLobbyInterface == nullptr ? nullptr : pLobbyInterface->GetCurrentGame();
 
 				if (pLobbyInterface == nullptr || !myGame || !myGame->isInGame())
+				{
+					NetworkLog(ELogVerbosity::LOG_DEBUG, "[QUICKMATCH] Checks failed, %d, %d, %d", pLobbyInterface == nullptr, !myGame, !myGame->isInGame());
 					return;
+				}
 
 				if (!TheNGMPGame)
+				{
+					NetworkLog(ELogVerbosity::LOG_DEBUG, "[QUICKMATCH] NO NGMP GAME INSTANCE");
 					return;
+				}
+
 
 				// TODO_NGMP
 				//SendStatsToOtherPlayers(TheNGMPGame);

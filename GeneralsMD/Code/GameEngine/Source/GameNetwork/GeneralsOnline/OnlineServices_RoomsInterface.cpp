@@ -153,10 +153,14 @@ void WebSocket::Disconnect()
 
 void WebSocket::Send(const char* send_payload)
 {
-	std::scoped_lock<std::recursive_mutex> lock(m_mutex);
+	if (!AcquireLock())
+	{
+		return;
+	}
 
 	if (!m_bConnected)
 	{
+		ReleaseLock();
 		return;
 	}
 
@@ -168,6 +172,8 @@ void WebSocket::Send(const char* send_payload)
 	{
 		NetworkLog(ELogVerbosity::LOG_RELEASE, "curl_ws_send() failed: %s\n", curl_easy_strerror(result));
 	}
+
+	ReleaseLock();
 }
 
 class WebSocketMessageBase
@@ -302,10 +308,14 @@ static bool JSONGetAsObject(nlohmann::json& jsonObject, T* outMsg)
 //static std::string strSignal = "str:1 ";
 void WebSocket::Tick()
 {
-	std::scoped_lock<std::recursive_mutex> lock(m_mutex);
+	if (!AcquireLock())
+	{
+		return;
+	}
 
 	if (!m_bConnected)
 	{
+		ReleaseLock();
 		return;
 	}
 
@@ -660,6 +670,7 @@ void WebSocket::Tick()
 
 												// TODO_QUICKMATCH: Only if really in quickmatch
 
+												// TODO_QUICKMATCH: We need to retrieve this info instead
 												// basic info needed to join
 												LobbyEntry lobbyEntry;
 												lobbyEntry.lobbyID = mmEvent.lobby_id;
@@ -789,6 +800,7 @@ void WebSocket::Tick()
 		m_vecWSPartialBuffer.clear();
 	};
 
+	ReleaseLock();
 }
 
 NGMP_OnlineServices_RoomsInterface::NGMP_OnlineServices_RoomsInterface()

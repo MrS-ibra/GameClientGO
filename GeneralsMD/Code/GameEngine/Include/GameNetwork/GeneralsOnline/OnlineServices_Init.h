@@ -185,7 +185,15 @@ public:
 	// TODO_STEAM: clear this on connect
 	std::queue<std::vector<uint8_t>> m_pendingSignals;
 
-	std::recursive_mutex& GetLock() { return m_mutex; }
+	bool AcquireLock()
+	{
+		return m_mutex.try_lock_for(std::chrono::milliseconds(1));
+	}
+
+	void ReleaseLock()
+	{
+		m_mutex.unlock();
+	}
 
 private:
 	CURL* m_pCurl = nullptr;
@@ -196,7 +204,7 @@ private:
 	const int64_t m_timeBetweenUserPings = 1000;
 	const int64_t m_timeForWSTimeout = 10000;
 
-	std::recursive_mutex m_mutex;
+	std::recursive_timed_mutex m_mutex;
 };
 
 enum class ERoomFlags : int

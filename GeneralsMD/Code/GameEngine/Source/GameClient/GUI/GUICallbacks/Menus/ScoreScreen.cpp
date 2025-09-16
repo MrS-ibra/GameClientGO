@@ -2176,7 +2176,6 @@ winName.format("ScoreScreen.wnd:StaticTextScore%d", pos);
 #else
 
 						pStatsInterface->UpdateMyStats(stats);
-						bool bEndedNormally = !gameEndedInDisconnect && !TheNetwork->sawCRCMismatch() && sawEndOfGame;
 						pStatsInterface->CommitMyOutcome(s, TheVictoryConditions->isLocalAlliedVictory());
 
 						

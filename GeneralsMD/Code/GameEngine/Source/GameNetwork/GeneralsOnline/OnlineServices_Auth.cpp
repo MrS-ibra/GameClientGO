@@ -404,6 +404,9 @@ void NGMP_OnlineServices_AuthInterface::SaveCredentials(const char* szRefreshTok
 
 bool NGMP_OnlineServices_AuthInterface::GetCredentials(std::string& strRefreshToken)
 {
+#if _DEBUG
+	return false;
+#endif
 	std::vector<uint8_t> vecBytes;
 	FILE* file = fopen(GetCredentialsFilePath().c_str(), "rb");
 	if (file)
