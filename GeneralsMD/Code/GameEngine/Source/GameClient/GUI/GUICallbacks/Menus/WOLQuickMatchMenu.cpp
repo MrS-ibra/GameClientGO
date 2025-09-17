@@ -2017,10 +2017,23 @@ WindowMsgHandledType WOLQuickMatchMenuSystem( GameWindow *window, UnsignedInt ms
 				}
 				else if ( controlID == buttonWidenID )
 				{
+#if defined(GENERALS_ONLINE)
+					GadgetListBoxAddEntryText(quickmatchTextWindow, TheGameText->fetch("QM:WIDENINGSEARCH"), GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
+
+					NGMP_OnlineServices_MatchmakingInterface* pMatchmakingInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_MatchmakingInterface>();
+					if (pMatchmakingInterface != nullptr)
+					{
+						pMatchmakingInterface->WidenSearch();
+
+						// disable widen button
+						buttonWiden->winEnable(FALSE);
+					}
+#else
 					PeerRequest req;
 					req.peerRequestType = PeerRequest::PEERREQUEST_WIDENQUICKMATCHSEARCH;
 					TheGameSpyPeerMessageQueue->addRequest(req);
 					buttonWiden->winEnable( FALSE );
+#endif
 				}
 				else if ( controlID == buttonStartID )
 				{
@@ -2081,7 +2094,7 @@ WindowMsgHandledType WOLQuickMatchMenuSystem( GameWindow *window, UnsignedInt ms
 								{
 
 									// buttons
-									buttonWiden->winEnable(FALSE);
+									buttonWiden->winEnable(TRUE);
 									buttonStart->winHide(TRUE);
 									buttonStop->winHide(FALSE);
 								}

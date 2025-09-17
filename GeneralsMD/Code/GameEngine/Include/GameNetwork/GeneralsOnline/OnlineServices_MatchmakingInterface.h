@@ -28,6 +28,8 @@ public:
 
 	void RetrievePlaylists(std::function<void(std::vector<PlaylistEntry>)> callbackOnComplete);
 
+	void WidenSearch();
+
 	void StartMatchmaking(uint16_t playlistID, std::vector<int> vecSelectedMapIndexes, std::function<void(bool)> fnCallback);
 
 	void CancelMatchmaking();

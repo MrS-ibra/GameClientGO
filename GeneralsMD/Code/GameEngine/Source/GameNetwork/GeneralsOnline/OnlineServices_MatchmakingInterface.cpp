@@ -64,6 +64,16 @@ void NGMP_OnlineServices_MatchmakingInterface::RetrievePlaylists(std::function<v
 		});
 }
 
+void NGMP_OnlineServices_MatchmakingInterface::WidenSearch()
+{
+	std::map<std::string, std::string> mapHeaders;
+	std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("Matchmaking/Widen");
+	NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPOSTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, "", [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
+		{
+			
+		});
+}
+
 void NGMP_OnlineServices_MatchmakingInterface::StartMatchmaking(uint16_t playlistID, std::vector<int> vecSelectedMapIndexes, std::function<void(bool)> fnCallback)
 {
 	nlohmann::json j;
