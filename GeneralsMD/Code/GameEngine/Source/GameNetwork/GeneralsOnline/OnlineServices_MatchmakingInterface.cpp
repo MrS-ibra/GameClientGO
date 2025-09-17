@@ -8,10 +8,67 @@ NGMP_OnlineServices_MatchmakingInterface::NGMP_OnlineServices_MatchmakingInterfa
 
 }
 
-void NGMP_OnlineServices_MatchmakingInterface::StartMatchmaking(int playlistID, std::function<void(bool)> fnCallback)
+void NGMP_OnlineServices_MatchmakingInterface::RetrievePlaylists(std::function<void(std::vector<PlaylistEntry>)> callbackOnComplete)
+{
+	std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("Matchmaking/Playlists");
+	std::map<std::string, std::string> mapHeaders;
+
+	NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendGETRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
+		{
+			// TODO_NGMP: Error handling
+			try
+			{
+				nlohmann::json jsonObject = nlohmann::json::parse(strBody);
+
+				std::vector<PlaylistEntry> vecPlaylists;
+				for (const auto& playlistEntryIter : jsonObject["playlists"])
+				{
+					PlaylistEntry playlistEntry;
+					playlistEntryIter["PlaylistID"].get_to(playlistEntry.PlaylistID);
+					playlistEntryIter["Name"].get_to(playlistEntry.Name);
+					playlistEntryIter["MinPlayers"].get_to(playlistEntry.MinPlayers);
+					playlistEntryIter["DesiredPlayers"].get_to(playlistEntry.DesiredPlayers);
+					playlistEntryIter["AllowTeams"].get_to(playlistEntry.AllowTeams);
+					playlistEntryIter["TeamSize"].get_to(playlistEntry.TeamSize);
+					playlistEntryIter["AllowArmySelection"].get_to(playlistEntry.AllowArmySelection);
+					playlistEntryIter["GracePeriodAtMinPlayersMSec"].get_to(playlistEntry.GracePeriodAtMinPlayersMSec);
+
+					// maps
+					for (const auto& mapEntryIter : playlistEntryIter["Maps"])
+					{
+						PlaylistMapEntry mapEntry;
+
+						mapEntryIter["Name"].get_to(mapEntry.Name);
+						mapEntryIter["Path"].get_to(mapEntry.Path);
+
+						playlistEntry.Maps.push_back(mapEntry);
+					}
+
+					vecPlaylists.push_back(playlistEntry);
+				}
+
+				// cache
+				m_vecCachedPlaylists = vecPlaylists;
+
+				// invoke callback
+				if (callbackOnComplete != nullptr)
+				{
+					callbackOnComplete(vecPlaylists);
+				}
+			}
+			catch (...)
+			{
+
+			}
+
+		});
+}
+
+void NGMP_OnlineServices_MatchmakingInterface::StartMatchmaking(uint16_t playlistID, std::vector<int> vecSelectedMapIndexes, std::function<void(bool)> fnCallback)
 {
 	nlohmann::json j;
 	j["playlist"] = playlistID;
+	j["maps"] = vecSelectedMapIndexes;
 
 	std::map<std::string, std::string> mapHeaders;
 	std::string strPostData = j.dump();

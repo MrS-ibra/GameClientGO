@@ -207,6 +207,8 @@ static void enableOptionsGadgets(Bool doIt)
 			comboBoxColor->winEnable(doIt);
 		if (comboBoxNumPlayers)
 			comboBoxNumPlayers->winEnable(doIt);
+
+#if !defined(GENERALS_ONLINE)
 		if (comboBoxLadder)
 			comboBoxLadder->winEnable(doIt);
 		if (comboBoxDisabledLadder)
@@ -215,6 +217,7 @@ static void enableOptionsGadgets(Bool doIt)
 			comboBoxMaxPing->winEnable(doIt);
 		if (comboBoxMaxDisconnects)
 			comboBoxMaxDisconnects->winEnable(doIt);
+#endif
 	}
 }
 
@@ -409,24 +412,25 @@ void PopulateQMLadderListBox( GameWindow *win )
 	QuickMatchPreferences pref;
 	AsciiString userPrefFilename;
 
-#if defined(GENERALS_ONLINE)
-	// TODO_NGMP: We should move to int32 for user IDs
-	NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
-
-	int64_t localProfile = pAuthInterface != nullptr ? pAuthInterface->GetUserID() : -1;
-#else
+#if !defined(GENERALS_ONLINE)
 	Int localProfile = TheGameSpyInfo->getLocalProfileID();
 #endif
-
-	Color specialColor = GameSpyColor[GSCOLOR_MAP_SELECTED];
+	
 	Color normalColor = GameSpyColor[GSCOLOR_MAP_UNSELECTED];
+#if !defined(GENERALS_ONLINE)
+	Color specialColor = GameSpyColor[GSCOLOR_MAP_SELECTED];
 	Color favoriteColor = GameSpyColor[GSCOLOR_MAP_UNSELECTED];
+#endif
 	Int index;
 	GadgetListBoxReset( win );
 
 	std::set<const LadderInfo *> usedLadders;
 
 	// start with "No Ladder"
+#if defined(GENERALS_ONLINE)
+	index = GadgetListBoxAddEntryText(win, UnicodeString(L"Automatic Ladder"), normalColor, -1);
+	GadgetListBoxSetItemData(win, 0, index);
+#else
 	index = GadgetListBoxAddEntryText( win, TheGameText->fetch("GUI:NoLadder"), normalColor, -1 );
 	GadgetListBoxSetItemData( win, 0, index );
 
@@ -490,6 +494,7 @@ void PopulateQMLadderListBox( GameWindow *win )
 	}
 
 	GadgetListBoxSetSelected( win, selectedPos );
+#endif
 	isPopulatingLadderBox = false;
 }
 
@@ -578,10 +583,56 @@ void PopulateQMLadderComboBox( void )
 
 static void populateQuickMatchMapSelectListbox( QuickMatchPreferences& pref )
 {
+	NetworkLog(ELogVerbosity::LOG_DEBUG, "Begin Map Dump");
+	for (auto it = TheMapCache->begin(); it != TheMapCache->end(); ++it)
+	{
+		if (it->second.m_isOfficial && it->second.m_isMultiplayer)
+		{
+			NetworkLog(ELogVerbosity::LOG_DEBUG, "%ls - %s", it->second.m_displayName.str(), it->second.m_fileName.str());
+		}
+	}
+	NetworkLog(ELogVerbosity::LOG_DEBUG, "End Map Dump");
+
 	// TODO_QUICKMATCH
-	//std::list<AsciiString> maps = TheGameSpyConfig->getQMMaps();
+#if defined(GENERALS_ONLINE)
 	std::list<AsciiString> maps;
-	maps.push_back(AsciiString("Maps\\Alpine Assault\\Alpine Assault.map"));
+	Int numPlayers = 0;
+	Int playlistIndex = -1;
+	GadgetComboBoxGetSelectedPos(comboBoxNumPlayers, &playlistIndex);
+
+	if (playlistIndex != -1)
+	{
+		NGMP_OnlineServices_MatchmakingInterface* pMatchmakingInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_MatchmakingInterface>();
+		if (pMatchmakingInterface != nullptr)
+		{
+			PlaylistEntry plEntry = pMatchmakingInterface->GetCachedPlaylistFromIndex(playlistIndex);
+			if (plEntry.PlaylistID != -1)
+			{
+				// take the min player count, we'll offer maps in that range, up to desired player count
+				numPlayers = plEntry.MinPlayers;
+
+				// maps
+				for (PlaylistMapEntry& mapEntry : plEntry.Maps)
+				{
+					// format into game format (Maps\\name\\name.map)
+					std::string correctedMapPath = std::format("Maps\\{}\\{}.map", mapEntry.Path, mapEntry.Path);
+					maps.push_back(AsciiString(correctedMapPath.c_str()));
+				}
+			}
+			else
+			{
+				// TODO_QUICKMATCH: Error?
+			}
+		}
+	}
+	else
+	{
+		// TODO_QUICKMATCH: Error?
+	}
+	
+#else
+	std::list<AsciiString> maps = TheGameSpyConfig->getQMMaps();
+#endif
 
 	// enable/disable box based on ladder status
 	Int index;
@@ -591,6 +642,8 @@ static void populateQuickMatchMapSelectListbox( QuickMatchPreferences& pref )
 	const LadderInfo *li = TheLadderList->findLadderByIndex( index );
 	//listboxMapSelect->winEnable( li == NULL || li->randomMaps == FALSE );
 
+	// GO does this differently (and does it above)
+#if !defined(GENERALS_ONLINE)
 	Int numPlayers = 0;
 	if (li)
 	{
@@ -605,6 +658,7 @@ static void populateQuickMatchMapSelectListbox( QuickMatchPreferences& pref )
 			selected = 0;
 		numPlayers = (selected+1)*2;
 	}
+#endif
 
 
 	GadgetListBoxReset(listboxMapSelect);
@@ -637,16 +691,62 @@ static void populateQuickMatchMapSelectListbox( QuickMatchPreferences& pref )
 
 static void saveQuickMatchOptions( void )
 {
-	// TODO_QUICKMATCH
-#if defined(GENERALS_ONLINE)
-	return;
-#endif
-
 	if(isInInit)
 		return;
 	QuickMatchPreferences pref;
 
+#if defined(GENERALS_ONLINE)
+	Int numPlayers = 0;
+	std::list<AsciiString> maps;
+	Int selected = -1;
+	GadgetComboBoxGetSelectedPos(comboBoxNumPlayers, &selected);
+
+	if (selected != -1)
+	{
+		NGMP_OnlineServices_MatchmakingInterface* pMatchmakingInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_MatchmakingInterface>();
+		if (pMatchmakingInterface != nullptr)
+		{
+			PlaylistEntry plEntry = pMatchmakingInterface->GetCachedPlaylistFromIndex(selected);
+			if (plEntry.PlaylistID != -1)
+			{
+				// take the min player count, we'll offer maps in that range, up to desired player count
+				numPlayers = plEntry.MinPlayers;
+
+				// maps
+				for (PlaylistMapEntry& mapEntry : plEntry.Maps)
+				{
+					// format into game format (Maps\\name\\name.map)
+					std::string correctedMapPath = std::format("Maps\\{}\\{}.map", mapEntry.Path, mapEntry.Path);
+					maps.push_back(AsciiString(correctedMapPath.c_str()));
+				}
+
+				// ladder
+				pref.setLastLadder(AsciiString::TheEmptyString, 0);
+
+				// map
+				Int row = 0;
+				Int entries = GadgetListBoxGetNumEntries(listboxMapSelect);
+				while (row < entries)
+				{
+					const MapMetaData* md = (const MapMetaData*)GadgetListBoxGetItemData(listboxMapSelect, row, 1);
+					if (md)
+						pref.setMapSelected(md->m_fileName, (Bool)GadgetListBoxGetItemData(listboxMapSelect, row));
+					row++;
+				}
+			}
+			else
+			{
+				// TODO_QUICKMATCH: Error?
+			}
+		}
+	}
+	else
+	{
+		// TODO_QUICKMATCH: Error?
+	}
+#else
 	std::list<AsciiString> maps = TheGameSpyConfig->getQMMaps();
+
 
 	Int index;
 	Int selected;
@@ -672,6 +772,7 @@ static void saveQuickMatchOptions( void )
 		numPlayers = (selected+1)*2;
 	}
 
+
 	if (!li || !li->randomMaps)  // don't save the map as selected if we couldn't choose
 	{
 		Int row = 0;
@@ -684,6 +785,7 @@ static void saveQuickMatchOptions( void )
 			row++;
 		}
 	}
+#endif
 
 	UnicodeString u;
 	AsciiString a;
@@ -732,6 +834,25 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 		{
 			// TODO_QUICKMATCH: Show error message + stop matchmaking + enable buttons again
 		});
+
+	// get playlist list
+	NGMP_OnlineServices_MatchmakingInterface* pMatchmakingInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_MatchmakingInterface>();
+	if (pMatchmakingInterface != nullptr)
+	{
+		pMatchmakingInterface->RetrievePlaylists([](std::vector<PlaylistEntry> vecPlaylists)
+			{
+				// add playlists
+				UnicodeString s;
+
+				for (PlaylistEntry& playlist : vecPlaylists)
+				{
+					s.format(L"%hs", playlist.Name.c_str());
+					GadgetComboBoxAddEntry(comboBoxNumPlayers, s, GameSpyColor[GSCOLOR_DEFAULT]);
+				}
+
+				GadgetComboBoxSetSelectedPos(comboBoxNumPlayers, 0);
+			});
+	}
 #endif
 
 	
@@ -965,7 +1086,12 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 		Color normalColor = GameSpyColor[GSCOLOR_MAP_UNSELECTED];
 		Int index;
 		GadgetComboBoxReset( comboBoxDisabledLadder );
+
+#if defined(GENERALS_ONLINE)
+		index = GadgetListBoxAddEntryText(comboBoxDisabledLadder, UnicodeString(L"Automatic Ladder"), normalColor, -1);
+#else
 		index = GadgetComboBoxAddEntry( comboBoxDisabledLadder, TheGameText->fetch("GUI:NoLadder"), normalColor );
+#endif
 		GadgetComboBoxSetItemData( comboBoxDisabledLadder, index, 0 );
 		GadgetComboBoxSetSelectedPos( comboBoxDisabledLadder, index );
 
@@ -1035,15 +1161,18 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 	maxPoints= pref.getMaxPoints();
 	minPoints = pref.getMinPoints();
 
-	Color c = GameSpyColor[GSCOLOR_DEFAULT];
-	GadgetComboBoxReset( comboBoxNumPlayers );
+	// NOTE: On GO, this comes from the service
 	Int i;
+	Color c = GameSpyColor[GSCOLOR_DEFAULT];
+#if !defined(GENERALS_ONLINE)
+	GadgetComboBoxReset( comboBoxNumPlayers );
 	for (i=1; i<5; ++i)
 	{
 		s.format(TheGameText->fetch("GUI:PlayersVersusPlayers"), i, i);
 		GadgetComboBoxAddEntry( comboBoxNumPlayers, s, c );
 	}
 	GadgetComboBoxSetSelectedPos( comboBoxNumPlayers, max(0, pref.getNumPlayers()) );
+#endif
 
 	GadgetComboBoxReset(comboBoxMaxDisconnects);
 	GadgetComboBoxAddEntry( comboBoxMaxDisconnects, TheGameText->fetch("GUI:Any"), c);
@@ -1057,7 +1186,8 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 
 	GadgetComboBoxReset( comboBoxMaxPing );
 #if defined(GENERALS_ONLINE)
-	maxPingEntries = 10;
+	// not supported in GO
+	maxPingEntries = 0;
 #else
 	maxPingEntries = (TheGameSpyConfig->getPingTimeoutInMs() - 1) / 100;
 #endif
@@ -1105,6 +1235,16 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 	buttonStop->winSetText(UnicodeString(L"CANCEL MATCHMAKING"));
 	buttonBuddies->winEnable(FALSE);
 	buttonBack->winEnable(TRUE);
+
+	// not supported in GO
+	if (comboBoxLadder)
+		comboBoxLadder->winEnable(FALSE);
+	if (comboBoxDisabledLadder)
+		comboBoxDisabledLadder->winEnable(FALSE);
+	if (comboBoxMaxPing)
+		comboBoxMaxPing->winEnable(FALSE);
+	if (comboBoxMaxDisconnects)
+		comboBoxMaxDisconnects->winEnable(FALSE);
 #endif
 } // WOLQuickMatchMenuInit
 
@@ -1886,20 +2026,44 @@ WindowMsgHandledType WOLQuickMatchMenuSystem( GameWindow *window, UnsignedInt ms
 				{
 #if defined(GENERALS_ONLINE)
 
-					// TODO_QUICKMATCH: Support map list
-					/*
-					Int numMaps = GadgetListBoxGetNumEntries(listboxMapSelect);
-					for ( Int i=0; i<numMaps; ++i )
-					{
-						req.qmMaps.push_back(GadgetListBoxGetItemData(listboxMapSelect, i, 0));
-					}
-					*/
+					std::vector<int> vecSelectedMapIndexes;
+					uint16_t playlistID = 0;
 
-					int numPlayersIndex = 0;
-					GadgetComboBoxGetSelectedPos(comboBoxNumPlayers, &numPlayersIndex);
-					if (numPlayersIndex < 0)
+					// get maps and playlist ID
+					std::list<AsciiString> maps;
+					Int playlistIndex = -1;
+					GadgetComboBoxGetSelectedPos(comboBoxNumPlayers, &playlistIndex);
+
+					if (playlistIndex != -1)
 					{
-						numPlayersIndex = 0;
+						NGMP_OnlineServices_MatchmakingInterface* pMatchmakingInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_MatchmakingInterface>();
+						if (pMatchmakingInterface != nullptr)
+						{
+							PlaylistEntry plEntry = pMatchmakingInterface->GetCachedPlaylistFromIndex(playlistIndex);
+							if (plEntry.PlaylistID != -1)
+							{
+								playlistID = plEntry.PlaylistID;
+
+								// maps
+								Int numMaps = GadgetListBoxGetNumEntries(listboxMapSelect);
+								for (Int i = 0; i < numMaps; ++i)
+								{
+									bool bMapSelected = GadgetListBoxGetItemData(listboxMapSelect, i, 0);
+									if (bMapSelected)
+									{
+										vecSelectedMapIndexes.push_back(i);
+									}
+								}
+							}
+							else
+							{
+								// TODO_QUICKMATCH: Error?
+							}
+						}
+					}
+					else
+					{
+						// TODO_QUICKMATCH: Error?
 					}
 
 					// buttons
@@ -1910,7 +2074,7 @@ WindowMsgHandledType WOLQuickMatchMenuSystem( GameWindow *window, UnsignedInt ms
 					NGMP_OnlineServices_MatchmakingInterface* pMatchmakingInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_MatchmakingInterface>();
 					if (pMatchmakingInterface != nullptr)
 					{
-						pMatchmakingInterface->StartMatchmaking(numPlayersIndex, [](bool bSuccess)
+						pMatchmakingInterface->StartMatchmaking(playlistID, vecSelectedMapIndexes, [](bool bSuccess)
 							{
 								// TODO_QUICKMATCH: Chat has a sound effect in TheGameSpyInfo, re-eanble it
 								if (bSuccess)
