@@ -1246,8 +1246,7 @@ void WOLDisplaySlotList( void )
 				}
 
 				UnicodeString ucTooltip;
-				ucTooltip.format(L"Display Name: %s\nUser ID: %lld\nConnection Type: %hs\nLatency: %d", from_utf8(member.display_name).c_str(),
-					member.user_id,
+				ucTooltip.format(L"Display Name: %s\nConnection Type: %hs\nLatency: %d", from_utf8(member.display_name).c_str(),
 					strConnectionState.c_str(),
 					latency);
 
@@ -3494,8 +3493,8 @@ Bool handleGameSetupSlashCommands(UnicodeString uText)
 			std::string strConnectionType = conn.GetConnectionType();
 
 			UnicodeString msg;
-			msg.format(L"        Connection %d - user %lld - name %s - State: %hs - Latency: %d game frames (%d ms) - %d GenTool frames - Connection Type %hs",
-				i, kvPair.first, strDisplayName.c_str(), strState.c_str(), ConvertMSLatencyToFrames(conn.GetLatency()), conn.GetLatency(), ConvertMSLatencyToGenToolFrames(conn.GetLatency()), strConnectionType.c_str());
+			msg.format(L"        Connection %d - name %s - State: %hs - Latency: %d game frames (%d ms) - %d GenTool frames - Connection Type %hs",
+				i, strDisplayName.c_str(), strState.c_str(), ConvertMSLatencyToFrames(conn.GetLatency()), conn.GetLatency(), ConvertMSLatencyToGenToolFrames(conn.GetLatency()), strConnectionType.c_str());
 			GadgetListBoxAddEntryText(listboxGameSetupChat, msg, GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
 
 			if (conn.GetLatency() > highestLatency)

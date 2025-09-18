@@ -343,11 +343,6 @@ static void playerTooltip(GameWindow *window,
 								}
 							}
 
-							// add user ID
-							UnicodeString tmp;
-							tmp.format(L"\nUser ID: %lld", roomMember->user_id);
-							tooltip.concat(tmp);
-
 							// TODO_SOCIAL
 							bool bIgnored = false;
 							if (bIgnored)
@@ -389,7 +384,7 @@ static void playerTooltip(GameWindow *window,
 							AsciiString rankName;
 							rankName.format("GUI:GSRank%d", rank);
 							
-							tmp.clear();
+							UnicodeString tmp;
 							tmp.format(L"\n\nFavorite Side: %ls\nRank: %ls", TheGameText->fetch(sideName).str(), TheGameText->fetch(rankName).str());
 							tooltip.concat(tmp);
 
