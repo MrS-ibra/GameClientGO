@@ -194,6 +194,14 @@ public:
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_NetworkStartSignalling, msg_id, lobby_id, user_id, preferred_port)
 };
 
+class WebSocketMessage_FullMeshConnectivityCheckResponse : public WebSocketMessageBase
+{
+public:
+	bool mesh_complete;
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_FullMeshConnectivityCheckResponse, mesh_complete)
+};
+
 class WebSocketMessage_NetworkDisconnectPlayer : public WebSocketMessageBase
 {
 public:
@@ -458,6 +466,64 @@ void WebSocket::Tick()
 									}
 									break;
 
+									case EWebSocketMessageID::FULL_MESH_CONNECTIVITY_CHECK_RESPONSE:
+									{
+										// respond with our state
+										std::vector<int64_t> connectivityMap;
+										NetworkMesh* pMesh = nullptr;
+										NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+										if (pLobbyInterface != nullptr)
+										{
+											pMesh = pLobbyInterface->GetNetworkMeshForLobby();
+										}
+
+										if (pMesh != nullptr)
+										{
+											for (auto& conn : pMesh->GetAllConnections())
+											{
+												int64_t userID = conn.first;
+												PlayerConnection& playerConn = conn.second;
+
+												if (playerConn.GetState() == EConnectionState::CONNECTED_DIRECT)
+												{
+													// NOTE: Useful for testing
+													//if (userID != 1)
+													{
+														connectivityMap.push_back(userID);
+													}
+												}
+											}
+										}
+
+										// send response
+										nlohmann::json j;
+										j["msg_id"] = EWebSocketMessageID::FULL_MESH_CONNECTIVITY_CHECK_RESPONSE;
+										j["connectivity_map"] = connectivityMap;
+										std::string strBody = j.dump();
+
+										Send(strBody.c_str());
+										break;
+									}
+
+									case EWebSocketMessageID::FULL_MESH_CONNECTIVITY_CHECK_RESPONSE_COMPLETE_TO_HOST:
+									{
+										// all checks are done, process start for host
+										WebSocketMessage_FullMeshConnectivityCheckResponse meshOutcome;
+										bool bParsed = JSONGetAsObject(jsonObject, &meshOutcome);
+
+										if (bParsed)
+										{
+											// invoke callback
+											if (m_cbOnConnectivityCheckComplete != nullptr)
+											{
+												m_cbOnConnectivityCheckComplete(meshOutcome.mesh_complete);
+											}
+
+											m_cbOnConnectivityCheckComplete = NULL;
+										}
+
+										break;
+									}
 
 									case EWebSocketMessageID::NETWORK_CONNECTION_START_SIGNALLING:
 									{

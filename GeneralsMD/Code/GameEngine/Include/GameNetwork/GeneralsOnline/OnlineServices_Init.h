@@ -53,7 +53,10 @@ enum EWebSocketMessageID
 	MATCHMAKING_MESSAGE = 22,
 	START_GAME_COUNTDOWN_STARTED = 23,
 	LOBBY_REMOVE_PASSWORD = 24,
-	LOBBY_CHANGE_PASSWORD = 25
+	LOBBY_CHANGE_PASSWORD = 25,
+	FULL_MESH_CONNECTIVITY_CHECK_HOST_REQUESTS_BEGIN = 26,
+	FULL_MESH_CONNECTIVITY_CHECK_RESPONSE = 27,
+	FULL_MESH_CONNECTIVITY_CHECK_RESPONSE_COMPLETE_TO_HOST = 28
 };
 
 enum class EQoSRegions
@@ -175,6 +178,9 @@ public:
 
 
 	void SendData_CountdownStarted();
+
+	std::function<void(bool)> m_cbOnConnectivityCheckComplete = nullptr;
+	void SendData_StartFullMeshConnectivityCheck(std::function<void(bool)> cbOnConnectivityCheckComplete);
 
 	void Tick();
 

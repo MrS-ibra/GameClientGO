@@ -1013,64 +1013,98 @@ static void StartPressed(void)
 
 	if(isReady)
 	{
-		// reset autostart just incase
-		pLobbyInterface->ClearAutoReadyCountdown();
+		// start full mesh connection check
+		UnicodeString strInform = UnicodeString(L"Starting full mesh connectivity checks...");
+		GadgetListBoxAddEntryText(listboxGameSetupChat, strInform, GameMakeColor(255, 194, 15, 255), -1, -1);
 
-		// host mark as ready on backend
-		pLobbyInterface->MarkCurrentGameAsStarted();
+		WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();
+		if (pWS != nullptr)
+		{
+			// we've started, there's no going back
+						// i.e. disable the back button.
+			if (buttonBack != nullptr)
+			{
+				buttonBack->winEnable(FALSE);
+			}
 
-		//PeerRequest req;
-		//req.peerRequestType = PeerRequest::PEERREQUEST_STARTGAME;
-		//TheGameSpyPeerMessageQueue->addRequest(req);
+			if (buttonStart != nullptr)
+			{
+				buttonStart->winEnable(FALSE);
+			}
+
+			pWS->SendData_StartFullMeshConnectivityCheck([=](bool bMeshFullyConnected)
+				{
+					if (bMeshFullyConnected)
+					{
+						UnicodeString strInform = UnicodeString(L"Mesh is fully connected!");
+						GadgetListBoxAddEntryText(listboxGameSetupChat, strInform, GameMakeColor(0, 255, 0, 255), -1, -1);
+
+						// reset autostart just incase
+						pLobbyInterface->ClearAutoReadyCountdown();
+
+						// host mark as ready on backend
+						pLobbyInterface->MarkCurrentGameAsStarted();
+
+						//PeerRequest req;
+						//req.peerRequestType = PeerRequest::PEERREQUEST_STARTGAME;
+						//TheGameSpyPeerMessageQueue->addRequest(req);
 
 #if !defined(GENERALS_ONLINE_ENABLE_MATCH_START_COUNTDOWN)
-		Lobby_StartGamePacket startGamePacket;
-		pLobbyInterface->SendToMesh(startGamePacket);
+						Lobby_StartGamePacket startGamePacket;
+						pLobbyInterface->SendToMesh(startGamePacket);
 
-		// process locally too
-		NetworkMesh* pMesh = NGMP_OnlineServicesManager::GetNetworkMesh();
-		if (pMesh != nullptr)
-		{
-			Lobby_StartGamePacket startGamePacket2;
-			pMesh->ProcessGameStart(startGamePacket2);
-		}
+						// process locally too
+						NetworkMesh* pMesh = NGMP_OnlineServicesManager::GetNetworkMesh();
+						if (pMesh != nullptr)
+						{
+							Lobby_StartGamePacket startGamePacket2;
+							pMesh->ProcessGameStart(startGamePacket2);
+						}
 #else
-		if (TheNGMPGame != nullptr)
-		{
-			if (!TheNGMPGame->IsCountdownStarted())
-			{
-				// remote msg
-				UnicodeString strInform;
-				strInform.format(TheGameText->fetch("LAN:GameStartTimerPlural"), TheNGMPGame->GetTotalCountdownDuration());
-				pLobbyInterface->SendAnnouncementMessageToCurrentLobby(strInform, true);
+						if (TheNGMPGame != nullptr)
+						{
+							if (!TheNGMPGame->IsCountdownStarted())
+							{
+								// remote msg
+								UnicodeString strInform;
+								strInform.format(TheGameText->fetch("LAN:GameStartTimerPlural"), TheNGMPGame->GetTotalCountdownDuration());
+								pLobbyInterface->SendAnnouncementMessageToCurrentLobby(strInform, true);
 
-				TheNGMPGame->StartCountdown();
-			}
-		}
+								TheNGMPGame->StartCountdown();
+							}
+						}
 #endif
 
-		// TODO_NGMP
-		//SendStatsToOtherPlayers(myGame);
+						// TODO_NGMP
+						//SendStatsToOtherPlayers(myGame);
 
-		// we've started, there's no going back
-		// i.e. disable the back button.
-		if (buttonBack != nullptr)
-		{
-			buttonBack->winEnable(FALSE);
+						GameWindow* buttonBuddy = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("GameSpyGameOptionsMenu.wnd:ButtonCommunicator"));
+						if (buttonBuddy != nullptr)
+						{
+							buttonBuddy->winEnable(FALSE);
+						}
+
+						GameSpyCloseOverlay(GSOVERLAY_BUDDY);
+					}
+					else
+					{
+						UnicodeString strInform = UnicodeString(L"Mesh is not fully connected yet! Please try again soon");
+						GadgetListBoxAddEntryText(listboxGameSetupChat, strInform, GameMakeColor(255, 0, 0, 255), -1, -1);
+
+						// restore state
+						if (buttonBack != nullptr)
+						{
+							buttonBack->winEnable(TRUE);
+						}
+
+						if (buttonStart != nullptr)
+						{
+							buttonStart->winEnable(TRUE);
+						}
+					}
+					
+				});
 		}
-
-		if (buttonStart != nullptr)
-		{
-			buttonStart->winEnable(FALSE);
-		}
-
-		GameWindow *buttonBuddy = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("GameSpyGameOptionsMenu.wnd:ButtonCommunicator"));
-		if (buttonBuddy != nullptr)
-		{
-			buttonBuddy->winEnable(FALSE);
-		}
-
-		GameSpyCloseOverlay(GSOVERLAY_BUDDY);
 	}
 	else if (allHaveMap)
 	{
@@ -1264,7 +1298,7 @@ void WOLDisplaySlotList( void )
 				// not connected? show another icon
 				if (!bIsConnected && i != game->getLocalSlotNum())
 				{
-					const Image* image = TheMappedImageCollection->findImageByName("HeroReticle");
+					static const Image* image = TheMappedImageCollection->findImageByName("HeroReticle");
 					genericPingWindow[i]->winSetEnabledImage(0, image);
 				}
 				else

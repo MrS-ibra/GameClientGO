@@ -764,6 +764,17 @@ void WebSocket::SendData_CountdownStarted()
 	Send(strBody.c_str());
 }
 
+
+void WebSocket::SendData_StartFullMeshConnectivityCheck(std::function<void(bool)> cbOnConnectivityCheckComplete)
+{
+	m_cbOnConnectivityCheckComplete = cbOnConnectivityCheckComplete;
+
+	nlohmann::json j;
+	j["msg_id"] = EWebSocketMessageID::FULL_MESH_CONNECTIVITY_CHECK_HOST_REQUESTS_BEGIN;
+	std::string strBody = j.dump();
+	Send(strBody.c_str());
+}
+
 void QoSManager::Tick()
 {
 	// are all probes done?
