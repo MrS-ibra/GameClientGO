@@ -1225,33 +1225,35 @@ void WOLDisplaySlotList( void )
 		NGMPGameSlot *slot = game->getGameSpySlot(i);
 		if (slot && slot->isHuman())
 		{
-			if (i == game->getLocalSlotNum())
+			bool bIsConnected = false;
+			int latency = -1;
+
+			LobbyMemberEntry member = pLobbyInterface->GetRoomMemberFromID(slot->m_userID);
+
+			if (NGMP_OnlineServicesManager::GetNetworkMesh() != nullptr)
 			{
-				LobbyMemberEntry member = pLobbyInterface->GetRoomMemberFromID(slot->m_userID);
+				PlayerConnection* pConnection = NGMP_OnlineServicesManager::GetNetworkMesh()->GetConnectionForUser(slot->m_userID);
 
-				AsciiString strPingString = "";
-				std::string strConnectionState = "Not Connected";
-				int latency = -1;
-
-				if (NGMP_OnlineServicesManager::GetNetworkMesh() != nullptr)
+				if (pConnection != nullptr)
 				{
-					PlayerConnection* pConnection = NGMP_OnlineServicesManager::GetNetworkMesh()->GetConnectionForUser(slot->m_userID);
-
-					if (pConnection != nullptr)
+					if (pConnection->GetState() == EConnectionState::CONNECTED_DIRECT)
 					{
-						strConnectionState = "Connected";
-						latency = pConnection->GetLatency();
-
+						bIsConnected = true;
 					}
+					else
+					{
+						bIsConnected = true;
+					}
+					latency = pConnection->GetLatency();
 				}
-
-				UnicodeString ucTooltip;
-				ucTooltip.format(L"Display Name: %s\nConnection Type: %hs\nLatency: %d", from_utf8(member.display_name).c_str(),
-					strConnectionState.c_str(),
-					latency);
-
-				slot->setPingString(ucTooltip);
 			}
+
+			UnicodeString ucTooltip;
+			ucTooltip.format(L"Display Name: %s\nConnection Type: %hs\nLatency: %d", from_utf8(member.display_name).c_str(),
+				bIsConnected ? "Connected" : "Not Connected",
+				latency);
+
+			slot->setPingString(ucTooltip);
 
 			if (genericPingWindow[i])
 			{
@@ -1259,18 +1261,26 @@ void WOLDisplaySlotList( void )
 
 				genericPingWindow[i]->winSetEnabledImage(0, pingImages[0]);
 
-				Int ping = slot->getPingAsInt();
-				if (ping < 500)
+				// not connected? show another icon
+				if (!bIsConnected && i != game->getLocalSlotNum())
 				{
-					genericPingWindow[i]->winSetEnabledImage(0, pingImages[0]);
-				}
-				else if (ping < 750)
-				{
-					genericPingWindow[i]->winSetEnabledImage(0, pingImages[1]);
+					const Image* image = TheMappedImageCollection->findImageByName("HeroReticle");
+					genericPingWindow[i]->winSetEnabledImage(0, image);
 				}
 				else
 				{
-					genericPingWindow[i]->winSetEnabledImage(0, pingImages[2]);
+					if (latency < 250)
+					{
+						genericPingWindow[i]->winSetEnabledImage(0, pingImages[0]);
+					}
+					else if (latency < 500)
+					{
+						genericPingWindow[i]->winSetEnabledImage(0, pingImages[1]);
+					}
+					else
+					{
+						genericPingWindow[i]->winSetEnabledImage(0, pingImages[2]);
+					}
 				}
 			}
 		}
