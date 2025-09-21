@@ -122,6 +122,10 @@ public:
 #else
 	virtual void setSawCRCMismatch() = 0;
 #endif
+
+#if defined(GENERALS_ONLINE)
+	virtual ConnectionManager* GetConnectionManager() = 0;
+#endif
 	
 	virtual Bool isPlayerConnected(Int playerID) = 0;
 

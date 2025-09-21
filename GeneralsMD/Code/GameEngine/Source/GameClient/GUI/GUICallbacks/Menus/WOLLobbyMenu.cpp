@@ -2371,7 +2371,7 @@ WindowMsgHandledType WOLLobbyMenuSystem( GameWindow *window, UnsignedInt msg,
 					{
 						Int groupID;
 						groupID = (Int)GadgetComboBoxGetItemData(comboLobbyGroupRooms, rowSelected);
-						DEBUG_LOG(("ItemData was %d, current Group Room is %d", groupID, TheGameSpyInfo->getCurrentGroupRoom()));
+						//DEBUG_LOG(("ItemData was %d, current Group Room is %d", groupID, TheGameSpyInfo->getCurrentGroupRoom()));
 // did it change?
 						if (groupID != pRoomsInterface->GetCurrentRoomID())
 						{

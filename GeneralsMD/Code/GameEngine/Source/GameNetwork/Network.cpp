@@ -187,6 +187,10 @@ public:
 	Int getPingsSent();
 	Int getPingsRecieved();
 
+#if defined(GENERALS_ONLINE)
+	ConnectionManager* GetConnectionManager() override { return m_conMgr; }
+#endif
+
 protected:
 	void GetCommandsFromCommandList();														///< Remove commands from TheCommandList and put them on the Network command list.
 	void SendCommandsToConnectionManager();												///< Send the new commands to the ConnectionManager

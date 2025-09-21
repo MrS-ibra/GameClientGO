@@ -1819,6 +1819,28 @@ PlayerLeaveCode ConnectionManager::disconnectPlayer(Int slot) {
 	return retval;
 }
 
+#if defined(GENERALS_ONLINE)
+PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
+{
+	if (TheNGMPGame != nullptr)
+	{
+		for (int slot = 0; slot < MAX_SLOTS; ++slot)
+		{
+			NGMPGameSlot* pSlot = (NGMPGameSlot*)TheNGMPGame->getSlot(slot);
+			if (pSlot)
+			{
+				if (pSlot->m_userID == userID)
+				{
+					return disconnectPlayer(slot);
+				}
+			}
+		}
+	}
+
+	return PLAYERLEAVECODE_UNKNOWN;
+}
+#endif
+
 void ConnectionManager::quitGame() {
 	// Need to do the NetDisconnectPlayerCommandMsg creation and sending here.
 	NetDisconnectPlayerCommandMsg *disconnectMsg = newInstance(NetDisconnectPlayerCommandMsg);

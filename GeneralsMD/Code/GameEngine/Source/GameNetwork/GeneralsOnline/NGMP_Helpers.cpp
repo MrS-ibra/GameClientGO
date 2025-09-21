@@ -5,6 +5,7 @@
 #include <locale>
 #include <codecvt>
 #include "../OnlineServices_Init.h"
+#include "../OnlineServices_Auth.h"
 
 std::string m_strNetworkLogFileName;
 std::mutex m_logMutex;
@@ -38,8 +39,21 @@ void NetworkLog(ELogVerbosity logVerbosity, const char* fmt, ...)
 		auto now = std::chrono::system_clock::now();
 		auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
+#if defined(_DEBUG)
+		// for debug, put the user ID in the log name so we can easily track it (NOte that this does mean we dont get very early logging, pre login, but that's OK normally)
 
+		NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
+		if (pAuthInterface != nullptr && pAuthInterface->GetUserID() != -1)
+		{
+			m_strNetworkLogFileName = std::format("{}\\GeneralsOnlineData\\GeneralsOnline_UserID_{}.log", TheGlobalData->getPath_UserData().str(), pAuthInterface->GetUserID());
+		}
+		else
+		{
+			return;
+		}
+#else
 		m_strNetworkLogFileName = std::format("{}\\GeneralsOnlineData\\GeneralsOnline.log", TheGlobalData->getPath_UserData().str());
+#endif
 		/*
 			std::stringstream ss;
 
