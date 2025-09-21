@@ -1283,7 +1283,11 @@ void WOLQuickMatchMenuShutdown( WindowLayout *layout, void *userData )
 	NGMP_OnlineServices_MatchmakingInterface* pMatchmakingInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_MatchmakingInterface>();
 	if (pMatchmakingInterface != nullptr)
 	{
-		pMatchmakingInterface->CancelMatchmaking();
+		// Shutdown is invokved for UI exit but also for going to game... so don't tear down lobby on service in the latter case
+		if (TheNGMPGame == nullptr || !TheNGMPGame->isGameInProgress())
+		{
+			pMatchmakingInterface->CancelMatchmaking();
+		}
 	}
 
 	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();

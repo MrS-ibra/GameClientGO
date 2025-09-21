@@ -813,7 +813,7 @@ void NetworkMesh::DisconnectUser(int64_t remoteUserID)
 		if (m_mapConnections[remoteUserID].m_hSteamConnection != k_HSteamNetConnection_Invalid)
 		{
 			NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Closing connection %lld", remoteUserID);
-			SteamNetworkingSockets()->CloseConnection(m_mapConnections[remoteUserID].m_hSteamConnection, 0, "Client Disconnecting Gracefully (not in lobby list)", false);
+			SteamNetworkingSockets()->CloseConnection(m_mapConnections[remoteUserID].m_hSteamConnection, 0, "Client Disconnecting Gracefully (Got EWebSocketMessageID::NETWORK_CONNECTION_DISCONNECT_PLAYER from service)", false);
 		}
 
 		NetworkLog(ELogVerbosity::LOG_RELEASE, "[ERASE 1] Removing user %lld", m_mapConnections[remoteUserID].m_userID);
