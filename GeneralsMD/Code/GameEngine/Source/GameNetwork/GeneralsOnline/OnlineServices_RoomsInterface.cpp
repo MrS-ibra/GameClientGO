@@ -743,6 +743,8 @@ void WebSocket::Tick()
 												lobbyEntry.map_path = "Maps\\Alpine Assault\\Alpine Assault.map";
 
 												pLobbyInterface->JoinLobby(lobbyEntry, std::string());
+
+												pLobbyInterface->InvokeMatchmakingMessageCallback("Joining QuickMatch Lobby");
 											}
 											else
 											{
