@@ -116,7 +116,6 @@ public:
 	inline UnsignedInt getFrameRate(void) { return m_frameRate; }
 	UnsignedInt getPacketArrivalCushion(void);								///< Returns the smallest packet arrival cushion since this was last called.
 	Bool isFrameDataReady( void );
-	virtual Bool isStalling();
 	void parseUserList( const GameInfo *game );
 	void startGame(void);																			///< Sets the network game frame counter to -1
 
@@ -741,7 +740,7 @@ void Network::endOfGameCheck() {
 	if (m_conMgr != NULL) {
 		if (m_conMgr->canILeave()) {
 			m_conMgr->disconnectLocalPlayer();
-			TheGameLogic->exitGame();
+			TheMessageStream->appendMessage(GameMessage::MSG_CLEAR_GAME_DATA);
 			m_localStatus = NETLOCALSTATUS_POSTGAME;
 
 			DEBUG_LOG(("Network::endOfGameCheck - about to show the shell"));
@@ -803,13 +802,6 @@ Bool Network::timeForNewFrame() {
  */
 Bool Network::isFrameDataReady() {
 	return (m_frameDataReady || (m_localStatus == NETLOCALSTATUS_LEFT));
-}
-
-Bool Network::isStalling()
-{
-	__int64 curTime;
-	QueryPerformanceCounter((LARGE_INTEGER *)&curTime);
-	return curTime >= m_nextFrameTime;
 }
 
 /**
@@ -934,7 +926,7 @@ void Network::quitGame() {
 		m_conMgr->quitGame();
 	}
 
-	TheGameLogic->exitGame();
+	TheMessageStream->appendMessage(GameMessage::MSG_CLEAR_GAME_DATA);
 	m_localStatus = NETLOCALSTATUS_POSTGAME;
 	DEBUG_LOG(("Network::quitGame - quitting game..."));
 }

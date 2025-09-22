@@ -77,7 +77,6 @@
 #include "GameClient/Shadow.h"
 #include "GameClient/GameText.h"
 
-#include "ww3d.h"
 
 #define VERY_TRANSPARENT_HEATVISION (0.001f)
 #define HEATVISION_FADE_SCALAR (0.8f)
@@ -373,7 +372,6 @@ Drawable::Drawable( const ThingTemplate *thingTemplate, DrawableStatus statusBit
 	m_flashCount = 0;
 
 	m_locoInfo = NULL;
-	m_physicsXform = NULL;
 
 	// sanity
 	if( TheGameClient == NULL || thingTemplate == NULL )
@@ -529,8 +527,6 @@ Drawable::~Drawable()
 
 	deleteInstance(m_locoInfo);
 	m_locoInfo = NULL;
-
-	delete m_physicsXform;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1254,19 +1250,24 @@ void Drawable::flashAsSelected( const RGBColor *color ) ///< drawable takes care
 //-------------------------------------------------------------------------------------------------
 void Drawable::applyPhysicsXform(Matrix3D* mtx)
 {
-	if (m_physicsXform != NULL)
-	{
-		// TheSuperHackers @tweak Update the physics transform on every WW Sync only.
-		// All calculations are originally catered to a 30 fps logic step.
-		if (WW3D::Get_Frame_Time() != 0)
-		{
-			calcPhysicsXform(*m_physicsXform);
-		}
+	const Object *obj = getObject();
 
-		mtx->Translate(0.0f, 0.0f, m_physicsXform->m_totalZ);
-		mtx->Rotate_Y( m_physicsXform->m_totalPitch );
-		mtx->Rotate_X( -m_physicsXform->m_totalRoll );
-		mtx->Rotate_Z( m_physicsXform->m_totalYaw );
+	if( !obj ||	obj->isDisabledByType( DISABLED_HELD ) || !TheGlobalData->m_showClientPhysics )
+	{
+		return;
+	}
+
+ 	Bool frozen = TheTacticalView->isTimeFrozen() && !TheTacticalView->isCameraMovementFinished();
+ 	frozen = frozen || TheScriptEngine->isTimeFrozenDebug() || TheScriptEngine->isTimeFrozenScript();
+	if (frozen)
+		return;
+	PhysicsXformInfo info;
+	if (calcPhysicsXform(info))
+	{
+		mtx->Translate(0.0f, 0.0f, info.m_totalZ);
+		mtx->Rotate_Y( info.m_totalPitch );
+		mtx->Rotate_X( -info.m_totalRoll );
+		mtx->Rotate_Z( info.m_totalYaw );
 	}
 }
 
@@ -1274,29 +1275,34 @@ void Drawable::applyPhysicsXform(Matrix3D* mtx)
 //-------------------------------------------------------------------------------------------------
 Bool Drawable::calcPhysicsXform(PhysicsXformInfo& info)
 {
+	const Object* obj = getObject();
+	const AIUpdateInterface *ai = obj ? obj->getAIUpdateInterface() : NULL;
 	Bool hasPhysicsXform = false;
-
-	if (const Locomotor *locomotor = getLocomotor())
+	if (ai)
 	{
-		switch (locomotor->getAppearance())
+		const Locomotor *locomotor = ai->getCurLocomotor();
+		if (locomotor)
 		{
-			case LOCO_WHEELS_FOUR:
-				calcPhysicsXformWheels(locomotor, info);
-				hasPhysicsXform = true;
-				break;
-			case LOCO_TREADS:
-				calcPhysicsXformTreads(locomotor, info);
-				hasPhysicsXform = true;
-				break;
-			case LOCO_HOVER:
-			case LOCO_WINGS:
-				calcPhysicsXformHoverOrWings(locomotor, info);
-				hasPhysicsXform = true;
-				break;
-			case LOCO_THRUST:
-				calcPhysicsXformThrust(locomotor, info);
-				hasPhysicsXform = true;
-				break;
+			switch (locomotor->getAppearance())
+			{
+				case LOCO_WHEELS_FOUR:
+					calcPhysicsXformWheels(locomotor, info);
+					hasPhysicsXform = true;
+					break;
+				case LOCO_TREADS:
+					calcPhysicsXformTreads(locomotor, info);
+					hasPhysicsXform = true;
+					break;
+				case LOCO_HOVER:
+				case LOCO_WINGS:
+					calcPhysicsXformHoverOrWings(locomotor, info);
+					hasPhysicsXform = true;
+					break;
+				case LOCO_THRUST:
+					calcPhysicsXformThrust(locomotor, info);
+					hasPhysicsXform = true;
+					break;
+			}
 		}
 	}
 
@@ -2173,7 +2179,7 @@ void Drawable::setStealthLook(StealthLookType look)
 //-------------------------------------------------------------------------------------------------
 /** default draw is to just call the database defined draw */
 //-------------------------------------------------------------------------------------------------
-void Drawable::draw()
+void Drawable::draw( View *view )
 {
 
 	if ( getObject() && getObject()->isEffectivelyDead() )
@@ -2208,10 +2214,7 @@ void Drawable::draw()
 #endif
 	}
 
-	if (TheGlobalData->m_showClientPhysics && getObject() && !getObject()->isDisabledByType( DISABLED_HELD ))
-	{
-		applyPhysicsXform(&transformMtx);
-	}
+	applyPhysicsXform(&transformMtx);
 
 	for (DrawModule** dm = getDrawModules(); *dm; ++dm)
 	{
@@ -3655,14 +3658,6 @@ void Drawable::friend_bindToObject( Object *obj ) ///< bind this drawable to an 
 	{
 		(*dm)->onDrawableBoundToObject();
 	}
-
-	PhysicsXformInfo physicsXform;
-	if (calcPhysicsXform(physicsXform))
-	{
-		DEBUG_ASSERTCRASH(m_physicsXform == NULL, ("m_physicsXform is not NULL"));
-		m_physicsXform = new PhysicsXformInfo;
-		*m_physicsXform = physicsXform;
-	}
 }
 //-------------------------------------------------------------------------------------------------
 	// when our Object changes teams, it calls us to let us know, so
@@ -4680,19 +4675,6 @@ void Drawable::loadPostProcess( void )
 	}
 
 }  // end loadPostProcess
-
-//-------------------------------------------------------------------------------------------------
-const Locomotor* Drawable::getLocomotor() const
-{
-	if (const Object* obj = getObject())
-	{
-		if (const AIUpdateInterface *ai = obj->getAIUpdateInterface())
-		{
-			return ai->getCurLocomotor();
-		}
-	}
-	return NULL;
-}
 
 //=================================================================================================
 //=================================================================================================

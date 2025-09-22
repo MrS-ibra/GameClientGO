@@ -602,8 +602,16 @@ void GameClient::update( void )
 		TheVideoPlayer->UPDATE();
 	}
 
-	const Bool freezeTime = TheGameEngine->isTimeFrozen() || TheGameEngine->isGameHalted();
+	Bool freezeTime = TheTacticalView->isTimeFrozen() && !TheTacticalView->isCameraMovementFinished();
+	freezeTime = freezeTime || TheScriptEngine->isTimeFrozenDebug();
+	freezeTime = freezeTime || TheScriptEngine->isTimeFrozenScript();
+	freezeTime = freezeTime || TheGameLogic->isGamePaused();
 	Int localPlayerIndex = ThePlayerList ? ThePlayerList->getLocalPlayer()->getPlayerIndex() : 0;
+
+	// hack to let client spin fast in network games but still do effects at the same pace. -MDC
+	static UnsignedInt lastFrame = ~0;
+	freezeTime = freezeTime || (lastFrame == m_frame);
+	lastFrame = m_frame;
 
 	if (!freezeTime)
 	{

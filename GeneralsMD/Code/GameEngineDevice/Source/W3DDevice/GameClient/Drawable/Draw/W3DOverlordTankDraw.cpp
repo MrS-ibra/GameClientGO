@@ -88,7 +88,7 @@ void W3DOverlordTankDraw::doDrawModule(const Matrix3D* transformMtx)
 		riderDraw->setColorTintEnvelope( *getDrawable()->getColorTintEnvelope() );
 
 		riderDraw->notifyDrawableDependencyCleared();
-		riderDraw->draw();
+		riderDraw->draw( NULL );// What the hell?  This param isn't used for anything
 	}
 }
 

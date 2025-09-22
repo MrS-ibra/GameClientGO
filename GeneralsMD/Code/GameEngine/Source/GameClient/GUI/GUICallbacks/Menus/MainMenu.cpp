@@ -268,7 +268,7 @@ static void quitCallback( void )
 
 	}
 	if (TheGameLogic->isInGame())
-		TheGameLogic->exitGame();
+		TheMessageStream->appendMessage( GameMessage::MSG_CLEAR_GAME_DATA );
 }
 
 
