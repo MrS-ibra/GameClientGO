@@ -111,9 +111,10 @@ AIGroup::~AIGroup()
 
 #endif
 
-	deleteInstance(m_groundPath);
-	m_groundPath = NULL;
-
+	if (m_groundPath) {
+		deleteInstance(m_groundPath);
+		m_groundPath = NULL;
+	}
 	//DEBUG_LOG(( "AIGroup #%d destroyed", m_id ));
 }
 
@@ -444,8 +445,10 @@ void AIGroup::recompute( void )
 
 	getCenter( &center );
 
-	deleteInstance(m_groundPath);
-	m_groundPath = NULL;
+	if (m_groundPath) {
+		deleteInstance(m_groundPath);
+		m_groundPath = NULL;
+	}
 
 	m_speed = 9999999999.9f;
 

@@ -296,7 +296,7 @@ void GameLogic::clearGameData( Bool showScoreScreen )
 // ------------------------------------------------------------------------------------------------
 /** Prepare for a new game */
 // ------------------------------------------------------------------------------------------------
-void GameLogic::prepareNewGame( GameMode gameMode, GameDifficulty diff, Int rankPoints )
+void GameLogic::prepareNewGame( Int gameMode, GameDifficulty diff, Int rankPoints )
 {
 	//Added By Sadullah Nader
 	//Fix for loading game scene
@@ -413,7 +413,7 @@ void GameLogic::logicMessageDispatcher( GameMessage *msg, void *userData )
 		case GameMessage::MSG_NEW_GAME:
 		{
 			//DEBUG_ASSERTCRASH(msg->getArgumentCount() == 1 || msg->getArgumentCount() == 2, ("%d arguments to MSG_NEW_GAME", msg->getArgumentCount()));
-			GameMode gameMode = (GameMode)msg->getArgument( 0 )->integer;
+			Int gameMode = msg->getArgument( 0 )->integer;
 			Int rankPoints = 0;
 			GameDifficulty diff = DIFFICULTY_NORMAL;
 			if ( msg->getArgumentCount() >= 2 )
@@ -1901,10 +1901,12 @@ void GameLogic::logicMessageDispatcher( GameMessage *msg, void *userData )
 			Player *player = ThePlayerList->getNthPlayer(playerIndex);
 			DEBUG_ASSERTCRASH(player != NULL, ("Could not find player for create team message"));
 
-			// TheSuperHackers @tweak Stubbjax 17/08/2025 The local player processes this message in CommandXlat for immediate assignment.
-			if (player && !player->isLocalPlayer())
-				player->processCreateTeamGameMessage(msg->getType() - GameMessage::MSG_CREATE_TEAM0, msg);
+			if (player == NULL)
+			{
+				break;
+			}
 
+			player->processCreateTeamGameMessage(msg->getType() - GameMessage::MSG_CREATE_TEAM0, msg);
 			break;
 		} // end create team command
 

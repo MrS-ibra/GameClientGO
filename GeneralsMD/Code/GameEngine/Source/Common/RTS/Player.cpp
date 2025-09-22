@@ -369,36 +369,54 @@ void Player::init(const PlayerTemplate* pt)
 	m_bombardBattlePlans = 0;
 	m_holdTheLineBattlePlans = 0;
 	m_searchAndDestroyBattlePlans = 0;
-
-	deleteInstance(m_battlePlanBonuses);
-	m_battlePlanBonuses = NULL;
+	if( m_battlePlanBonuses )
+	{
+		deleteInstance(m_battlePlanBonuses);
+		m_battlePlanBonuses = NULL;
+	}
 
 	deleteUpgradeList();
 
 	m_energy.init(this);
 	m_stats.init();
-
-	deleteInstance(m_pBuildList);
-	m_pBuildList = NULL;
-
+	if (m_pBuildList != NULL)
+	{
+		deleteInstance(m_pBuildList);
+		m_pBuildList = NULL;
+	}
 	m_defaultTeam = NULL;
 
-	deleteInstance(m_ai);
+	if (m_ai)
+	{
+		deleteInstance(m_ai);
+	}
 	m_ai = NULL;
 
-	deleteInstance(m_resourceGatheringManager);
-	m_resourceGatheringManager = NULL;
+	if( m_resourceGatheringManager )
+	{
+		deleteInstance(m_resourceGatheringManager);
+		m_resourceGatheringManager = NULL;
+	}
 
 	for (Int i = 0; i < NUM_HOTKEY_SQUADS; ++i) {
-		deleteInstance(m_squads[i]);
+		if (m_squads[i] != NULL) {
+			deleteInstance(m_squads[i]);
+			m_squads[i] = NULL;
+		}
 		m_squads[i] = newInstance(Squad);
 	}
 
-	deleteInstance(m_currentSelection);
+	if (m_currentSelection != NULL) {
+		deleteInstance(m_currentSelection) ;
+		m_currentSelection = NULL;
+	}
 	m_currentSelection = newInstance(Squad);
 
-	deleteInstance(m_tunnelSystem);
-	m_tunnelSystem = NULL;
+	if( m_tunnelSystem )
+	{
+		deleteInstance(m_tunnelSystem);
+		m_tunnelSystem = NULL;
+	}
 
 	m_canBuildBase = true;
 	m_canBuildUnits = true;
@@ -491,7 +509,8 @@ void Player::init(const PlayerTemplate* pt)
 	{
 		KindOfPercentProductionChange *tof = *it;
 		it = m_kindOfPercentProductionChangeList.erase( it );
-		deleteInstance(tof);
+		if(tof)
+			deleteInstance(tof);
 	}
 
 	getAcademyStats()->init( this );
@@ -516,21 +535,25 @@ Player::~Player()
 
 	// delete the relation maps (the destructor clears the actual map if any data is present)
 	deleteInstance(m_teamRelations);
-	m_teamRelations = NULL;
-
 	deleteInstance(m_playerRelations);
-	m_playerRelations = NULL;
 
 	for (Int i = 0; i < NUM_HOTKEY_SQUADS; ++i) {
-		deleteInstance(m_squads[i]);
-		m_squads[i] = NULL;
+		if (m_squads[i] != NULL) {
+			deleteInstance(m_squads[i]);
+			m_squads[i] = NULL;
+		}
 	}
 
-	deleteInstance(m_currentSelection);
-	m_currentSelection = NULL;
+	if (m_currentSelection != NULL) {
+		deleteInstance(m_currentSelection);
+		m_currentSelection = NULL;
+	}
 
-	deleteInstance(m_battlePlanBonuses);
-	m_battlePlanBonuses = NULL;
+	if( m_battlePlanBonuses )
+	{
+		deleteInstance(m_battlePlanBonuses);
+		m_battlePlanBonuses = NULL;
+	}
 }
 
 //=============================================================================
@@ -637,7 +660,10 @@ Bool Player::removeTeamRelationship(const Team *that)
 void Player::setBuildList(BuildListInfo *pBuildList)
 {
 
-	deleteInstance(m_pBuildList);
+	if (m_pBuildList != NULL)
+	{
+		deleteInstance(m_pBuildList);
+	}
 	m_pBuildList = pBuildList;
 
 }
@@ -730,7 +756,10 @@ void Player::setPlayerType(PlayerType t, Bool skirmish)
 {
 	m_playerType = t;
 
-	deleteInstance(m_ai);
+	if (m_ai)
+	{
+		deleteInstance(m_ai);
+	}
 	m_ai = NULL;
 
 	if (t == PLAYER_COMPUTER)
@@ -763,8 +792,11 @@ void Player::setDefaultTeam(void) {
 //=============================================================================
 void Player::deletePlayerAI()
 {
-	deleteInstance(m_ai);
-	m_ai = NULL;
+	if (m_ai)
+	{
+		deleteInstance(m_ai);
+		m_ai = NULL;
+	}
 }
 
 //=============================================================================
@@ -838,10 +870,10 @@ void Player::initFromDict(const Dict* d)
 
 				ScriptList *scripts = TheSidesList->getSkirmishSideInfo(i)->getScriptList()->duplicateAndQualify(
 							qualifier, qualTemplatePlayerName, pname);
-
-				deleteInstance(TheSidesList->getSideInfo(getPlayerIndex())->getScriptList());
+				if (TheSidesList->getSideInfo(getPlayerIndex())->getScriptList()) {
+					deleteInstance(TheSidesList->getSideInfo(getPlayerIndex())->getScriptList());
+				}
 				TheSidesList->getSideInfo(getPlayerIndex())->setScriptList(scripts);
-
 				deleteInstance(TheSidesList->getSkirmishSideInfo(i)->getScriptList());
 				TheSidesList->getSkirmishSideInfo(i)->setScriptList(NULL);
 			}
@@ -890,10 +922,12 @@ void Player::initFromDict(const Dict* d)
 			qualifier.format("%d", m_mpStartIndex);
 			ScriptList *scripts = TheSidesList->getSkirmishSideInfo(skirmishNdx)->getScriptList()->duplicateAndQualify(
 						qualifier, qualTemplatePlayerName, pname);
-
-			deleteInstance(TheSidesList->getSideInfo(getPlayerIndex())->getScriptList());
+			ScriptList* slist = TheSidesList->getSideInfo(getPlayerIndex())->getScriptList();
+			if (slist)
+			{
+				deleteInstance(slist);
+			}
 			TheSidesList->getSideInfo(getPlayerIndex())->setScriptList(scripts);
-
 			for (i=0; i<TheSidesList->getNumTeams(); i++) {
 				if (TheSidesList->getTeamInfo(i)->getDict()->getAsciiString(TheKey_teamOwner) == pname)
 				{
@@ -960,11 +994,18 @@ void Player::initFromDict(const Dict* d)
 			}
 		}
 	}
-
-	deleteInstance(m_resourceGatheringManager);
+	if( m_resourceGatheringManager )
+	{
+		deleteInstance(m_resourceGatheringManager);
+		m_resourceGatheringManager = NULL;
+	}
 	m_resourceGatheringManager = newInstance(ResourceGatheringManager);
 
-	deleteInstance(m_tunnelSystem);
+	if( m_tunnelSystem )
+	{
+		deleteInstance(m_tunnelSystem);
+		m_tunnelSystem = NULL;
+	}
 	m_tunnelSystem = newInstance(TunnelTracker);
 
 	m_handicap.readFromDict(d);
@@ -997,11 +1038,18 @@ void Player::initFromDict(const Dict* d)
 		m_money.deposit(m);
 
 	for ( i = 0; i < NUM_HOTKEY_SQUADS; ++i ) {
-		deleteInstance(m_squads[i]);
+		if (m_squads[i] != NULL)
+		{
+			deleteInstance(m_squads[i]);
+			m_squads[i] = NULL;
+		}
 		m_squads[i] = newInstance( Squad );
 	}
 
-	deleteInstance(m_currentSelection);
+	if (m_currentSelection != NULL) {
+		deleteInstance(m_currentSelection);
+		m_currentSelection = NULL;
+	}
 	m_currentSelection = newInstance( Squad );
 }
 
@@ -3638,7 +3686,7 @@ void Player::applyBattlePlanBonusesForPlayerObjects( const BattlePlanBonuses *bo
 //-------------------------------------------------------------------------------------------------
 /** Create a hotkey team based on this GameMessage */
 //-------------------------------------------------------------------------------------------------
-void Player::processCreateTeamGameMessage(Int hotkeyNum, const GameMessage *msg) {
+void Player::processCreateTeamGameMessage(Int hotkeyNum, GameMessage *msg) {
 	// GameMessage arguments are the object ID's of the objects that are to be in this team.
 
 	if ((hotkeyNum < 0) || (hotkeyNum >= NUM_HOTKEY_SQUADS)) {
@@ -3840,7 +3888,8 @@ void Player::removeKindOfProductionCostChange(	KindOfMaskType kindOf, Real perce
 			if(tof->m_ref == 0)
 			{
 				m_kindOfPercentProductionChangeList.erase( it );
-				deleteInstance(tof);
+				if(tof)
+					deleteInstance(tof);
 			}
 			return;
 		}
@@ -4153,7 +4202,8 @@ void Player::xfer( Xfer *xfer )
 		// destroy any build list that we got from loading the bare bones map, note that deleting
 		// the head of these structures automatically deletes any links attached
 		//
-		deleteInstance(m_pBuildList);
+		if( m_pBuildList)
+			deleteInstance(m_pBuildList);
 		m_pBuildList = NULL;
 
 		// read each build list info
@@ -4492,9 +4542,11 @@ void Player::xfer( Xfer *xfer )
 	xfer->xferBool( &battlePlanBonus ); //If we're loading, it just replaces the bool
 	if( xfer->getXferMode() == XFER_LOAD )
 	{
-		deleteInstance(m_battlePlanBonuses);
-		m_battlePlanBonuses = NULL;
-
+		if (m_battlePlanBonuses)
+		{
+			deleteInstance(m_battlePlanBonuses);
+			m_battlePlanBonuses = NULL;
+		}
 		if ( battlePlanBonus )
 		{
 			m_battlePlanBonuses = newInstance( BattlePlanBonuses );

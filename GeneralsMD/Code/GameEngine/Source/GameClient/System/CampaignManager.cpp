@@ -130,7 +130,8 @@ Campaign::~Campaign( void )
 	{
 		Mission *mission = *it;
 		it = m_missions.erase( it );
-		deleteInstance(mission);
+		if(mission)
+			deleteInstance(mission);
 	}
 }
 
@@ -235,7 +236,8 @@ CampaignManager::~CampaignManager( void )
 	{
 		Campaign *campaign = *it;
 		it = m_campaignList.erase( it );
-		deleteInstance(campaign);
+		if(campaign)
+			deleteInstance(campaign);
 	}
 }
 
@@ -244,7 +246,7 @@ void CampaignManager::init( void )
 {
 	INI ini;
 	// Read from INI all the CampaignManager
-	ini.loadFileDirectory( AsciiString( "Data\\INI\\Campaign" ), INI_LOAD_OVERWRITE, NULL );
+	ini.load( AsciiString( "Data\\INI\\Campaign.ini" ), INI_LOAD_OVERWRITE, NULL );
 }
 
 //-----------------------------------------------------------------------------

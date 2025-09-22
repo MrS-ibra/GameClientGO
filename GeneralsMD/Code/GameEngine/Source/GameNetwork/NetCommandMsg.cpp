@@ -176,10 +176,11 @@ GameMessage *NetGameCommandMsg::constructGameMessage()
 	AsciiString name;
 	name.format("player%d", getPlayerID());
 	retval->friend_setPlayerIndex( ThePlayerList->findPlayerWithNameKey(TheNameKeyGenerator->nameToKey(name))->getPlayerIndex());
+//	retval->friend_setPlayerIndex(indexFromMask(ThePlayerList->findPlayerWithNameKey(TheNameKeyGenerator->nameToKey(name))->getPlayerMask()));
 
 	GameMessageArgument *arg = m_argList;
 	while (arg != NULL) {
-
+//		retval->appendGenericArgument(arg->m_data);
 		switch (arg->m_type) {
 
 		case ARGUMENTDATATYPE_INTEGER:
@@ -216,7 +217,7 @@ GameMessage *NetGameCommandMsg::constructGameMessage()
 			retval->appendWideCharArgument(arg->m_data.wChar);
 			break;
 
-		}
+		} // switch (arg->m_type)
 
 		arg = arg->m_next;
 	}

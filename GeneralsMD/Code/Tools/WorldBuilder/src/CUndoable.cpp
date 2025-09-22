@@ -207,7 +207,7 @@ void WBDocUndoable::Undo(void)
 AddObjectUndoable::~AddObjectUndoable(void)
 {
 	m_pDoc = NULL;  // not ref counted.
-	if (!m_addedToList) {
+	if (m_objectToAdd && !m_addedToList) {
 		deleteInstance(m_objectToAdd);
 		m_objectToAdd=NULL;
 	}
@@ -857,7 +857,7 @@ void DictItemUndoable::Undo(void)
 ***************************************************************************/
 DeleteInfo::~DeleteInfo(void)
 {
-	if (m_didDelete) {
+	if (m_didDelete && m_objectToDelete) {
 		deleteInstance(m_objectToDelete);
 	}
 	DeleteInfo *pCur = m_next;

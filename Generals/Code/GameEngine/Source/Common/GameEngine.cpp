@@ -44,7 +44,6 @@
 #include "Common/ThingFactory.h"
 #include "Common/file.h"
 #include "Common/FileSystem.h"
-#include "Common/FrameRateLimit.h"
 #include "Common/ArchiveFileSystem.h"
 #include "Common/LocalFileSystem.h"
 #include "Common/CDManager.h"
@@ -85,6 +84,7 @@
 #include "GameLogic/SidesList.h"
 
 #include "GameClient/ClientInstance.h"
+#include "GameClient/Display.h"
 #include "GameClient/FXList.h"
 #include "GameClient/GameClient.h"
 #include "GameClient/Keyboard.h"
@@ -158,16 +158,11 @@ SubsystemInterfaceList* TheSubsystemList = NULL;
 
 //-------------------------------------------------------------------------------------------------
 template<class SUBSYSTEM>
-void initSubsystem(
-	SUBSYSTEM*& sysref,
-	AsciiString name,
-	SUBSYSTEM* sys,
-	Xfer *pXfer,
-	const char* path1 = NULL,
-	const char* path2 = NULL)
+void initSubsystem(SUBSYSTEM*& sysref, AsciiString name, SUBSYSTEM* sys, Xfer *pXfer,  const char* path1 = NULL,
+									 const char* path2 = NULL, const char* dirpath = NULL)
 {
 	sysref = sys;
-	TheSubsystemList->initSubsystem(sys, path1, path2, pXfer, name);
+	TheSubsystemList->initSubsystem(sys, path1, path2, dirpath, pXfer, name);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -247,19 +242,21 @@ static void updateWindowTitle()
 }
 
 //-------------------------------------------------------------------------------------------------
+Int GameEngine::getFramesPerSecondLimit( void )
+{
+	return m_maxFPS;
+}
+
+//-------------------------------------------------------------------------------------------------
 GameEngine::GameEngine( void )
 {
 	// Set the time slice size to 1 ms.
 	timeBeginPeriod(1);
 
 	// initialize to non garbage values
-	m_maxFPS = BaseFps;
-	m_logicTimeScaleFPS = LOGICFRAMES_PER_SECOND;
-	m_updateTime = 0.0f;
-	m_logicTimeAccumulator = 0.0f;
+	m_maxFPS = 0;
 	m_quitting = FALSE;
 	m_isActive = FALSE;
-	m_enableLogicTimeScale = FALSE;
 
 	_Module.Init(NULL, ApplicationHInstance, NULL);
 }
@@ -310,91 +307,10 @@ GameEngine::~GameEngine()
 	timeEndPeriod(1);
 }
 
-//-------------------------------------------------------------------------------------------------
 void GameEngine::setFramesPerSecondLimit( Int fps )
 {
 	DEBUG_LOG(("GameEngine::setFramesPerSecondLimit() - setting max fps to %d (TheGlobalData->m_useFpsLimit == %d)", fps, TheGlobalData->m_useFpsLimit));
 	m_maxFPS = fps;
-}
-
-//-------------------------------------------------------------------------------------------------
-Int GameEngine::getFramesPerSecondLimit( void )
-{
-	return m_maxFPS;
-}
-
-//-------------------------------------------------------------------------------------------------
-Real GameEngine::getUpdateTime()
-{
-	return m_updateTime;
-}
-
-//-------------------------------------------------------------------------------------------------
-Real GameEngine::getUpdateFps()
-{
-	return 1.0f / m_updateTime;
-}
-
-//-------------------------------------------------------------------------------------------------
-void GameEngine::setLogicTimeScaleFps( Int fps )
-{
-	m_logicTimeScaleFPS = fps;
-}
-
-//-------------------------------------------------------------------------------------------------
-Int GameEngine::getLogicTimeScaleFps()
-{
-	return m_logicTimeScaleFPS;
-}
-
-//-------------------------------------------------------------------------------------------------
-void GameEngine::enableLogicTimeScale( Bool enable )
-{
-	m_enableLogicTimeScale = enable;
-}
-
-//-------------------------------------------------------------------------------------------------
-Bool GameEngine::isLogicTimeScaleEnabled()
-{
-	return m_enableLogicTimeScale;
-}
-
-//-------------------------------------------------------------------------------------------------
-Int GameEngine::getActualLogicTimeScaleFps( void )
-{
-	if (TheNetwork != NULL)
-	{
-		return TheNetwork->getFrameRate();
-	}
-	else
-	{
-		const Bool enabled = isLogicTimeScaleEnabled();
-		const Int logicTimeScaleFps = getLogicTimeScaleFps();
-		const Int maxFps = getFramesPerSecondLimit();
-
-		if (!enabled || logicTimeScaleFps >= maxFps)
-		{
-			return getFramesPerSecondLimit();
-		}
-		else
-		{
-			return logicTimeScaleFps;
-		}
-	}
-}
-
-//-------------------------------------------------------------------------------------------------
-Real GameEngine::getActualLogicTimeScaleRatio()
-{
-	return (Real)getActualLogicTimeScaleFps() / LOGICFRAMES_PER_SECONDS_REAL;
-}
-
-//-------------------------------------------------------------------------------------------------
-Real GameEngine::getActualLogicTimeScaleOverFpsRatio()
-{
-	// TheSuperHackers @info Clamps ratio to min 1, because the logic
-	// frame rate is (typically) capped by the render frame rate.
-	return min(1.0f, (Real)getActualLogicTimeScaleFps() / getUpdateFps());
 }
 
 /** -----------------------------------------------------------------------------------------------
@@ -419,6 +335,8 @@ void GameEngine::init()
 			DEBUG_LOG(("Build git commit author: %s", Version::getGitCommitAuthorName()));
 			DEBUG_LOG(("================================================================================"));
 		}
+
+		m_maxFPS = DEFAULT_MAX_FPS;
 
 		TheSubsystemList = MSGNEW("GameEngineSubsystem") SubsystemInterfaceList;
 
@@ -445,14 +363,19 @@ void GameEngine::init()
 		initSubsystem(TheArchiveFileSystem, "TheArchiveFileSystem", createArchiveFileSystem(), NULL); // this MUST come after TheLocalFileSystem creation
 
 		DEBUG_ASSERTCRASH(TheWritableGlobalData,("TheWritableGlobalData expected to be created"));
-		initSubsystem(TheWritableGlobalData, "TheWritableGlobalData", TheWritableGlobalData, &xferCRC, "Data\\INI\\Default\\GameData", "Data\\INI\\GameData");
+		initSubsystem(TheWritableGlobalData, "TheWritableGlobalData", TheWritableGlobalData, &xferCRC, "Data\\INI\\Default\\GameData.ini", "Data\\INI\\GameData.ini");
 		TheWritableGlobalData->parseCustomDefinition();
 
+		// TheSuperHackers @bugfix helmutbuhler 14/04/2025
+		// Pump messages during startup to ensure that the application window is correctly
+		// positioned on slower computers and in debug builds by a later call to SetWindowPos.
+		// It is unclear what the issue with SetWindowPos is when it fails to reposition the window.
+		serviceWindowsOS();
 
 
 	#if defined(RTS_DEBUG)
 		// If we're in Debug, load the Debug settings as well.
-		ini.loadFileDirectory( AsciiString( "Data\\INI\\GameDataDebug" ), INI_LOAD_OVERWRITE, NULL );
+		ini.load( AsciiString( "Data\\INI\\GameDataDebug.ini" ), INI_LOAD_OVERWRITE, NULL );
 	#endif
 
 		// special-case: parse command-line parameters after loading global data
@@ -479,18 +402,18 @@ void GameEngine::init()
 	#endif
 
 		// read the water settings from INI (must do prior to initing GameClient, apparently)
-		ini.loadFileDirectory( AsciiString( "Data\\INI\\Default\\Water" ), INI_LOAD_OVERWRITE, &xferCRC );
-		ini.loadFileDirectory( AsciiString( "Data\\INI\\Water" ), INI_LOAD_OVERWRITE, &xferCRC );
+		ini.load( AsciiString( "Data\\INI\\Default\\Water.ini" ), INI_LOAD_OVERWRITE, &xferCRC );
+		ini.load( AsciiString( "Data\\INI\\Water.ini" ), INI_LOAD_OVERWRITE, &xferCRC );
 
 #ifdef DEBUG_CRC
-		initSubsystem(TheDeepCRCSanityCheck, "TheDeepCRCSanityCheck", MSGNEW("GameEngineSubystem") DeepCRCSanityCheck, NULL);
+		initSubsystem(TheDeepCRCSanityCheck, "TheDeepCRCSanityCheck", MSGNEW("GameEngineSubystem") DeepCRCSanityCheck, NULL, NULL, NULL, NULL);
 #endif // DEBUG_CRC
 		initSubsystem(TheGameText, "TheGameText", CreateGameTextInterface(), NULL);
 		updateWindowTitle();
-		initSubsystem(TheScienceStore,"TheScienceStore", MSGNEW("GameEngineSubsystem") ScienceStore(), &xferCRC, "Data\\INI\\Default\\Science", "Data\\INI\\Science");
-		initSubsystem(TheMultiplayerSettings,"TheMultiplayerSettings", MSGNEW("GameEngineSubsystem") MultiplayerSettings(), &xferCRC, "Data\\INI\\Default\\Multiplayer", "Data\\INI\\Multiplayer");
-		initSubsystem(TheTerrainTypes,"TheTerrainTypes", MSGNEW("GameEngineSubsystem") TerrainTypeCollection(), &xferCRC, "Data\\INI\\Default\\Terrain", "Data\\INI\\Terrain");
-		initSubsystem(TheTerrainRoads,"TheTerrainRoads", MSGNEW("GameEngineSubsystem") TerrainRoadCollection(), &xferCRC, "Data\\INI\\Default\\Roads", "Data\\INI\\Roads");
+		initSubsystem(TheScienceStore,"TheScienceStore", MSGNEW("GameEngineSubsystem") ScienceStore(), &xferCRC, "Data\\INI\\Default\\Science.ini", "Data\\INI\\Science.ini");
+		initSubsystem(TheMultiplayerSettings,"TheMultiplayerSettings", MSGNEW("GameEngineSubsystem") MultiplayerSettings(), &xferCRC, "Data\\INI\\Default\\Multiplayer.ini", "Data\\INI\\Multiplayer.ini");
+		initSubsystem(TheTerrainTypes,"TheTerrainTypes", MSGNEW("GameEngineSubsystem") TerrainTypeCollection(), &xferCRC, "Data\\INI\\Default\\Terrain.ini", "Data\\INI\\Terrain.ini");
+		initSubsystem(TheTerrainRoads,"TheTerrainRoads", MSGNEW("GameEngineSubsystem") TerrainRoadCollection(), &xferCRC, "Data\\INI\\Default\\Roads.ini", "Data\\INI\\Roads.ini");
 		initSubsystem(TheGlobalLanguageData,"TheGlobalLanguageData",MSGNEW("GameEngineSubsystem") GlobalLanguage, NULL); // must be before the game text
 		initSubsystem(TheCDManager,"TheCDManager", CreateCDManager(), NULL);
 		initSubsystem(TheAudio,"TheAudio", TheGlobalData->m_headless ? NEW AudioManagerDummy : createAudioManager(), NULL);
@@ -501,46 +424,46 @@ void GameEngine::init()
 		initSubsystem(TheMessageStream,"TheMessageStream", createMessageStream(), NULL);
 		initSubsystem(TheSidesList,"TheSidesList", MSGNEW("GameEngineSubsystem") SidesList(), NULL);
 		initSubsystem(TheCaveSystem,"TheCaveSystem", MSGNEW("GameEngineSubsystem") CaveSystem(), NULL);
-		initSubsystem(TheRankInfoStore,"TheRankInfoStore", MSGNEW("GameEngineSubsystem") RankInfoStore(), &xferCRC, NULL, "Data\\INI\\Rank");
-		initSubsystem(ThePlayerTemplateStore,"ThePlayerTemplateStore", MSGNEW("GameEngineSubsystem") PlayerTemplateStore(), &xferCRC, "Data\\INI\\Default\\PlayerTemplate", "Data\\INI\\PlayerTemplate");
+		initSubsystem(TheRankInfoStore,"TheRankInfoStore", MSGNEW("GameEngineSubsystem") RankInfoStore(), &xferCRC, NULL, "Data\\INI\\Rank.ini");
+		initSubsystem(ThePlayerTemplateStore,"ThePlayerTemplateStore", MSGNEW("GameEngineSubsystem") PlayerTemplateStore(), &xferCRC, "Data\\INI\\Default\\PlayerTemplate.ini", "Data\\INI\\PlayerTemplate.ini");
 		initSubsystem(TheParticleSystemManager,"TheParticleSystemManager", createParticleSystemManager(), NULL);
-		initSubsystem(TheFXListStore,"TheFXListStore", MSGNEW("GameEngineSubsystem") FXListStore(), &xferCRC, "Data\\INI\\Default\\FXList", "Data\\INI\\FXList");
-		initSubsystem(TheWeaponStore,"TheWeaponStore", MSGNEW("GameEngineSubsystem") WeaponStore(), &xferCRC, NULL, "Data\\INI\\Weapon");
-		initSubsystem(TheObjectCreationListStore,"TheObjectCreationListStore", MSGNEW("GameEngineSubsystem") ObjectCreationListStore(), &xferCRC, "Data\\INI\\Default\\ObjectCreationList", "Data\\INI\\ObjectCreationList");
-		initSubsystem(TheLocomotorStore,"TheLocomotorStore", MSGNEW("GameEngineSubsystem") LocomotorStore(), &xferCRC, NULL, "Data\\INI\\Locomotor");
-		initSubsystem(TheSpecialPowerStore,"TheSpecialPowerStore", MSGNEW("GameEngineSubsystem") SpecialPowerStore(), &xferCRC, "Data\\INI\\Default\\SpecialPower", "Data\\INI\\SpecialPower");
-		initSubsystem(TheDamageFXStore,"TheDamageFXStore", MSGNEW("GameEngineSubsystem") DamageFXStore(), &xferCRC, NULL, "Data\\INI\\DamageFX");
-		initSubsystem(TheArmorStore,"TheArmorStore", MSGNEW("GameEngineSubsystem") ArmorStore(), &xferCRC, NULL, "Data\\INI\\Armor");
+		initSubsystem(TheFXListStore,"TheFXListStore", MSGNEW("GameEngineSubsystem") FXListStore(), &xferCRC, "Data\\INI\\Default\\FXList.ini", "Data\\INI\\FXList.ini");
+		initSubsystem(TheWeaponStore,"TheWeaponStore", MSGNEW("GameEngineSubsystem") WeaponStore(), &xferCRC, NULL, "Data\\INI\\Weapon.ini");
+		initSubsystem(TheObjectCreationListStore,"TheObjectCreationListStore", MSGNEW("GameEngineSubsystem") ObjectCreationListStore(), &xferCRC, "Data\\INI\\Default\\ObjectCreationList.ini", "Data\\INI\\ObjectCreationList.ini");
+		initSubsystem(TheLocomotorStore,"TheLocomotorStore", MSGNEW("GameEngineSubsystem") LocomotorStore(), &xferCRC, NULL, "Data\\INI\\Locomotor.ini");
+		initSubsystem(TheSpecialPowerStore,"TheSpecialPowerStore", MSGNEW("GameEngineSubsystem") SpecialPowerStore(), &xferCRC, "Data\\INI\\Default\\SpecialPower.ini", "Data\\INI\\SpecialPower.ini");
+		initSubsystem(TheDamageFXStore,"TheDamageFXStore", MSGNEW("GameEngineSubsystem") DamageFXStore(), &xferCRC, NULL, "Data\\INI\\DamageFX.ini");
+		initSubsystem(TheArmorStore,"TheArmorStore", MSGNEW("GameEngineSubsystem") ArmorStore(), &xferCRC, NULL, "Data\\INI\\Armor.ini");
 		initSubsystem(TheBuildAssistant,"TheBuildAssistant", MSGNEW("GameEngineSubsystem") BuildAssistant, NULL);
-		initSubsystem(TheThingFactory,"TheThingFactory", createThingFactory(), &xferCRC, "Data\\INI\\Default\\Object", "Data\\INI\\Object");
-		initSubsystem(TheUpgradeCenter,"TheUpgradeCenter", MSGNEW("GameEngineSubsystem") UpgradeCenter, &xferCRC, "Data\\INI\\Default\\Upgrade", "Data\\INI\\Upgrade");
+		initSubsystem(TheThingFactory,"TheThingFactory", createThingFactory(), &xferCRC, "Data\\INI\\Default\\Object.ini", NULL, "Data\\INI\\Object");
+		initSubsystem(TheUpgradeCenter,"TheUpgradeCenter", MSGNEW("GameEngineSubsystem") UpgradeCenter, &xferCRC, "Data\\INI\\Default\\Upgrade.ini", "Data\\INI\\Upgrade.ini");
 		initSubsystem(TheGameClient,"TheGameClient", createGameClient(), NULL);
-		initSubsystem(TheAI,"TheAI", MSGNEW("GameEngineSubsystem") AI(), &xferCRC,  "Data\\INI\\Default\\AIData", "Data\\INI\\AIData");
+		initSubsystem(TheAI,"TheAI", MSGNEW("GameEngineSubsystem") AI(), &xferCRC,  "Data\\INI\\Default\\AIData.ini", "Data\\INI\\AIData.ini");
 		initSubsystem(TheGameLogic,"TheGameLogic", createGameLogic(), NULL);
 		initSubsystem(TheTeamFactory,"TheTeamFactory", MSGNEW("GameEngineSubsystem") TeamFactory(), NULL);
-		initSubsystem(TheCrateSystem,"TheCrateSystem", MSGNEW("GameEngineSubsystem") CrateSystem(), &xferCRC, "Data\\INI\\Default\\Crate", "Data\\INI\\Crate");
+		initSubsystem(TheCrateSystem,"TheCrateSystem", MSGNEW("GameEngineSubsystem") CrateSystem(), &xferCRC, "Data\\INI\\Default\\Crate.ini", "Data\\INI\\Crate.ini");
 		initSubsystem(ThePlayerList,"ThePlayerList", MSGNEW("GameEngineSubsystem") PlayerList(), NULL);
 		initSubsystem(TheRecorder,"TheRecorder", createRecorder(), NULL);
 		initSubsystem(TheRadar,"TheRadar", TheGlobalData->m_headless ? NEW RadarDummy : createRadar(), NULL);
 		initSubsystem(TheVictoryConditions,"TheVictoryConditions", createVictoryConditions(), NULL);
 
 		AsciiString fname;
-		fname.format("Data\\%s\\CommandMap", GetRegistryLanguage().str());
-		initSubsystem(TheMetaMap,"TheMetaMap", MSGNEW("GameEngineSubsystem") MetaMap(), NULL, fname.str(), "Data\\INI\\CommandMap");
+		fname.format("Data\\%s\\CommandMap.ini", GetRegistryLanguage().str());
+		initSubsystem(TheMetaMap,"TheMetaMap", MSGNEW("GameEngineSubsystem") MetaMap(), NULL, fname.str(), "Data\\INI\\CommandMap.ini");
 
 		TheMetaMap->generateMetaMap();
 
 #if defined(RTS_DEBUG)
-		ini.loadFileDirectory("Data\\INI\\CommandMapDebug", INI_LOAD_MULTIFILE, NULL);
+		ini.load("Data\\INI\\CommandMapDebug.ini", INI_LOAD_MULTIFILE, NULL);
 #endif
 
 		initSubsystem(TheActionManager,"TheActionManager", MSGNEW("GameEngineSubsystem") ActionManager(), NULL);
 		//initSubsystem((CComObject<WebBrowser> *)TheWebBrowser,"(CComObject<WebBrowser> *)TheWebBrowser", (CComObject<WebBrowser> *)createWebBrowser(), NULL);
-		initSubsystem(TheGameStateMap,"TheGameStateMap", MSGNEW("GameEngineSubsystem") GameStateMap, NULL );
-		initSubsystem(TheGameState,"TheGameState", MSGNEW("GameEngineSubsystem") GameState, NULL );
+		initSubsystem(TheGameStateMap,"TheGameStateMap", MSGNEW("GameEngineSubsystem") GameStateMap, NULL, NULL, NULL );
+		initSubsystem(TheGameState,"TheGameState", MSGNEW("GameEngineSubsystem") GameState, NULL, NULL, NULL );
 
 		// Create the interface for sending game results
-		initSubsystem(TheGameResultsQueue,"TheGameResultsQueue", GameResultsInterface::createNewGameResultsInterface(), NULL);
+		initSubsystem(TheGameResultsQueue,"TheGameResultsQueue", GameResultsInterface::createNewGameResultsInterface(), NULL, NULL, NULL, NULL);
 
 		xferCRC.close();
 		TheWritableGlobalData->m_iniCRC = xferCRC.getCRC();
@@ -732,49 +655,9 @@ void GameEngine::update( void )
 
 		TheGameLogic->preUpdate();
 
-		if (TheNetwork != NULL)
+		if ((TheNetwork == NULL && !TheGameLogic->isGamePaused()) || (TheNetwork && TheNetwork->isFrameDataReady()))
 		{
-			if (TheNetwork->isFrameDataReady())
-			{
-				TheGameClient->step();
-				TheGameLogic->UPDATE();
-			}
-		}
-		else
-		{
-			if (!TheGameLogic->isGamePaused())
-			{
-				const Bool enabled = isLogicTimeScaleEnabled();
-				const Int logicTimeScaleFps = getLogicTimeScaleFps();
-				const Int maxRenderFps = getFramesPerSecondLimit();
-
-#if defined(_ALLOW_DEBUG_CHEATS_IN_RELEASE)
-				Bool useFastMode = TheGlobalData->m_TiVOFastMode;
-#else	//always allow this cheat key if we're in a replay game.
-				Bool useFastMode = TheGlobalData->m_TiVOFastMode && TheGameLogic->isInReplayGame();
-#endif
-
-				if (useFastMode || !enabled || logicTimeScaleFps >= maxRenderFps)
-				{
-					// Logic time scale is uncapped or larger equal Render FPS. Update straight away.
-					TheGameClient->step();
-					TheGameLogic->UPDATE();
-				}
-				else
-				{
-					// TheSuperHackers @tweak xezon 06/08/2025
-					// The logic time step is now decoupled from the render update.
-					const Real targetFrameTime = 1.0f / logicTimeScaleFps;
-					m_logicTimeAccumulator += min(m_updateTime, targetFrameTime);
-
-					if (m_logicTimeAccumulator >= targetFrameTime)
-					{
-						m_logicTimeAccumulator -= targetFrameTime;
-						TheGameClient->step();
-						TheGameLogic->UPDATE();
-					}
-				}
-			}
+			TheGameLogic->UPDATE();
 		}
 
 	}	// end perfGather
@@ -790,8 +673,8 @@ extern HWND ApplicationHWnd;
  */
 void GameEngine::execute( void )
 {
-	FrameRateLimit* frameRateLimit = new FrameRateLimit();
 
+	DWORD prevTime = timeGetTime();
 #if defined(RTS_DEBUG)
 	DWORD startTime = timeGetTime() / 1000;
 #endif
@@ -861,31 +744,39 @@ void GameEngine::execute( void )
 			}	// perf
 
 			{
-				{
-					Bool allowFpsLimit = TheTacticalView->getTimeMultiplier()<=1 && !TheScriptEngine->isTimeFast();
 
-		// I'm disabling this in debug because many people need alt-tab capability.  If you happen to be
+				if (TheTacticalView->getTimeMultiplier()<=1 && !TheScriptEngine->isTimeFast())
+				{
+
+		// I'm disabling this in internal because many people need alt-tab capability.  If you happen to be
 		// doing performance tuning, please just change this on your local system. -MDC
 		#if defined(RTS_DEBUG)
-					if (allowFpsLimit)
-						::Sleep(1); // give everyone else a tiny time slice.
+					::Sleep(1); // give everyone else a tiny time slice.
 		#endif
 
 
 		#if defined(_ALLOW_DEBUG_CHEATS_IN_RELEASE)
-					allowFpsLimit &= !(!TheGameLogic->isGamePaused() && TheGlobalData->m_TiVOFastMode);
-		#else	//always allow this cheat key if we're in a replay game.
-					allowFpsLimit &= !(!TheGameLogic->isGamePaused() && TheGlobalData->m_TiVOFastMode && TheGameLogic->isInReplayGame());
+          if ( ! TheGlobalData->m_TiVOFastMode )
+		#else	//always allow this cheatkey if we're in a replaygame.
+		  if ( ! (TheGlobalData->m_TiVOFastMode && TheGameLogic->isInReplayGame()))
 		#endif
-					{
-						// TheSuperHackers @bugfix xezon 05/08/2025 Re-implements the frame rate limiter
-						// with higher resolution counters to cap the frame rate more accurately to the desired limit.
-						allowFpsLimit &= TheGlobalData->m_useFpsLimit;
-						const UnsignedInt maxFps = allowFpsLimit ? getFramesPerSecondLimit() : RenderFpsPreset::UncappedFpsValue;
-						m_updateTime = frameRateLimit->wait(maxFps);
-					}
+          {
+            // limit the framerate
+					  DWORD now = timeGetTime();
+					  DWORD limit = (1000.0f/m_maxFPS)-1;
+					  while (TheGlobalData->m_useFpsLimit && (now - prevTime) < limit)
+					  {
+						  ::Sleep(0);
+						  now = timeGetTime();
+					  }
+					  //Int slept = now - prevTime;
+					  //DEBUG_LOG(("delayed %d",slept));
 
-				}
+					  prevTime = now;
+
+          }
+
+        }
 			}
 
 		}	// perfgather for execute_loop
@@ -901,7 +792,6 @@ void GameEngine::execute( void )
 
 	}
 
-	delete frameRateLimit;
 }
 
 /** -----------------------------------------------------------------------------------------------

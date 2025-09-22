@@ -34,7 +34,6 @@
 #include "Common/GameEngine.h"
 #include "Common/GlobalData.h"
 #include "Common/INI.h"
-#include "Common/UserPreferences.h"
 
 #include "GameClient/Display.h"
 #include "GameClient/DisplayStringManager.h"
@@ -46,34 +45,19 @@
 #include "GameClient/Mouse.h"
 #include "GameClient/GlobalLanguage.h"
 
-#include "GameLogic/GameLogic.h"
 #include "GameLogic/ScriptEngine.h"
 
 
 // PUBLIC DATA ////////////////////////////////////////////////////////////////////////////////////
 Mouse *TheMouse = NULL;
 
-const char* const TheCursorCaptureModeNames[] = {
-	"None",
-	"InGame",
-	"Always",
-	"Auto",
-};
-static_assert(ARRAY_SIZE(TheCursorCaptureModeNames) == CursorCaptureMode_Count, "Incorrect array size");
-
-const char *const Mouse::RedrawModeName[] = {
+const char *Mouse::RedrawModeName[RM_MAX] = {
 	"Mouse:Windows",
 	"Mouse:W3D",
 	"Mouse:Poly",
 	"Mouse:DX8",
 };
 
-const char *const Mouse::CursorCaptureBlockReasonNames[] = {
-	"CursorCaptureBlockReason_NoInit",
-	"CursorCaptureBlockReason_NoGame",
-	"CursorCaptureBlockReason_Paused",
-	"CursorCaptureBlockReason_Unfocused",
-};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // PRIVATE DATA ///////////////////////////////////////////////////////////////////////////////////
@@ -459,9 +443,6 @@ CursorInfo::CursorInfo( void )
 //-------------------------------------------------------------------------------------------------
 Mouse::Mouse( void )
 {
-	static_assert(ARRAY_SIZE(CursorCaptureBlockReasonNames) == CursorCaptureBlockReason_Count, "Incorrect array size");
-	static_assert(ARRAY_SIZE(RedrawModeName) == RM_MAX, "Incorrect array size");
-
 	// device info
 	m_numButtons = 0;
 	m_numAxes = 0;
@@ -500,7 +481,6 @@ Mouse::Mouse( void )
 	else
 		m_currentRedrawMode = RM_W3D;//RM_WINDOWS;
 	m_visible = FALSE;
-	m_isCursorCaptured = FALSE;
 	m_tooltipFontName = "Times New Roman";
 	m_tooltipFontSize = 12;
 	m_tooltipFontIsBold = FALSE;
@@ -550,11 +530,6 @@ Mouse::Mouse( void )
 	m_tooltipBackColor.blue = 0;
 	m_tooltipBackColor.alpha = 255;
 
-	m_cursorCaptureMode = CursorCaptureMode_Default;
-
-	m_captureBlockReasonBits = (1 << CursorCaptureBlockReason_NoInit) | (1 << CursorCaptureBlockReason_NoGame);
-	DEBUG_LOG(("Mouse::Mouse: m_blockCaptureReason=CursorCaptureBlockReason_NoInit|CursorCaptureBlockReason_NoGame"));
-
 }  // end Mouse
 
 //-------------------------------------------------------------------------------------------------
@@ -576,7 +551,7 @@ the Win32 version of the mouse (by preloading resources before D3D device is cre
 void Mouse::parseIni(void)
 {
 	INI ini;
-	ini.loadFileDirectory( AsciiString( "Data\\INI\\Mouse" ), INI_LOAD_OVERWRITE, NULL );
+	ini.load( AsciiString( "Data\\INI\\Mouse.ini" ), INI_LOAD_OVERWRITE, NULL );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -616,8 +591,6 @@ void Mouse::init( void )
  	// allocate a new display string
 	m_cursorTextDisplayString = TheDisplayStringManager->newDisplayString();
 
-	initCapture();
-
 }  // end init
 
 //-------------------------------------------------------------------------------------------------
@@ -650,34 +623,6 @@ void Mouse::mouseNotifyResolutionChange( void )
 
 }  // end reset
 
-//-------------------------------------------------------------------------------------------------
-void Mouse::onGameModeChanged(GameMode prev, GameMode next)
-{
-	const Bool wasInteractiveGame = GameLogic::isInInteractiveGame(prev);
-	const Bool isInteractiveGame = GameLogic::isInInteractiveGame(next);
-
-	if (wasInteractiveGame && !isInteractiveGame)
-	{
-		blockCapture(CursorCaptureBlockReason_NoGame);
-	}
-	else if (!wasInteractiveGame && isInteractiveGame)
-	{
-		unblockCapture(CursorCaptureBlockReason_NoGame);
-	}
-}
-
-//-------------------------------------------------------------------------------------------------
-void Mouse::onGamePaused(Bool paused)
-{
-	if (paused)
-	{
-		blockCapture(CursorCaptureBlockReason_Paused);
-	}
-	else
-	{
-		unblockCapture(CursorCaptureBlockReason_Paused);
-	}
-}
 
 //-------------------------------------------------------------------------------------------------
 /** Reset mouse system */
@@ -690,8 +635,6 @@ void Mouse::reset( void )
 	// reset the text of the cursor text
   if ( m_cursorTextDisplayString )
   	m_cursorTextDisplayString->reset();
-
-	blockCapture(CursorCaptureBlockReason_NoInit);
 
 }  // end reset
 
@@ -993,11 +936,11 @@ void Mouse::setPosition( Int x, Int y )
 }  // end setPosition
 
 //-------------------------------------------------------------------------------------------------
-/** This default implementation of SetMouseLimits will just set the limiting
+/** This default implemtation of SetMouseLimits will just set the limiting
 	* rectangle to be the width and height of the game display with the
 	* origin in the upper left at (0,0).  However, if the game is running
 	* in a windowed mode then these limits should reflect the SCREEN
-	* coordinates that the mouse is allowed to move in.  Also, if the game is in
+	* coords that the mouse is allowed to move in.  Also, if the game is in
 	* a window you may want to adjust for any title bar available in
 	* the operating system.  For system specific limits and windows etc,
 	* just override this function in the device implementation of the mouse */
@@ -1016,120 +959,6 @@ void Mouse::setMouseLimits( void )
 	}  // end if
 
 }  // end setMouseLimits
-
-// ------------------------------------------------------------------------------------------------
-void Mouse::setCursorCaptureMode(CursorCaptureMode mode)
-{
-	if (m_cursorCaptureMode != mode)
-	{
-		m_cursorCaptureMode = mode;
-		refreshCursorCapture();
-	}
-}
-
-// ------------------------------------------------------------------------------------------------
-void Mouse::refreshCursorCapture()
-{
-	if (canCapture())
-	{
-		capture();
-	}
-	else
-	{
-		releaseCapture();
-	}
-}
-
-// ------------------------------------------------------------------------------------------------
-Bool Mouse::isCursorCaptured()
-{
-	return m_isCursorCaptured;
-}
-
-// ------------------------------------------------------------------------------------------------
-void Mouse::loseFocus()
-{
-	// Free the cursor when losing window focus.
-	blockCapture(CursorCaptureBlockReason_Unfocused);
-}
-
-// ------------------------------------------------------------------------------------------------
-void Mouse::regainFocus()
-{
-	// Recapture the cursor when returning from desktop.
-	unblockCapture(CursorCaptureBlockReason_Unfocused);
-}
-
-// ------------------------------------------------------------------------------------------------
-void Mouse::initCapture()
-{
-	OptionPreferences prefs;
-	m_cursorCaptureMode = prefs.getCursorCaptureMode();
-
-	unblockCapture(CursorCaptureBlockReason_NoInit);
-}
-
-// ------------------------------------------------------------------------------------------------
-Bool Mouse::canCapture() const
-{
-	CONSTEXPR const CursorCaptureBlockReasonInt noGameBits = CursorCaptureBlockReason_NoGame | CursorCaptureBlockReason_Paused;
-
-	switch (m_cursorCaptureMode)
-	{
-	case CursorCaptureMode_None:
-		return false;
-	case CursorCaptureMode_InGame:
-		return (m_captureBlockReasonBits == 0);
-	case CursorCaptureMode_Always:
-		return (m_captureBlockReasonBits & ~noGameBits) == 0;
-	case CursorCaptureMode_Auto:
-	default:
-		if (TheDisplay == NULL || TheDisplay->getWindowed())
-			return (m_captureBlockReasonBits == 0);
-		else
-			return (m_captureBlockReasonBits & ~noGameBits) == 0;
-	}
-}
-
-// ------------------------------------------------------------------------------------------------
-void Mouse::unblockCapture(CursorCaptureBlockReason reason)
-{
-	Bool canCaptureBefore = canCapture();
-	m_captureBlockReasonBits &= ~(1 << reason);
-	Bool canCaptureNow = canCapture();
-
-	if (canCaptureNow != canCaptureBefore)
-	{
-		DEBUG_ASSERTCRASH(canCaptureNow, ("Mouse::unblockCapture(%s): Unexpected logic", CursorCaptureBlockReasonNames[reason]));
-		capture();
-	}
-
-	DEBUG_LOG(("Mouse::unblockCapture(%s): m_captureBlockReason=%u canCapture=%d",
-		CursorCaptureBlockReasonNames[reason], m_captureBlockReasonBits, (Int)canCapture()));
-}
-
-// ------------------------------------------------------------------------------------------------
-void Mouse::blockCapture(CursorCaptureBlockReason reason)
-{
-	Bool canCaptureBefore = canCapture();
-	m_captureBlockReasonBits |= (1 << reason);
-	Bool canCaptureNow = canCapture();
-
-	if (canCaptureNow != canCaptureBefore)
-	{
-		DEBUG_ASSERTCRASH(!canCaptureNow, ("Mouse::blockCapture(%s): Unexpected logic", CursorCaptureBlockReasonNames[reason]));
-		releaseCapture();
-	}
-
-	DEBUG_LOG(("Mouse::blockCapture(%s): m_captureBlockReason=%u canCapture=%d",
-		CursorCaptureBlockReasonNames[reason], m_captureBlockReasonBits, (Int)canCapture()));
-}
-
-// ------------------------------------------------------------------------------------------------
-void Mouse::onCursorCaptured( Bool captured )
-{
-	m_isCursorCaptured = captured;
-}
 
 //-------------------------------------------------------------------------------------------------
 /** Draw the mouse */

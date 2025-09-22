@@ -215,11 +215,14 @@ m_firstScript(NULL)
 */
 ScriptList::~ScriptList(void)
 {
-	deleteInstance(m_firstGroup);
-	m_firstGroup = NULL;
-
-	deleteInstance(m_firstScript);
-	m_firstScript = NULL;
+	if (m_firstGroup) {
+		deleteInstance(m_firstGroup);
+		m_firstGroup = NULL;
+	}
+	if (m_firstScript) {
+		deleteInstance(m_firstScript);
+		m_firstScript = NULL;
+	}
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -523,8 +526,10 @@ Bool ScriptList::ParseScriptsDataChunk(DataChunkInput &file, DataChunkInfo *info
 	file.registerParser( AsciiString("ScriptList"), info->label, ScriptList::ParseScriptListDataChunk );
 	DEBUG_ASSERTCRASH(s_numInReadList==0, ("Leftover scripts floating aroung."));
 	for (i=0; i<s_numInReadList; i++) {
-		deleteInstance(s_readLists[i]);
-		s_readLists[i] = NULL;
+		if (s_readLists[i]) {
+			deleteInstance(s_readLists[i]);
+			s_readLists[i] = NULL;
+		}
 	}
 	TScriptListReadInfo readInfo;
 	for (i=0; i<MAX_PLAYER_COUNT; i++) {
@@ -644,10 +649,11 @@ m_nextGroup(NULL)
 */
 ScriptGroup::~ScriptGroup(void)
 {
-	// Delete the first script.  m_firstScript deletes the entire list.
-	deleteInstance(m_firstScript);
-	m_firstScript = NULL;
-
+	if (m_firstScript) {
+		// Delete the first script.  m_firstScript deletes the entire list.
+		deleteInstance(m_firstScript);
+		m_firstScript = NULL;
+	}
 	if (m_nextGroup) {
 		// Delete all the subsequent groups in our list.
 		ScriptGroup *cur = m_nextGroup;
@@ -928,10 +934,16 @@ Script::~Script(void)
 			cur = next;
 		}
 	}
+	if (m_condition) {
+		deleteInstance(m_condition);
+	}
+	if (m_action) {
+		deleteInstance(m_action);
+	}
 
-	deleteInstance(m_condition);
-	deleteInstance(m_action);
-	deleteInstance(m_actionFalse);
+	if (m_actionFalse) {
+		deleteInstance(m_actionFalse);
+	}
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -978,7 +990,12 @@ void Script::loadPostProcess( void )
 Script *Script::duplicate(void) const
 {
 	Script *pNew = newInstance(Script);
-
+	if (pNew->m_condition) {
+		deleteInstance(pNew->m_condition);
+	}
+	if (pNew->m_action) {
+		deleteInstance(pNew->m_action);
+	}
 	pNew->m_scriptName = m_scriptName;
 	pNew->m_comment = m_comment;
 	pNew->m_conditionComment = m_conditionComment;
@@ -990,7 +1007,6 @@ Script *Script::duplicate(void) const
 	pNew->m_normal = m_normal;
 	pNew->m_hard = m_hard;
 	pNew->m_delayEvaluationSeconds = m_delayEvaluationSeconds;
-
 	if (m_condition) {
 		pNew->m_condition = m_condition->duplicate();
 	}
@@ -1013,7 +1029,12 @@ Script *Script::duplicateAndQualify(const AsciiString& qualifier,
 			const AsciiString& playerTemplateName, const AsciiString& newPlayerName) const
 {
 	Script *pNew = newInstance(Script);
-
+	if (pNew->m_condition) {
+		deleteInstance(pNew->m_condition);
+	}
+	if (pNew->m_action) {
+		deleteInstance(pNew->m_action);
+	}
 	pNew->m_scriptName = m_scriptName;
 	pNew->m_scriptName.concat(qualifier);
 	pNew->m_comment = m_comment;
@@ -1026,7 +1047,6 @@ Script *Script::duplicateAndQualify(const AsciiString& qualifier,
 	pNew->m_normal = m_normal;
 	pNew->m_hard = m_hard;
 	pNew->m_delayEvaluationSeconds = m_delayEvaluationSeconds;
-
 	if (m_condition) {
 		pNew->m_condition = m_condition->duplicateAndQualify(qualifier, playerTemplateName, newPlayerName);
 	}
@@ -1058,16 +1078,19 @@ void Script::updateFrom(Script *pSrc)
 	this->m_easy = pSrc->m_easy;
 	this->m_normal = pSrc->m_normal;
 	this->m_hard = pSrc->m_hard;
-
-	deleteInstance(this->m_condition);
+	if (this->m_condition) {
+		deleteInstance(this->m_condition);
+	}
 	this->m_condition = pSrc->m_condition;
 	pSrc->m_condition = NULL;
-
-	deleteInstance(this->m_action);
+	if (this->m_action) {
+		deleteInstance(this->m_action);
+	}
 	this->m_action = pSrc->m_action;
 	pSrc->m_action = NULL;
-
-	deleteInstance(this->m_actionFalse);
+	if (this->m_actionFalse) {
+		deleteInstance(this->m_actionFalse);
+	}
 	this->m_actionFalse = pSrc->m_actionFalse;
 	pSrc->m_actionFalse = NULL;
 }
@@ -1315,9 +1338,10 @@ OrCondition *Script::findPreviousOrCondition( OrCondition *curOr )
 //-------------------------------------------------------------------------------------------------
 OrCondition::~OrCondition(void)
 {
-	deleteInstance(m_firstAnd);
-	m_firstAnd = NULL;
-
+	if (m_firstAnd) {
+		deleteInstance(m_firstAnd);
+		m_firstAnd = NULL;
+	}
 	if (m_nextOr) {
 		OrCondition *cur = m_nextOr;
 		OrCondition *next;
@@ -1502,7 +1526,8 @@ void Condition::setConditionType(enum ConditionType type)
 {
 	Int i;
 	for (i=0; i<m_numParms; i++) {
-		deleteInstance(m_parms[i]);
+		if (m_parms[i])
+			deleteInstance(m_parms[i]);
 		m_parms[i] = NULL;
 	}
 	m_conditionType = type;
@@ -2192,7 +2217,8 @@ void ScriptAction::setActionType(enum ScriptActionType type)
 {
 	Int i;
 	for (i=0; i<m_numParms; i++) {
-		deleteInstance(m_parms[i]);
+		if (m_parms[i])
+			deleteInstance(m_parms[i]);
 		m_parms[i] = NULL;
 	}
 	m_actionType = type;

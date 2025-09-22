@@ -64,7 +64,6 @@
 #include "GameLogic/Weapon.h"
 
 #include "GameClient/Anim2D.h"
-#include "GameClient/ControlBar.h"
 #include "GameClient/Display.h"
 #include "GameClient/DisplayStringManager.h"
 #include "GameClient/Drawable.h"
@@ -79,7 +78,6 @@
 #include "GameClient/GameText.h"
 
 #include "../NextGenMP_defines.h"
-#include "ww3d.h"
 
 //#define KRIS_BRUTAL_HACK_FOR_AIRCRAFT_CARRIER_DEBUGGING
 #ifdef KRIS_BRUTAL_HACK_FOR_AIRCRAFT_CARRIER_DEBUGGING
@@ -160,7 +158,8 @@ void DrawableIconInfo::clear()
 {
 	for (int i = 0; i < MAX_ICONS; ++i)
 	{
-		deleteInstance(m_icon[i]);
+		if (m_icon[i])
+			deleteInstance(m_icon[i]);
 		m_icon[i] = NULL;
 		m_keepTillFrame[i] = 0;
 	}
@@ -555,9 +554,11 @@ Drawable::~Drawable()
 	}
 
 	stopAmbientSound();
-
-	deleteInstance(m_ambientSound);
-	m_ambientSound = NULL;
+	if (m_ambientSound)
+	{
+		deleteInstance(m_ambientSound);
+		m_ambientSound = NULL;
+	}
 
   clearCustomSoundAmbient( false );
 
@@ -569,17 +570,20 @@ Drawable::~Drawable()
 	m_object = NULL;
 
 	// delete any icons present
-	deleteInstance(m_iconInfo);
-	m_iconInfo = NULL;
+	if (m_iconInfo)
+		deleteInstance(m_iconInfo);
 
-	deleteInstance(m_selectionFlashEnvelope);
-	m_selectionFlashEnvelope = NULL;
+	if (m_selectionFlashEnvelope)
+		deleteInstance(m_selectionFlashEnvelope);
 
-	deleteInstance(m_colorTintEnvelope);
-	m_colorTintEnvelope = NULL;
+	if (m_colorTintEnvelope)
+		deleteInstance(m_colorTintEnvelope);
 
-	deleteInstance(m_locoInfo);
-	m_locoInfo = NULL;
+	if (m_locoInfo)
+	{
+		deleteInstance(m_locoInfo);
+		m_locoInfo = NULL;
+	}
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -2762,7 +2766,7 @@ Bool Drawable::drawsAnyUIText( void )
 		return FALSE;
 
 	const Object *obj = getObject();
-	if ( !obj || obj->getControllingPlayer() != TheControlBar->getCurrentlyViewedPlayer())
+	if ( !obj || !obj->isLocallyControlled() )
 		return FALSE;
 
 	Player *owner = obj->getControllingPlayer();
@@ -2915,7 +2919,7 @@ void Drawable::drawAmmo( const IRegion2D *healthBarRegion )
 	if (!(
 				TheGlobalData->m_showObjectHealth &&
 				(isSelected() || (TheInGameUI && (TheInGameUI->getMousedOverDrawableID() == getID()))) &&
-				obj->getControllingPlayer() == TheControlBar->getCurrentlyViewedPlayer()
+				obj->getControllingPlayer() == ThePlayerList->getLocalPlayer()
 			))
 		return;
 
@@ -2973,7 +2977,7 @@ void Drawable::drawContained( const IRegion2D *healthBarRegion )
 	if (!(
 				TheGlobalData->m_showObjectHealth &&
 				(isSelected() || (TheInGameUI && (TheInGameUI->getMousedOverDrawableID() == getID()))) &&
-				obj->getControllingPlayer() == TheControlBar->getCurrentlyViewedPlayer()
+				obj->getControllingPlayer() == ThePlayerList->getLocalPlayer()
 			))
 		return;
 
@@ -3491,7 +3495,7 @@ void Drawable::drawBombed(const IRegion2D* healthBarRegion)
 	UnsignedInt now = TheGameLogic->getFrame();
 
 	if( obj->testWeaponSetFlag( WEAPONSET_CARBOMB ) &&
-				obj->getControllingPlayer() == TheControlBar->getCurrentlyViewedPlayer())
+				obj->getControllingPlayer() == ThePlayerList->getLocalPlayer())
 	{
 		if( !getIconInfo()->m_icon[ ICON_CARBOMB ] )
 			getIconInfo()->m_icon[ ICON_CARBOMB ] = newInstance(Anim2D)( s_animationTemplates[ ICON_CARBOMB ], TheAnim2DCollection );
@@ -5420,7 +5424,8 @@ void Drawable::xfer( Xfer *xfer )
           catch( ... )
           {
             // since Xfer can throw exceptions -- don't leak memory!
-            deleteInstance(customizedInfo);
+            if ( customizedInfo != NULL )
+              deleteInstance(customizedInfo);
 
             throw; //rethrow
           }

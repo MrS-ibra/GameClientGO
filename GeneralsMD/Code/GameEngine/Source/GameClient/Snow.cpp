@@ -96,8 +96,11 @@ SnowManager::~SnowManager()
 	m_startingHeights=NULL;
 
 	// TheSuperHackers @fix Mauller 13/04/2025 Delete the instance of the weather settings
-	deleteInstance((WeatherSetting*)TheWeatherSetting.getNonOverloadedPointer());
-	TheWeatherSetting=NULL;
+	if (TheWeatherSetting)
+	{
+		deleteInstance((WeatherSetting*)TheWeatherSetting.getNonOverloadedPointer());
+		TheWeatherSetting=NULL;
+	}
 }
 
 OVERRIDE<WeatherSetting> TheWeatherSetting = NULL;

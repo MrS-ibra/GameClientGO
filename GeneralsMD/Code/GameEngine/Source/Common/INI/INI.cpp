@@ -205,51 +205,12 @@ INI::~INI( void )
 }  // end ~INI
 
 //-------------------------------------------------------------------------------------------------
-UnsignedInt INI::loadFileDirectory( AsciiString fileDirName, INILoadType loadType, Xfer *pXfer, Bool subdirs )
-{
-	UnsignedInt filesRead = 0;
-
-	AsciiString iniDir = fileDirName;
-	AsciiString iniFile = fileDirName;
-
-	char ext[] = ".ini";
-
-	if (iniDir.endsWithNoCase(ext))
-	{
-		iniDir.truncateBy(ARRAY_SIZE(ext)-1);
-	}
-
-	if (!iniFile.endsWithNoCase(ext))
-	{
-		iniFile.concat(ext);
-	}
-
-	if (TheFileSystem->doesFileExist(iniFile.str()))
-	{
-		filesRead += load(iniFile, loadType, pXfer);
-	}
-
-	// Load any additional ini files from a "filename" directory and its subdirectories.
-	filesRead += loadDirectory(iniDir, loadType, pXfer, subdirs);
-
-	// Expect to open and load at least one file.
-	if (filesRead == 0)
-	{
-		throw INI_CANT_OPEN_FILE;
-	}
-
-	return filesRead;
-}
-
-//-------------------------------------------------------------------------------------------------
 /** Load all INI files in the specified directory (and subdirectories if indicated).
 	* If we are to load subdirectories, we will load them *after* we load all the
 	* files in the current directory */
 //-------------------------------------------------------------------------------------------------
-UnsignedInt INI::loadDirectory( AsciiString dirName, INILoadType loadType, Xfer *pXfer, Bool subdirs )
+void INI::loadDirectory( AsciiString dirName, Bool subdirs, INILoadType loadType, Xfer *pXfer )
 {
-	UnsignedInt filesRead = 0;
-
 	// sanity
 	if( dirName.isEmpty() )
 		throw INI_INVALID_DIRECTORY;
@@ -258,7 +219,7 @@ UnsignedInt INI::loadDirectory( AsciiString dirName, INILoadType loadType, Xfer 
 	{
 		FilenameList filenameList;
 		dirName.concat('\\');
-		TheFileSystem->getFileListInDirectory(dirName, "*.ini", filenameList, subdirs);
+		TheFileSystem->getFileListInDirectory(dirName, "*.ini", filenameList, TRUE);
 		// Load the INI files in the dir now, in a sorted order.  This keeps things the same between machines
 		// in a network game.
 		FilenameList::const_iterator it = filenameList.begin();
@@ -269,7 +230,7 @@ UnsignedInt INI::loadDirectory( AsciiString dirName, INILoadType loadType, Xfer 
 
 			if ((tempname.find('\\') == NULL) && (tempname.find('/') == NULL)) {
 				// this file doesn't reside in a subdirectory, load it first.
-				filesRead += load( *it, loadType, pXfer );
+				load( *it, loadType, pXfer );
 			}
 			++it;
 		}
@@ -281,7 +242,7 @@ UnsignedInt INI::loadDirectory( AsciiString dirName, INILoadType loadType, Xfer 
 			tempname = (*it).str() + dirName.getLength();
 
 			if ((tempname.find('\\') != NULL) || (tempname.find('/') != NULL)) {
-				filesRead += load( *it, loadType, pXfer );
+				load( *it, loadType, pXfer );
 			}
 			++it;
 		}
@@ -292,8 +253,7 @@ UnsignedInt INI::loadDirectory( AsciiString dirName, INILoadType loadType, Xfer 
 		throw;
 	}
 
-	return filesRead;
-}
+}  // end loadDirectory
 
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
@@ -323,7 +283,7 @@ void INI::prepFile( AsciiString filename, INILoadType loadType )
 	// save our filename
 	m_filename = filename;
 
-	// save our load type
+	// save our load time
 	m_loadType = loadType;
 }
 
@@ -384,7 +344,7 @@ static INIFieldParseProc findFieldParse(const FieldParse* parseTable, const char
 //-------------------------------------------------------------------------------------------------
 /** Load and parse an INI file */
 //-------------------------------------------------------------------------------------------------
-UnsignedInt INI::load( AsciiString filename, INILoadType loadType, Xfer *pXfer )
+void INI::load( AsciiString filename, INILoadType loadType, Xfer *pXfer )
 {
 	setFPMode(); // so we have consistent Real values for GameLogic -MDC
 
@@ -448,11 +408,10 @@ UnsignedInt INI::load( AsciiString filename, INILoadType loadType, Xfer *pXfer )
 
 	unPrepFile();
 
-	return 1;
-}
+}  // end load
 
 //-------------------------------------------------------------------------------------------------
-/** Read a line from the already open file.  Any comments will be removed and
+/** Read a line from the already open file.  Any comments will be remved and
 	* therefore ignored from any given line */
 //-------------------------------------------------------------------------------------------------
 void INI::readLine( void )
@@ -1185,8 +1144,11 @@ void INI::parseDynamicAudioEventRTS( INI *ini, void * /*instance*/, void *store,
 	// translate the string into a sound
 	if (stricmp(token, "NoSound") == 0)
 	{
-		deleteInstance(*theSound);
-		*theSound = NULL;
+		if (*theSound)
+		{
+			deleteInstance(*theSound);
+			*theSound = NULL;
+		}
 	}
 	else
 	{
@@ -1568,6 +1530,7 @@ void INI::initFromINIMulti( void *what, const MultiIniFieldParse& parseTableList
 				{
 					DEBUG_ASSERTCRASH( 0, ("[LINE: %d - FILE: '%s'] Unknown field '%s' in block '%s'",
 														 INI::getLineNum(), INI::getFilename().str(), field, m_curBlockStart) );
+					throw INI_UNKNOWN_TOKEN;
 				}
 
 			}  // end else
@@ -1910,39 +1873,61 @@ void INI::parseDeathTypeFlags(INI* ini, void* /*instance*/, void* store, const v
 // both blockType and blockName are case insensitive
 Bool INI::isDeclarationOfType( AsciiString blockType, AsciiString blockName, char *bufferToCheck )
 {
-	if (!bufferToCheck || blockType.isEmpty() || blockName.isEmpty())
+	Bool retVal = true;
+	if (!bufferToCheck || blockType.isEmpty() || blockName.isEmpty()) {
 		return false;
+	}
+	// DO NOT RETURN EARLY FROM THIS FUNCTION. (beyond this point)
+	// we have to restore the bufferToCheck to its previous state before returning, so
+	// it is important to get through all the checks.
 
-	const char* tempBuff = bufferToCheck;
+	char restoreChar;
+	char *tempBuff = bufferToCheck;
+	int blockTypeLength = blockType.getLength();
+	int blockNameLength = blockName.getLength();
 
-	while (isspace(*tempBuff))
+	while (isspace(*tempBuff)) {
 		++tempBuff;
+	}
 
-	const int blockTypeLength = blockType.getLength();
-	if (strnicmp(tempBuff, blockType.str(), blockTypeLength) != 0)
-		return false;
+	if (strlen(tempBuff) > blockTypeLength) {
+		restoreChar = tempBuff[blockTypeLength];
+		tempBuff[blockTypeLength] = 0;
 
-	tempBuff += blockTypeLength;
+		if (stricmp(blockType.str(), tempBuff) != 0) {
+			retVal = false;
+		}
 
-	if (!isspace(*tempBuff++))
-		return false;
+		tempBuff[blockTypeLength] = restoreChar;
+		tempBuff = tempBuff + blockTypeLength;
+	} else {
+		retVal = false;
+	}
 
-	while (isspace(*tempBuff))
+	while (isspace(*tempBuff)) {
 		++tempBuff;
+	}
 
-	const int blockNameLength = blockName.getLength();
-	if (strnicmp(tempBuff, blockName.str(), blockNameLength) != 0)
-		return false;
+	if (strlen(tempBuff) > blockNameLength) {
+		restoreChar = tempBuff[blockNameLength];
+		tempBuff[blockNameLength] = 0;
 
-	tempBuff += blockNameLength;
+		if (stricmp(blockName.str(), tempBuff) != 0) {
+			retVal = false;
+		}
 
-	while (isspace(*tempBuff))
+		tempBuff[blockNameLength] = restoreChar;
+		tempBuff = tempBuff + blockNameLength;
+	} else {
+		retVal = false;
+	}
+
+	while (strlen(tempBuff)) {
+		retVal = retVal && isspace(tempBuff[0]);
 		++tempBuff;
+	}
 
-	if (*tempBuff != '\0')
-		return false;
-
-	return true;
+	return retVal;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1983,8 +1968,8 @@ Bool INI::isEndOfBlock( char *bufferToCheck )
 		retVal = false;
 	}
 
-	while (*tempBuff && retVal) {
-		retVal = isspace(*tempBuff);
+	while (strlen(tempBuff)) {
+		retVal = retVal && isspace(tempBuff[0]);
 		++tempBuff;
 	}
 

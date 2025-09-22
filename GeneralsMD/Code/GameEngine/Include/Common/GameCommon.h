@@ -72,7 +72,6 @@
 // ----------------------------------------------------------------------------------------------
 enum
 {
-	BaseFps = 30, // The historic base frame rate for this game. This value must never change.
 #if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
 	LOGICFRAMES_PER_SECOND = GENERALS_ONLINE_HIGH_FPS_LIMIT,
 #else
@@ -492,7 +491,6 @@ enum WhichTurretType CPP_11(: Int)
 
 // ------------------------------------------------------------------------
 // this normalizes an angle to the range -PI...PI.
-// TheSuperHackers @todo DO NOT USE THIS FUNCTION! Use WWMath::Normalize_Angle instead. Delete this.
 extern Real normalizeAngle(Real angle);
 
 // ------------------------------------------------------------------------

@@ -985,16 +985,6 @@ void GameLogic::setGameLoading( Bool loading )
 }
 
 // ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-void GameLogic::setGameMode( GameMode mode )
-{
-	GameMode prev = m_gameMode;
-	m_gameMode = mode;
-
-	TheMouse->onGameModeChanged(prev, mode);
-}
-
-// ------------------------------------------------------------------------------------------------
 /** Entry point for starting a new game, the engine is already in clean state at this
 	* point and ready to load up with all the data */
 // ------------------------------------------------------------------------------------------------
@@ -2095,13 +2085,6 @@ void GameLogic::startNewGame( Bool saveGame )
 	if (TheGameSpyInfo)
 		TheGameSpyInfo->updateAdditionalGameSpyDisconnections(1);
 
-
-  if ( isInReplayGame() && TheInGameUI && TheGameText )
-  {
-		TheInGameUI->messageNoFormat( TheGameText->FETCH_OR_SUBSTITUTE( "GUI:FastForwardInstructions", L"Press F to toggle Fast Forward" ) );
-  }
-
-
 }  // end startNewGame
 
 //-----------------------------------------------------------------------------------------
@@ -2166,9 +2149,6 @@ void GameLogic::loadMapINI( AsciiString mapName )
 		INI ini;
 		ini.load( AsciiString(fullFledgeFilename), INI_LOAD_CREATE_OVERRIDES, NULL );
 	}
-
-	// TheSuperHackers @todo Implement ini load directory for map folder.
-	// Requires adjustments in map transfer.
 
 	sprintf(fullFledgeFilename, "%s\\solo.ini", filename);
 	if (TheFileSystem->doesFileExist(fullFledgeFilename)) {
@@ -3812,8 +3792,6 @@ void GameLogic::pauseGameInput(Bool paused)
 		return;
 
 	m_pauseInput = paused;
-
-	TheMouse->onGamePaused(paused);
 
 	if(paused)
 	{

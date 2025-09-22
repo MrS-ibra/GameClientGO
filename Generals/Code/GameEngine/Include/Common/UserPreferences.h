@@ -38,9 +38,6 @@
 //-----------------------------------------------------------------------------
 #include "Common/STLTypedefs.h"
 
-enum CursorCaptureMode CPP_11(: Int);
-typedef UnsignedInt ScreenEdgeScrollMode;
-
 //-----------------------------------------------------------------------------
 // PUBLIC TYPES ///////////////////////////////////////////////////////////////
 //-----------------------------------------------------------------------------
@@ -93,12 +90,6 @@ public:
 	void setOnlineIPAddress(UnsignedInt IP);	// convenience function
 	Bool getAlternateMouseModeEnabled(void);	// convenience function
 	Real getScrollFactor(void);								// convenience function
-	Bool getDrawScrollAnchor(void);
-	Bool getMoveScrollAnchor(void);
-	CursorCaptureMode getCursorCaptureMode() const;
-	Bool getScreenEdgeScrollEnabledInWindowedApp() const;
-	Bool getScreenEdgeScrollEnabledInFullscreenApp() const;
-	ScreenEdgeScrollMode getScreenEdgeScrollMode() const;
 	Bool getSendDelay(void);									// convenience function
 	Int getFirewallBehavior(void);						// convenience function
 	Short getFirewallPortAllocationDelta(void);	// convenience function

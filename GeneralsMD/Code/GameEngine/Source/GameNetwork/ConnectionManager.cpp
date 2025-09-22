@@ -57,6 +57,8 @@
 #include "../ngmp_interfaces.h"
 
 
+extern Int MIN_LOGIC_FRAMES;
+
 /**
  * Le destructor.
  */

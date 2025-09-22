@@ -45,6 +45,7 @@
 #include "Common/ThingTemplate.h"
 #include "Common/BuildAssistant.h"
 #include "Common/Recorder.h"
+#include "Common/BuildAssistant.h"
 #include "Common/SpecialPower.h"
 
 #include "GameClient/Anim2D.h"
@@ -65,6 +66,7 @@
 #include "GameClient/GadgetStaticText.h"
 #include "GameClient/View.h"
 #include "GameClient/TerrainVisual.h"
+#include "GameClient/ControlBar.h"
 #include "GameClient/Display.h"
 #include "GameClient/WindowLayout.h"
 #include "GameClient/LookAtXlat.h"
@@ -1099,7 +1101,7 @@ InGameUI::~InGameUI()
 void InGameUI::init( void )
 {
 	INI ini;
-	ini.loadFileDirectory( AsciiString( "Data\\INI\\InGameUI" ), INI_LOAD_OVERWRITE, NULL );
+	ini.load( AsciiString( "Data\\INI\\InGameUI.ini" ), INI_LOAD_OVERWRITE, NULL );
 
 	//override INI values with language localized values:
 	if (TheGlobalLanguageData)
@@ -1186,8 +1188,6 @@ void InGameUI::init( void )
 
 	m_soloNexusSelectedDrawableID = INVALID_DRAWABLE_ID;
 
-	setDrawRMBScrollAnchor(TheGlobalData->m_drawScrollAnchor);
-	setMoveRMBScrollAnchor(TheGlobalData->m_moveScrollAnchor);
 
 }  // end init
 
@@ -1415,13 +1415,6 @@ void InGameUI::handleBuildPlacements( void )
 				v.y = worldEnd.y - worldStart.y;
 				angle = v.toAngle();
 
-				// TheSuperHackers @tweak Stubbjax 04/08/2025 Snap angle to nearest 45 degrees
-				// while using force attack mode for convenience.
-				if (isInForceAttackMode())
-				{
-					const Real snapRadians = DEG_TO_RADF(45);
-					angle = WWMath::Round(angle / snapRadians) * snapRadians;
-				}
 			}  // end if
 
 		}  // end if
@@ -1793,7 +1786,11 @@ void InGameUI::update( void )
 //		moneyWin = TheWindowManager->winGetWindowFromId( NULL, moneyWindowKey );
 //
 //	}  // end if
-	Player* moneyPlayer = TheControlBar->getCurrentlyViewedPlayer();
+	Player *moneyPlayer = NULL;
+	if( TheControlBar->isObserverControlBarOn())
+		moneyPlayer = TheControlBar->getObserverLookAtPlayer();
+	else
+		moneyPlayer = ThePlayerList->getLocalPlayer();
 	if( moneyPlayer)
 	{
 		Int currentMoney = moneyPlayer->getMoney()->countMoney();
@@ -1830,30 +1827,26 @@ void InGameUI::update( void )
 		layout->runUpdate();
 	}
 
-	if (m_cameraRotatingLeft || m_cameraRotatingRight || m_cameraZoomingIn || m_cameraZoomingOut)
+	//Handle keyboard camera rotations
+	if( m_cameraRotatingLeft && !m_cameraRotatingRight )
 	{
-		// TheSuperHackers @tweak The camera rotation and zoom are now decoupled from the render update.
-		const Real fpsRatio = (Real)BaseFps / TheGameEngine->getUpdateFps();
-		const Real rotateAngle = TheGlobalData->m_keyboardCameraRotateSpeed * fpsRatio;
-		const Real zoomHeight = (Real)View::ZoomHeightPerSecond * fpsRatio;
-
-		if( m_cameraRotatingLeft && !m_cameraRotatingRight )
-		{
-			TheTacticalView->setAngle( TheTacticalView->getAngle() - rotateAngle );
-		}
-		else if( m_cameraRotatingRight && !m_cameraRotatingLeft )
-		{
-			TheTacticalView->setAngle( TheTacticalView->getAngle() + rotateAngle );
-		}
-
-		if( m_cameraZoomingIn && !m_cameraZoomingOut )
-		{
-			TheTacticalView->zoom( -zoomHeight );
-		}
-		else if( m_cameraZoomingOut && !m_cameraZoomingIn )
-		{
-			TheTacticalView->zoom( +zoomHeight );
-		}
+		//Keyboard rotate left
+		TheTacticalView->setAngle( TheTacticalView->getAngle() - TheGlobalData->m_keyboardCameraRotateSpeed );
+	}
+	if( m_cameraRotatingRight && !m_cameraRotatingLeft )
+	{
+		//Keyboard rotate right
+		TheTacticalView->setAngle( TheTacticalView->getAngle() + TheGlobalData->m_keyboardCameraRotateSpeed );
+	}
+	if( m_cameraZoomingIn && !m_cameraZoomingOut )
+	{
+		//Keyboard zoom in
+		TheTacticalView->zoomIn();
+	}
+	if( m_cameraZoomingOut && !m_cameraZoomingIn )
+	{
+		//Keyboard zoom out
+		TheTacticalView->zoomOut();
 	}
 
 
@@ -2817,6 +2810,7 @@ void InGameUI::setScrolling( Bool isScrolling )
 
 	if (isScrolling)
 	{
+		TheMouse->capture();
 		setMouseCursor( Mouse::SCROLL );
 
 		// break any camera locks
@@ -2826,6 +2820,7 @@ void InGameUI::setScrolling( Bool isScrolling )
 	else
 	{
 		setMouseCursor( Mouse::ARROW );
+		TheMouse->releaseCapture();
 	}
 
 	m_isScrolling = isScrolling;
@@ -3024,6 +3019,9 @@ void InGameUI::placeBuildAvailable( const ThingTemplate *build, Drawable *buildD
 
 			Drawable *draw;
 
+			// capture the mouse for our window, windows is lame and changes it if we don't
+			TheMouse->capture();
+
 			// hack for changing cursor
 			setMouseCursor( Mouse::CROSS );
 
@@ -3072,6 +3070,7 @@ void InGameUI::placeBuildAvailable( const ThingTemplate *build, Drawable *buildD
 				m_mouseModeCursor = Mouse::ARROW;
 			}
 
+			TheMouse->releaseCapture();
 			setMouseCursor( Mouse::ARROW );
 			setPlacementStart( NULL );
 
@@ -4036,8 +4035,8 @@ void InGameUI::militarySubtitle( const AsciiString& label, Int duration )
 
 	// calculate where this screen position should be since the position being passed in is based off 8x6
 	Coord2D multiplyer;
-	multiplyer.x = TheDisplay->getWidth() / (Real)DEFAULT_DISPLAY_WIDTH;
-	multiplyer.y = TheDisplay->getHeight() / (Real)DEFAULT_DISPLAY_HEIGHT;
+	multiplyer.x = TheDisplay->getWidth() / 800;
+	multiplyer.y = TheDisplay->getHeight() / 600;
 
 	// lets bring out the data structure!
 	m_militarySubtitle = NEW MilitarySubtitleData;
@@ -5581,7 +5580,8 @@ void InGameUI::resetIdleWorker( void )
 void InGameUI::recreateControlBar( void )
 {
 	GameWindow *win = TheWindowManager->winGetWindowFromId(NULL, TheNameKeyGenerator->nameToKey(AsciiString("ControlBar.wnd")));
-	deleteInstance(win);
+	if(win)
+		deleteInstance(win);
 
 	m_idleWorkerWin = NULL;
 

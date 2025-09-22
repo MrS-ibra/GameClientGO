@@ -28,8 +28,6 @@
 #include "Common/MessageStream.h"
 #include "GameNetwork/GameInfo.h"
 
-class File;
-
 /**
   * The ReplayGameInfo class holds information about the replay game and
 	* the contents of its slot list for reconstructing multiplayer games.
@@ -156,7 +154,7 @@ protected:
 
 	CullBadCommandsResult cullBadCommands(); ///< prevent the user from giving mouse commands that he shouldn't be able to do during playback.
 
-	File* m_file;
+	FILE *m_file;
 	AsciiString m_fileName;
 	Int m_currentFilePosition;
 	RecorderModeType m_mode;

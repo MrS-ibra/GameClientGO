@@ -25,7 +25,6 @@
 // GameClient/Eva.cpp /////////////////////////////////////////////////////////////////////////////
 
 #include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
-#include "GameClient/ControlBar.h"
 #include "GameClient/Eva.h"
 
 #include "Common/Player.h"
@@ -173,7 +172,8 @@ Eva::~Eva()
 {
 	EvaCheckInfoPtrVecIt it;
 	for (it = m_allCheckInfos.begin(); it != m_allCheckInfos.end(); ++it) {
-		deleteInstance(*it);
+		if (*it)
+			deleteInstance(*it);
 	}
 }
 
@@ -182,7 +182,7 @@ void Eva::init()
 {
 	// parse the INI here, etc.
 	INI ini;
-	ini.loadFileDirectory( AsciiString( "Data\\INI\\Eva" ), INI_LOAD_OVERWRITE, NULL);
+	ini.load( AsciiString( "Data\\INI\\Eva.ini" ), INI_LOAD_OVERWRITE, NULL);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -213,7 +213,7 @@ void Eva::update()
 		return;
 	}
 
-	m_localPlayer = TheControlBar->getCurrentlyViewedPlayer();
+	m_localPlayer = ThePlayerList->getLocalPlayer();
 	UnsignedInt frame = TheGameLogic->getFrame();
 
 	// Don't update for the first few frames. This way, we don't have to deal with our initial power
@@ -428,7 +428,7 @@ void Eva::processPlayingMessages(UnsignedInt currentFrame)
 	}
 
 	// We've got a winner!
-	AsciiString side = TheControlBar->getCurrentlyViewedPlayerSide();
+	AsciiString side = ThePlayerList->getLocalPlayer()->getSide();
 	Int numSides = storedIt->m_evaInfo->m_evaSideSounds.size();
 
 	for (Int i = 0; i < numSides; ++i) {

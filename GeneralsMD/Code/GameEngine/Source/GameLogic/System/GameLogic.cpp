@@ -1138,16 +1138,6 @@ void GameLogic::deleteLoadScreen( void )
 }  // end deleteLoadScreen
 
 // ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-void GameLogic::setGameMode( GameMode mode )
-{
-	GameMode prev = m_gameMode;
-	m_gameMode = mode;
-
-	TheMouse->onGameModeChanged(prev, mode);
-}
-
-// ------------------------------------------------------------------------------------------------
 /** Entry point for starting a new game, the engine is already in clean state at this
 	* point and ready to load up with all the data */
 // ------------------------------------------------------------------------------------------------
@@ -2450,7 +2440,7 @@ void GameLogic::startNewGame( Bool loadingSaveGame )
 
   if ( isInReplayGame() && TheInGameUI && TheGameText )
   {
-		TheInGameUI->messageNoFormat( TheGameText->FETCH_OR_SUBSTITUTE( "GUI:FastForwardInstructions", L"Press F to toggle Fast Forward" ) );
+		TheInGameUI->message( TheGameText->fetch( "GUI:FastForwardInstructions" ) );
   }
 
 
@@ -2518,9 +2508,6 @@ void GameLogic::loadMapINI( AsciiString mapName )
 		INI ini;
 		ini.load( AsciiString(fullFledgeFilename), INI_LOAD_CREATE_OVERRIDES, NULL );
 	}
-
-	// TheSuperHackers @todo Implement ini load directory for map folder.
-	// Requires adjustments in map transfer.
 
 	sprintf(fullFledgeFilename, "%s\\solo.ini", filename);
 	if (TheFileSystem->doesFileExist(fullFledgeFilename)) {
@@ -2695,12 +2682,13 @@ void GameLogic::processCommandList( CommandList *list )
 #if defined(GENERALS_ONLINE)
 			// provide more details
 			UnicodeString strMismatchDetails;
-			strMismatchDetails.format(L"GameLogic frame %d, latest frame %d, GetGameLogicRandomSeedCRC was %d\nHad %d CRCs from %d players\nMismatched Players:\n",
+			strMismatchDetails.format(L"GameLogic frame %d, latest frame %d, GetGameLogicRandomSeedCRC was %d\nHad %d CRCs from %d players\nNum RNG Calls %llu\nMismatched Players:\n",
 				TheGameLogic->getFrame(),
 				TheGameLogic->getFrame() - TheNetwork->getRunAhead() - 1,
 				GetGameLogicRandomSeedCRC(),
 				m_cachedCRCs.size(),
-				numPlayers);
+				numPlayers,
+				TheGameLogic->GetNumRNGS());
 
 			// determine who is at fault
 			std::map<UnsignedInt, int> mapCRCOccurences;
@@ -4521,8 +4509,6 @@ void GameLogic::pauseGameInput(Bool paused)
 		return;
 
 	m_pauseInput = paused;
-
-	TheMouse->onGamePaused(paused);
 
 	if(paused)
 	{

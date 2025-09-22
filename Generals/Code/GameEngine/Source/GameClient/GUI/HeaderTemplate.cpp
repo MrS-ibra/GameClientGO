@@ -136,14 +136,22 @@ HeaderTemplateManager::~HeaderTemplateManager( void )
 
 void HeaderTemplateManager::init( void )
 {
-	{
-		AsciiString fname;
-		fname.format("Data\\%s\\HeaderTemplate", GetRegistryLanguage().str());
+	INI ini;
+	AsciiString fname;
+	fname.format("Data\\%s\\HeaderTemplate.ini", GetRegistryLanguage().str());
+	OSVERSIONINFO	osvi;
+	osvi.dwOSVersionInfoSize=sizeof(OSVERSIONINFO);
+	if (GetVersionEx(&osvi))
+	{	//check if we're running Win9x variant since they may need different fonts
+		if (osvi.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
+		{	AsciiString tempName;
 
-		INI ini;
-		ini.loadFileDirectory( fname, INI_LOAD_OVERWRITE, NULL );
+			tempName.format("Data\\%s\\HeaderTemplate9x.ini", GetRegistryLanguage().str());
+			if (TheFileSystem->doesFileExist(tempName.str()))
+				fname = tempName;
+		}
 	}
-
+	ini.load( fname, INI_LOAD_OVERWRITE, NULL );
 	populateGameFonts();
 }
 

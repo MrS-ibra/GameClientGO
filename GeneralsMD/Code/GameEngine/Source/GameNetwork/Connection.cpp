@@ -59,11 +59,15 @@ Connection::Connection() {
  * The destructor.
  */
 Connection::~Connection() {
-	deleteInstance(m_user);
-	m_user = NULL;
+	if (m_user != NULL) {
+		deleteInstance(m_user);
+		m_user = NULL;
+	}
 
-	deleteInstance(m_netCommandList);
-	m_netCommandList = NULL;
+	if (m_netCommandList != NULL) {
+		deleteInstance(m_netCommandList);
+		m_netCommandList = NULL;
+	}
 }
 
 /**
@@ -72,8 +76,10 @@ Connection::~Connection() {
 void Connection::init() {
 	m_transport = NULL;
 
-	deleteInstance(m_user);
-	m_user = NULL;
+	if (m_user != NULL) {
+		deleteInstance(m_user);
+		m_user = NULL;
+	}
 
 	if (m_netCommandList == NULL) {
 		m_netCommandList = newInstance(NetCommandList);
@@ -118,7 +124,10 @@ void Connection::attachTransport(Transport *transport) {
  * Assign this connection a user.  This is the user to whome we send all our packetized goodies.
  */
 void Connection::setUser(User *user) {
-	deleteInstance(m_user);
+	if (m_user != NULL) {
+		deleteInstance(m_user);
+	}
+
 	m_user = user;
 }
 
@@ -318,8 +327,9 @@ UnsignedInt Connection::doSend() {
 			couldQueue = m_transport->queueSend(packet->getAddr(), packet->getPort(), packet->getData(), packet->getLength());
 			m_lastTimeSent = curtime;
 		}
-
-		deleteInstance(packet); // delete the packet now that we're done with it.
+		if (packet != NULL) {
+			deleteInstance(packet); // delete the packet now that we're done with it.
+		}
 	}
 
 	return numpackets;

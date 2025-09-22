@@ -38,6 +38,7 @@
 #include "mutex.h"
 #include "thread.h"
 
+#include "Common/StackDump.h"
 #include "Common/SubsystemInterface.h"
 
 
@@ -822,6 +823,7 @@ static void getPreorderCallback(int localid, int profileid, persisttype_t type, 
 void PSThreadClass::Thread_Function()
 {
 	try {
+	_set_se_translator( DumpExceptionInfo ); // Hook that allows stack trace.
 	/*********
 	First step, set our game authentication info
 	We could do:

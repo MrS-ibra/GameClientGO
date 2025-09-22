@@ -726,7 +726,10 @@ AIStateMachine::AIStateMachine( Object *obj, AsciiString name ) : StateMachine( 
 //----------------------------------------------------------------------------------------------------------
 AIStateMachine::~AIStateMachine()
 {
-	deleteInstance(m_goalSquad);
+	if (m_goalSquad)
+	{
+		deleteInstance(m_goalSquad);
+	}
 }
 
 
@@ -5488,8 +5491,11 @@ void AIAttackState::onExit( StateExitType status )
 	//addSelfAsTargeter(false);
 
 	// destroy the attack machine
-	deleteInstance(m_attackMachine);
-	m_attackMachine = NULL;
+	if (m_attackMachine)
+	{
+		deleteInstance(m_attackMachine);
+		m_attackMachine = NULL;
+	}
 
 	Object *obj = getMachineOwner();
 	obj->clearStatus( MAKE_OBJECT_STATUS_MASK4( OBJECT_STATUS_IS_FIRING_WEAPON,
@@ -5703,9 +5709,12 @@ StateReturnType AIAttackSquadState::update( void )
 //----------------------------------------------------------------------------------------------------------
 void AIAttackSquadState::onExit( StateExitType status )
 {
-	// destroy the attack machine
-	deleteInstance(m_attackSquadMachine);
-	m_attackSquadMachine = NULL;
+	if( m_attackSquadMachine )
+	{
+		// destroy the attack machine
+		deleteInstance(m_attackSquadMachine);
+		m_attackSquadMachine = NULL;
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------

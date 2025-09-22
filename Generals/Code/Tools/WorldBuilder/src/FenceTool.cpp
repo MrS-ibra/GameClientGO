@@ -49,7 +49,9 @@ FenceTool::FenceTool(void) :
 /// Destructor
 FenceTool::~FenceTool(void)
 {
-	deleteInstance(m_mapObjectList);
+	if (m_mapObjectList) {
+		deleteInstance(m_mapObjectList);
+	}
 	m_mapObjectList = NULL;
 }
 
@@ -152,10 +154,10 @@ void FenceTool::mouseDown(TTrackingMode m, CPoint viewPt, WbView* pView, CWorldB
 	pView->snapPoint(&cpt);
 	m_downPt2d = viewPt;
 	m_downPt3d = cpt;
-
-	deleteInstance(m_mapObjectList);
-	m_mapObjectList = NULL;
-
+	if (m_mapObjectList) {
+		deleteInstance(m_mapObjectList);
+		m_mapObjectList = NULL;
+	}
 	if (FenceOptions::hasSelectedObject()) {
 		FenceOptions::update();
 		m_curObjectWidth = FenceOptions::getFenceSpacing();

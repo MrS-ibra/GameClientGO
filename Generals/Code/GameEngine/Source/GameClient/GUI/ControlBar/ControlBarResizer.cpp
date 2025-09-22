@@ -103,7 +103,7 @@ void ControlBarResizer::init( void )
 {
 	INI ini;
 	// Read from INI all the ControlBarSchemes
-	ini.loadFileDirectory( AsciiString( "Data\\INI\\ControlBarResizer" ), INI_LOAD_OVERWRITE, NULL );
+	ini.load( AsciiString( "Data\\INI\\ControlBarResizer.ini" ), INI_LOAD_OVERWRITE, NULL );
 
 }
 
@@ -180,8 +180,8 @@ void ControlBarResizer::sizeWindowsAlt( void )
 {
 	ResizerWindowList::iterator it = m_resizerWindowsList.begin();
 	GameWindow *win = NULL;
-	Real x = (Real)TheDisplay->getWidth() / DEFAULT_DISPLAY_WIDTH;
-	Real y = (Real)TheDisplay->getHeight() / DEFAULT_DISPLAY_HEIGHT;
+	Real x = (Real)TheDisplay->getWidth() / 800;
+	Real y = (Real)TheDisplay->getHeight() / 600;
 	while (it != m_resizerWindowsList.end())
 	{
 		ResizerWindow *rWin = *it;

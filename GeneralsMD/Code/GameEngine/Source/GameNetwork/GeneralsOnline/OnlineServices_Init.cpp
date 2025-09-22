@@ -164,19 +164,20 @@ std::string NGMP_OnlineServicesManager::GetAPIEndpoint(const char* szEndpoint)
 }
 
 
-void NGMP_OnlineServicesManager::CommitReplay(File* pFile)
+void NGMP_OnlineServicesManager::CommitReplay(FILE* pFile)
 {
 	std::vector<unsigned char> replayData;
 	if (pFile)
 	{
-		Int fileSize = pFile->size();
-
+		fseek(pFile, 0, SEEK_END);
+		long fileSize = ftell(pFile);
+		fseek(pFile, 0, SEEK_SET);
 		if (fileSize > 0)
 		{
-			pFile->seek(0, File::seekMode::START);
 			replayData.resize(fileSize);
-			pFile->read(replayData.data(), fileSize);
+			fread(replayData.data(), 1, fileSize, pFile);
 		}
+		fclose(pFile);
 	}
 
 	std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("MatchReplay");

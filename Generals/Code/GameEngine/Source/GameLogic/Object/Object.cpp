@@ -575,7 +575,9 @@ Object::~Object()
 	delete [] m_behaviors;
 	m_behaviors = NULL;
 
-	deleteInstance(m_experienceTracker);
+	if( m_experienceTracker )
+		deleteInstance(m_experienceTracker);
+
 	m_experienceTracker = NULL;
 
 	// we don't need to delete these, there were deleted on the m_behaviors list
@@ -2761,7 +2763,7 @@ Bool Object::hasSpecialPower( SpecialPowerType type ) const
 }
 
 //-------------------------------------------------------------------------------------------------
-void Object::onVeterancyLevelChanged( VeterancyLevel oldLevel, VeterancyLevel newLevel, Bool provideFeedback )
+void Object::onVeterancyLevelChanged( VeterancyLevel oldLevel, VeterancyLevel newLevel )
 {
 	updateUpgradeModules();
 
@@ -2771,7 +2773,14 @@ void Object::onVeterancyLevelChanged( VeterancyLevel oldLevel, VeterancyLevel ne
 
 	BodyModuleInterface* body = getBodyModule();
 	if (body)
-		body->onVeterancyLevelChanged(oldLevel, newLevel, provideFeedback);
+		body->onVeterancyLevelChanged(oldLevel, newLevel);
+
+
+	Bool hideAnimationForStealth = ( ! isLocallyControlled() && testStatus(OBJECT_STATUS_STEALTHED));
+
+	Bool doAnimation = ( ! hideAnimationForStealth
+											&& (newLevel > oldLevel)
+											&& ( ! isKindOf(KINDOF_IGNORED_IN_GUI))); //First, we plan to do the animation if the level went up
 
 	switch (newLevel)
 	{
@@ -2782,6 +2791,7 @@ void Object::onVeterancyLevelChanged( VeterancyLevel oldLevel, VeterancyLevel ne
 			clearWeaponBonusCondition(WEAPONBONUSCONDITION_VETERAN);
 			clearWeaponBonusCondition(WEAPONBONUSCONDITION_ELITE);
 			clearWeaponBonusCondition(WEAPONBONUSCONDITION_HERO);
+			doAnimation = FALSE;//... but not if somehow up to Regular
 			break;
 		case LEVEL_VETERAN:
 			setWeaponSetFlag(WEAPONSET_VETERAN);
@@ -2808,13 +2818,6 @@ void Object::onVeterancyLevelChanged( VeterancyLevel oldLevel, VeterancyLevel ne
 			setWeaponBonusCondition(WEAPONBONUSCONDITION_HERO);
 			break;
 	}
-
-	Bool doAnimation = provideFeedback
-		&& newLevel > oldLevel
-		&& !isKindOf(KINDOF_IGNORED_IN_GUI)
-		&& (isLocallyControlled()
-			|| !testStatus(OBJECT_STATUS_STEALTHED)
-			|| testStatus(OBJECT_STATUS_DETECTED));
 
 	if( doAnimation && TheGameLogic->getDrawIconUI() )
 	{

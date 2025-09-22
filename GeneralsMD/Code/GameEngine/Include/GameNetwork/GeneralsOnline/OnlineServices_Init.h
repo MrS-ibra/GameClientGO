@@ -309,7 +309,7 @@ public:
 		}
 	}
 
-	void CommitReplay(File* pFile);
+	void CommitReplay(FILE* pFile);
 
 	static NGMP_OnlineServicesManager* GetInstance()
 	{

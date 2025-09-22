@@ -74,7 +74,7 @@ enum BuildableStatus CPP_11(: Int);
 typedef const CommandButton* ConstCommandButtonPtr;
 
 // What kind of game we're in.
-enum GameMode CPP_11(: Int)
+enum
 {
 	GAME_SINGLE_PLAYER,
 	GAME_LAN,
@@ -124,7 +124,7 @@ public:
 #endif
 	void processCommandList( CommandList *list );		///< process the command list
 
-	void prepareNewGame( GameMode gameMode, GameDifficulty diff, Int rankPoints );						///< prepare for new game
+	void prepareNewGame( Int gameMode, GameDifficulty diff, Int rankPoints );						///< prepare for new game
 
 	void logicMessageDispatcher( GameMessage *msg,
 																			 void *userData );	///< Logic command list processing
@@ -186,10 +186,9 @@ public:
 	void setLoadingSave( Bool loading ) { m_loadingSave = loading; }
 	void setClearingGameData( Bool clearing ) { m_clearingGameData = clearing; }
 
-	void setGameMode( GameMode mode );
-	GameMode getGameMode( void );
-
-	Bool isInGame( void ); // Includes Shell Game
+	void setGameMode( Int mode );
+	Int getGameMode( void );
+	Bool isInGame( void );
 	Bool isInLanGame( void );
 	Bool isInSinglePlayerGame( void );
 	Bool isInSkirmishGame( void );
@@ -198,7 +197,12 @@ public:
 	Bool isInShellGame( void );
 	Bool isInMultiplayerGame( void );
 
-	static Bool isInInteractiveGame(GameMode mode) { return mode != GAME_NONE && mode != GAME_SHELL; }
+//#if defined(GENERALS_ONLINE_USE_NEW_RNG_LOGIC)
+	uint32_t m_numRNGs = 0;
+	void ResetNumRNGs();
+	void IncrementNumRNGS();
+	uint32_t GetNumRNGS();
+//#endif
 
 	//Kris: Cut isLoadingGame() and replaced with isLoadingMap() and isLoadingSave() -- reason: nomenclature
 	//Bool isLoadingGame() const { return m_loadingScene; }		// This is the old function that isn't very clear on it's definition.
@@ -379,7 +383,7 @@ private:
 	virtual TerrainLogic *createTerrainLogic( void );
 	virtual GhostObjectManager *createGhostObjectManager(void);
 
-	GameMode m_gameMode;
+	Int m_gameMode;
 	Int m_rankLevelLimit;
   UnsignedShort m_superweaponRestriction;
 
@@ -437,15 +441,22 @@ inline UnsignedInt GameLogic::getFrameLegacyLast(void) { return m_frameLegacyLas
 inline bool GameLogic::HasLegacyFrameAdvanced(void) { return m_frameLegacy != m_frameLegacyLast; }
 #endif
 
+//#if defined(GENERALS_ONLINE_USE_NEW_RNG_LOGIC)
+inline void GameLogic::ResetNumRNGs() { m_numRNGs = 0; }
+inline void GameLogic::IncrementNumRNGS() { ++m_numRNGs; }
+inline uint32_t GameLogic::GetNumRNGS() { return m_numRNGs; }
+//#endif
+
 #if defined(GENERALS_ONLINE_RUN_FAST)
 inline void GameLogic::setFrame(UnsignedInt frame) { m_frame = frame; }
 #endif
 
 inline Bool GameLogic::isInGame( void ) { return !(m_gameMode == GAME_NONE); }
-inline GameMode GameLogic::getGameMode(void) { return m_gameMode; }
+inline void GameLogic::setGameMode( Int mode ) { m_gameMode = mode; }
+inline Int  GameLogic::getGameMode( void ) { return m_gameMode; }
 inline Bool GameLogic::isInLanGame( void ) { return (m_gameMode == GAME_LAN); }
 inline Bool GameLogic::isInSkirmishGame( void ) { return (m_gameMode == GAME_SKIRMISH); }
-inline Bool GameLogic::isInMultiplayerGame( void ) { return (m_gameMode == GAME_LAN) || (m_gameMode == GAME_INTERNET) ; }
+inline Bool GameLogic::isInMultiplayerGame( void ) { return ((m_gameMode == GAME_LAN) || (m_gameMode == GAME_INTERNET)) ; }
 inline Bool GameLogic::isInReplayGame( void ) { return (m_gameMode == GAME_REPLAY); }
 inline Bool GameLogic::isInInternetGame( void ) { return (m_gameMode == GAME_INTERNET); }
 inline Bool GameLogic::isInShellGame( void ) { return (m_gameMode == GAME_SHELL); }

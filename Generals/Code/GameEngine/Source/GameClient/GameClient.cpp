@@ -183,7 +183,6 @@ GameClient::~GameClient()
 	delete TheFontLibrary;
 	TheFontLibrary = NULL;
 
-	TheMouse->reset();
 	delete TheMouse;
 	TheMouse = NULL;
 
@@ -241,7 +240,7 @@ void GameClient::init( void )
 
 	INI ini;
 	// Load the DrawGroupInfo here, before the Display Manager is loaded.
-	ini.loadFileDirectory("Data\\INI\\DrawGroupInfo", INI_LOAD_OVERWRITE, NULL);
+	ini.load("Data\\INI\\DrawGroupInfo.ini", INI_LOAD_OVERWRITE, NULL);
 
 	// Override the ini values with localized versions:
 	if (TheGlobalLanguageData && TheGlobalLanguageData->m_drawGroupInfoFont.name.isNotEmpty())
@@ -734,11 +733,6 @@ void GameClient::update( void )
 		TheInGameUI->UPDATE();
 	}
 }  // end update
-
-void GameClient::step()
-{
-	TheDisplay->step();
-}
 
 void GameClient::updateHeadless()
 {

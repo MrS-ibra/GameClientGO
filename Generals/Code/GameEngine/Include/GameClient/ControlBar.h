@@ -731,13 +731,6 @@ public:
 	void populateObserverList( void );
 	Bool isObserverControlBarOn( void ) { return m_isObserverCommandBar;}
 
-	/// Returns the currently viewed player. May return NULL if no player is selected while observing.
-	Player* getCurrentlyViewedPlayer();
-	/// Returns the relationship with the currently viewed player. May return NEUTRAL if no player is selected while observing.
-	Relationship getCurrentlyViewedPlayerRelationship(const Team* team);
-	/// Returns the currently viewed player. Returns "Observer" if no player is selected while observing.
-	AsciiString getCurrentlyViewedPlayerSide();
-
 //	ControlBarResizer *getControlBarResizer( void ) {return m_controlBarResizer;}
 
 	// Functions for repositioning/resizing the control bar

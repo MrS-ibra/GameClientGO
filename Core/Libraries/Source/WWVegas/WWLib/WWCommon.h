@@ -18,8 +18,6 @@
 
 #pragma once
 
-#include <stringex.h>
-
 #if defined(_MSC_VER) && _MSC_VER < 1300
 typedef unsigned MemValueType;
 #else

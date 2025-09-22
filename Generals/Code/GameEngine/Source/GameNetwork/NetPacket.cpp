@@ -43,130 +43,87 @@ NetCommandRef * NetPacket::ConstructNetCommandMsgFromRawData(UnsignedByte *data,
 	UnsignedByte relay = 0;
 
 	Int offset = 0;
+	Bool notDone = TRUE;
 	NetCommandRef *ref = NULL;
 	NetCommandMsg *msg = NULL;
 
-	while (offset < (Int)dataLength) {
-
-		switch (data[offset]) {
-
-		case 'T':
+	while ((offset < (Int)dataLength) && notDone) {
+		if (data[offset] == 'T') {
 			++offset;
 			memcpy(&commandType, data + offset, sizeof(UnsignedByte));
 			offset += sizeof(UnsignedByte);
-			break;
-
-		case 'R':
+		} else if (data[offset] == 'R') {
 			++offset;
 			memcpy(&relay, data + offset, sizeof(UnsignedByte));
 			offset += sizeof(UnsignedByte);
-			break;
-
-		case 'P':
+		} else if (data[offset] == 'P') {
 			++offset;
 			memcpy(&playerID, data + offset, sizeof(UnsignedByte));
 			offset += sizeof(UnsignedByte);
-			break;
-
-		case 'C':
+		} else if (data[offset] == 'C') {
 			++offset;
 			memcpy(&commandID, data + offset, sizeof(UnsignedShort));
 			offset += sizeof(UnsignedShort);
-			break;
-
-		case 'F':
+		} else if (data[offset] == 'F') {
 			++offset;
 			memcpy(&frame, data + offset, sizeof(UnsignedInt));
 			offset += sizeof(UnsignedInt);
-			break;
-
-		case 'D':
+		} else if (data[offset] == 'D') {
 			++offset;
-
-			switch (commandType) {
-
-			case NETCOMMANDTYPE_GAMECOMMAND:
+			if (commandType == NETCOMMANDTYPE_GAMECOMMAND) {
 				msg = readGameMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_ACKBOTH:
+			} else if (commandType == NETCOMMANDTYPE_ACKBOTH) {
 				msg = readAckBothMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_ACKSTAGE1:
+			} else if (commandType == NETCOMMANDTYPE_ACKSTAGE1) {
 				msg = readAckStage1Message(data, offset);
-				break;
-			case NETCOMMANDTYPE_ACKSTAGE2:
+			} else if (commandType == NETCOMMANDTYPE_ACKSTAGE2) {
 				msg = readAckStage2Message(data, offset);
-				break;
-			case NETCOMMANDTYPE_FRAMEINFO:
+			} else if (commandType == NETCOMMANDTYPE_FRAMEINFO) {
 				msg = readFrameMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_PLAYERLEAVE:
+			} else if (commandType == NETCOMMANDTYPE_PLAYERLEAVE) {
 				msg = readPlayerLeaveMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_RUNAHEADMETRICS:
+			} else if (commandType == NETCOMMANDTYPE_RUNAHEADMETRICS) {
 				msg = readRunAheadMetricsMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_RUNAHEAD:
+			} else if (commandType == NETCOMMANDTYPE_RUNAHEAD) {
 				msg = readRunAheadMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_DESTROYPLAYER:
+			} else if (commandType == NETCOMMANDTYPE_DESTROYPLAYER) {
 				msg = readDestroyPlayerMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_KEEPALIVE:
+			} else if (commandType == NETCOMMANDTYPE_KEEPALIVE) {
 				msg = readKeepAliveMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_DISCONNECTKEEPALIVE:
+			} else if (commandType == NETCOMMANDTYPE_DISCONNECTKEEPALIVE) {
 				msg = readDisconnectKeepAliveMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_DISCONNECTPLAYER:
+			} else if (commandType == NETCOMMANDTYPE_DISCONNECTPLAYER) {
 				msg = readDisconnectPlayerMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_PACKETROUTERQUERY:
+			} else if (commandType == NETCOMMANDTYPE_PACKETROUTERQUERY) {
 				msg = readPacketRouterQueryMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_PACKETROUTERACK:
+			} else if (commandType == NETCOMMANDTYPE_PACKETROUTERACK) {
 				msg = readPacketRouterAckMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_DISCONNECTCHAT:
+			} else if (commandType == NETCOMMANDTYPE_DISCONNECTCHAT) {
 				msg = readDisconnectChatMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_DISCONNECTVOTE:
+			} else if (commandType == NETCOMMANDTYPE_DISCONNECTVOTE) {
 				msg = readDisconnectVoteMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_CHAT:
+			} else if (commandType == NETCOMMANDTYPE_CHAT) {
 				msg = readChatMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_PROGRESS:
+			} else if (commandType == NETCOMMANDTYPE_PROGRESS) {
 				msg = readProgressMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_LOADCOMPLETE:
+			} else if (commandType == NETCOMMANDTYPE_LOADCOMPLETE) {
 				msg = readLoadCompleteMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_TIMEOUTSTART:
+			} else if (commandType == NETCOMMANDTYPE_TIMEOUTSTART) {
 				msg = readTimeOutGameStartMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_WRAPPER:
+			} else if (commandType == NETCOMMANDTYPE_WRAPPER) {
 				msg = readWrapperMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_FILE:
+			} else if (commandType == NETCOMMANDTYPE_FILE) {
 				msg = readFileMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_FILEANNOUNCE:
+			} else if (commandType == NETCOMMANDTYPE_FILEANNOUNCE) {
 				msg = readFileAnnounceMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_FILEPROGRESS:
+			} else if (commandType == NETCOMMANDTYPE_FILEPROGRESS) {
 				msg = readFileProgressMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_DISCONNECTFRAME:
+			} else if (commandType == NETCOMMANDTYPE_DISCONNECTFRAME) {
 				msg = readDisconnectFrameMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_DISCONNECTSCREENOFF:
+			} else if (commandType == NETCOMMANDTYPE_DISCONNECTSCREENOFF) {
 				msg = readDisconnectScreenOffMessage(data, offset);
-				break;
-			case NETCOMMANDTYPE_FRAMERESENDREQUEST:
+			} else if (commandType == NETCOMMANDTYPE_FRAMERESENDREQUEST) {
 				msg = readFrameResendRequestMessage(data, offset);
-				break;
-
 			}
 
 			msg->setExecutionFrame(frame);
@@ -181,10 +138,8 @@ NetCommandRef * NetPacket::ConstructNetCommandMsgFromRawData(UnsignedByte *data,
 			msg->detach();
 			msg = NULL;
 
-			return ref;
-
+			notDone = FALSE;
 		}
-
 	}
 
 	return ref;
@@ -360,45 +315,29 @@ UnsignedInt NetPacket::GetGameCommandSize(NetCommandMsg *msg) {
 	while (arg != NULL) {
 		msglen += 2 * sizeof(UnsignedByte); // for the type and number of args of that type declaration.
 		GameMessageArgumentDataType type = arg->getType();
-
-		switch (type) {
-		
-		case ARGUMENTDATATYPE_INTEGER:
+		if (type == ARGUMENTDATATYPE_INTEGER) {
 			msglen += arg->getArgCount() * sizeof(Int);
-			break;
-		case ARGUMENTDATATYPE_REAL:
+		} else if (type == ARGUMENTDATATYPE_REAL) {
 			msglen += arg->getArgCount() * sizeof(Real);
-			break;
-		case ARGUMENTDATATYPE_BOOLEAN:
+		} else if (type == ARGUMENTDATATYPE_BOOLEAN) {
 			msglen += arg->getArgCount() * sizeof(Bool);
-			break;
-		case ARGUMENTDATATYPE_OBJECTID:
+		} else if (type == ARGUMENTDATATYPE_OBJECTID) {
 			msglen += arg->getArgCount() * sizeof(ObjectID);
-			break;
-		case ARGUMENTDATATYPE_DRAWABLEID:
+		} else if (type == ARGUMENTDATATYPE_DRAWABLEID) {
 			msglen += arg->getArgCount() * sizeof(DrawableID);
-			break;
-		case ARGUMENTDATATYPE_TEAMID:
+		} else if (type == ARGUMENTDATATYPE_TEAMID) {
 			msglen += arg->getArgCount() * sizeof(UnsignedInt);
-			break;
-		case ARGUMENTDATATYPE_LOCATION:
+		} else if (type == ARGUMENTDATATYPE_LOCATION) {
 			msglen += arg->getArgCount() * sizeof(Coord3D);
-			break;
-		case ARGUMENTDATATYPE_PIXEL:
+		} else if (type == ARGUMENTDATATYPE_PIXEL) {
 			msglen += arg->getArgCount() * sizeof(ICoord2D);
-			break;
-		case ARGUMENTDATATYPE_PIXELREGION:
+		} else if (type == ARGUMENTDATATYPE_PIXELREGION) {
 			msglen += arg->getArgCount() * sizeof(IRegion2D);
-			break;
-		case ARGUMENTDATATYPE_TIMESTAMP:
+		} else if (type == ARGUMENTDATATYPE_TIMESTAMP) {
 			msglen += arg->getArgCount() * sizeof(UnsignedInt);
-			break;
-		case ARGUMENTDATATYPE_WIDECHAR:
+		} else if (type == ARGUMENTDATATYPE_WIDECHAR) {
 			msglen += arg->getArgCount() * sizeof(WideChar);
-			break;
-
 		}
-
 		arg = arg->getNext();
 	}
 
@@ -949,55 +888,42 @@ void NetPacket::FillBufferWithGameCommand(UnsignedByte *buffer, NetCommandRef *m
 	for (Int i = 0; i < numArgs; ++i) {
 		GameMessageArgumentDataType type = gmsg->getArgumentDataType(i);
 		GameMessageArgumentType arg = *(gmsg->getArgument(i));
+//		writeGameMessageArgumentToPacket(type, arg);
 
-		switch (type) {
-
-		case ARGUMENTDATATYPE_INTEGER:
+		if (type == ARGUMENTDATATYPE_INTEGER) {
 			memcpy(buffer + offset, &(arg.integer), sizeof(arg.integer));
 			offset += sizeof(arg.integer);
-			break;
-		case ARGUMENTDATATYPE_REAL:
+		} else if (type == ARGUMENTDATATYPE_REAL) {
 			memcpy(buffer + offset, &(arg.real), sizeof(arg.real));
 			offset += sizeof(arg.real);
-			break;
-		case ARGUMENTDATATYPE_BOOLEAN:
+		} else if (type == ARGUMENTDATATYPE_BOOLEAN) {
 			memcpy(buffer + offset, &(arg.boolean), sizeof(arg.boolean));
 			offset += sizeof(arg.boolean);
-			break;
-		case ARGUMENTDATATYPE_OBJECTID:
+		} else if (type == ARGUMENTDATATYPE_OBJECTID) {
 			memcpy(buffer + offset, &(arg.objectID), sizeof(arg.objectID));
 			offset += sizeof(arg.objectID);
-			break;
-		case ARGUMENTDATATYPE_DRAWABLEID:
+		} else if (type == ARGUMENTDATATYPE_DRAWABLEID) {
 			memcpy(buffer + offset, &(arg.drawableID), sizeof(arg.drawableID));
 			offset += sizeof(arg.drawableID);
-			break;
-		case ARGUMENTDATATYPE_TEAMID:
+		} else if (type == ARGUMENTDATATYPE_TEAMID) {
 			memcpy(buffer + offset, &(arg.teamID), sizeof(arg.teamID));
 			offset += sizeof(arg.teamID);
-			break;
-		case ARGUMENTDATATYPE_LOCATION:
+		} else if (type == ARGUMENTDATATYPE_LOCATION) {
 			memcpy(buffer + offset, &(arg.location), sizeof(arg.location));
 			offset += sizeof(arg.location);
-			break;
-		case ARGUMENTDATATYPE_PIXEL:
+		} else if (type == ARGUMENTDATATYPE_PIXEL) {
 			memcpy(buffer + offset, &(arg.pixel), sizeof(arg.pixel));
 			offset += sizeof(arg.pixel);
-			break;
-		case ARGUMENTDATATYPE_PIXELREGION:
+		} else if (type == ARGUMENTDATATYPE_PIXELREGION) {
 			memcpy(buffer + offset, &(arg.pixelRegion), sizeof(arg.pixelRegion));
 			offset += sizeof(arg.pixelRegion);
-			break;
-		case ARGUMENTDATATYPE_TIMESTAMP:
+		} else if (type == ARGUMENTDATATYPE_TIMESTAMP) {
 			memcpy(buffer + offset, &(arg.timestamp), sizeof(arg.timestamp));
 			offset += sizeof(arg.timestamp);
-			break;
-		case ARGUMENTDATATYPE_WIDECHAR:
+		} else if (type == ARGUMENTDATATYPE_WIDECHAR) {
 			memcpy(buffer + offset, &(arg.wChar), sizeof(arg.wChar));
 			offset += sizeof(arg.wChar);
-			break;
 		}
-
 	}
 
 	deleteInstance(parser);
@@ -1005,7 +931,8 @@ void NetPacket::FillBufferWithGameCommand(UnsignedByte *buffer, NetCommandRef *m
 
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket::addGameMessage - added game message, frame %d, player %d, command ID %d", m_lastFrame, m_lastPlayerID, m_lastCommandID));
 
-	deleteInstance(gmsg);
+	if (gmsg)
+		deleteInstance(gmsg);
 	gmsg = NULL;
 }
 
@@ -1018,36 +945,23 @@ void NetPacket::FillBufferWithAckCommand(UnsignedByte *buffer, NetCommandRef *ms
 	UnsignedShort commandID = 0;
 	UnsignedByte originalPlayerID = 0;
 
-	NetCommandType type = cmdMsg->getNetCommandType();
-
-	switch (type) {
-
-	case NETCOMMANDTYPE_ACKBOTH: {
-		NetAckBothCommandMsg* ackbothmsg = (NetAckBothCommandMsg*)msg;
-		commandID = ackbothmsg->getCommandID();
-		originalPlayerID = ackbothmsg->getOriginalPlayerID();
-		break;
-	}
-
-	case NETCOMMANDTYPE_ACKSTAGE1: {
-		NetAckStage1CommandMsg* ackstageonemsg = (NetAckStage1CommandMsg*)msg;
-		commandID = ackstageonemsg->getCommandID();
-		originalPlayerID = ackstageonemsg->getOriginalPlayerID();
-		break;
-	}
-
-	case NETCOMMANDTYPE_ACKSTAGE2: {
-		NetAckStage2CommandMsg* ackstagetwomsg = (NetAckStage2CommandMsg*)msg;
-		commandID = ackstagetwomsg->getCommandID();
-		originalPlayerID = ackstagetwomsg->getOriginalPlayerID();
-		break;
-	}
-
+	if (cmdMsg->getNetCommandType() == NETCOMMANDTYPE_ACKBOTH) {
+		NetAckBothCommandMsg *ackmsg = (NetAckBothCommandMsg *)msg;
+		commandID = ackmsg->getCommandID();
+		originalPlayerID = ackmsg->getOriginalPlayerID();
+	} else if (cmdMsg->getNetCommandType() == NETCOMMANDTYPE_ACKSTAGE1) {
+		NetAckStage1CommandMsg *ackmsg = (NetAckStage1CommandMsg *)msg;
+		commandID = ackmsg->getCommandID();
+		originalPlayerID = ackmsg->getOriginalPlayerID();
+	} else if (cmdMsg->getNetCommandType() == NETCOMMANDTYPE_ACKSTAGE2) {
+		NetAckStage2CommandMsg *ackmsg = (NetAckStage2CommandMsg *)msg;
+		commandID = ackmsg->getCommandID();
+		originalPlayerID = ackmsg->getOriginalPlayerID();
 	}
 
 	buffer[offset] = 'T';
 	++offset;
-	buffer[offset] = type;
+	buffer[offset] = cmdMsg->getNetCommandType();
 	offset += sizeof(UnsignedByte);
 
 	buffer[offset] = 'P';
@@ -2001,8 +1915,10 @@ NetPacket::NetPacket(TransportMessage *msg) {
  * Destructor
  */
 NetPacket::~NetPacket() {
-	deleteInstance(m_lastCommand);
-	m_lastCommand = NULL;
+	if (m_lastCommand != NULL) {
+		deleteInstance(m_lastCommand);
+		m_lastCommand = NULL;
+	}
 }
 
 /**
@@ -2025,9 +1941,10 @@ void NetPacket::init() {
 }
 
 void NetPacket::reset() {
-	deleteInstance(m_lastCommand);
-	m_lastCommand = NULL;
-
+	if (m_lastCommand != NULL) {
+		deleteInstance(m_lastCommand);
+		m_lastCommand = NULL;
+	}
 	init();
 }
 
@@ -2193,8 +2110,10 @@ Bool NetPacket::addFrameResendRequestCommand(NetCommandRef *msg) {
 		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket::addFrameResendRequest - added frame resend request command from player %d for frame %d, command id = %d", m_lastPlayerID, frameToResend, m_lastCommandID));
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -2302,8 +2221,10 @@ Bool NetPacket::addDisconnectScreenOffCommand(NetCommandRef *msg) {
 		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket::addDisconnectScreenOff - added disconnect screen off command from player %d for frame %d, command id = %d", m_lastPlayerID, newFrame, m_lastCommandID));
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -2409,8 +2330,10 @@ Bool NetPacket::addDisconnectFrameCommand(NetCommandRef *msg) {
 		m_packetLen += sizeof(disconnectFrame);
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -2515,8 +2438,10 @@ Bool NetPacket::addFileCommand(NetCommandRef *msg) {
 		m_packetLen += fileLength;
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -2618,8 +2543,10 @@ Bool NetPacket::addFileAnnounceCommand(NetCommandRef *msg) {
 		m_packetLen += sizeof(playerMask);
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -2721,8 +2648,10 @@ Bool NetPacket::addFileProgressCommand(NetCommandRef *msg) {
 		m_packetLen += sizeof(progress);
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -2851,8 +2780,10 @@ Bool NetPacket::addWrapperCommand(NetCommandRef *msg) {
 		m_packetLen += dataLength;
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -2948,8 +2879,10 @@ Bool NetPacket::addTimeOutGameStartMessage(NetCommandRef *msg) {
 		++m_packetLen;
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -3040,8 +2973,10 @@ Bool NetPacket::addLoadCompleteMessage(NetCommandRef *msg) {
 		++m_packetLen;
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -3124,8 +3059,10 @@ Bool NetPacket::addProgressMessage(NetCommandRef *msg) {
 		++m_packetLen;
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -3233,8 +3170,10 @@ Bool NetPacket::addDisconnectVoteCommand(NetCommandRef *msg) {
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket::addDisconnectVoteCommand - added disconnect vote command, player id %d command id %d, voted slot %d", m_lastPlayerID, m_lastCommandID, slot));
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -3330,8 +3269,10 @@ Bool NetPacket::addDisconnectChatCommand(NetCommandRef *msg) {
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket - added disconnect chat command"));
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -3445,8 +3386,10 @@ Bool NetPacket::addChatCommand(NetCommandRef *msg) {
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket - added chat command"));
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -3534,8 +3477,10 @@ Bool NetPacket::addPacketRouterAckCommand(NetCommandRef *msg) {
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket - added packet router ack command, player id %d", m_lastPlayerID));
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -3614,8 +3559,10 @@ Bool NetPacket::addPacketRouterQueryCommand(NetCommandRef *msg) {
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket - added packet router query command, player id %d", m_lastPlayerID));
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -3717,8 +3664,10 @@ Bool NetPacket::addDisconnectPlayerCommand(NetCommandRef *msg) {
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket::addDisconnectPlayerCommand - added disconnect player command, player id %d command id %d, disconnecting slot %d", m_lastPlayerID, m_lastCommandID, slot));
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -3800,8 +3749,10 @@ Bool NetPacket::addDisconnectKeepAliveCommand(NetCommandRef *msg) {
 		++m_packetLen;
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -3878,8 +3829,10 @@ Bool NetPacket::addKeepAliveCommand(NetCommandRef *msg) {
 		++m_packetLen;
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -3995,8 +3948,10 @@ Bool NetPacket::addRunAheadCommand(NetCommandRef *msg) {
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket - added run ahead command, frame %d, player id %d command id %d", m_lastFrame, m_lastPlayerID, m_lastCommandID));
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -4114,8 +4069,10 @@ Bool NetPacket::addDestroyPlayerCommand(NetCommandRef *msg) {
 		//DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket - added CRC:0x%8.8X info command, frame %d, player id %d command id %d", newCRC, m_lastFrame, m_lastPlayerID, m_lastCommandID));
 
 		++m_numCommands;
-
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -4224,7 +4181,10 @@ Bool NetPacket::addRunAheadMetricsCommand(NetCommandRef *msg) {
 		memcpy(m_packet + m_packetLen, &averageFps, sizeof(averageFps));
 		m_packetLen += sizeof(averageFps);
 
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -4340,7 +4300,10 @@ Bool NetPacket::addPlayerLeaveCommand(NetCommandRef *msg) {
 		memcpy(m_packet + m_packetLen, &leavingPlayerID, sizeof(UnsignedByte));
 		m_packetLen += sizeof(UnsignedByte);
 
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -4476,7 +4439,10 @@ Bool NetPacket::addFrameCommand(NetCommandRef *msg) {
 		// frameinfodebug
 //		DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("outgoing - added frame %d, player %d, command count = %d, command id = %d", cmdMsg->getExecutionFrame(), cmdMsg->getPlayerID(), cmdMsg->getCommandCount(), cmdMsg->getID()));
 
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -4579,8 +4545,9 @@ Bool NetPacket::addAckCommand(NetCommandRef *msg, UnsignedShort commandID, Unsig
 		m_packet[m_packetLen] = 'Z';
 		++m_packetLen;
 		++m_numCommands;
-
 		deleteInstance(m_lastCommand);
+		m_lastCommand = NULL;
+
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 		return TRUE;
@@ -4615,7 +4582,10 @@ Bool NetPacket::addAckCommand(NetCommandRef *msg, UnsignedShort commandID, Unsig
 		memcpy(m_packet + m_packetLen, &originalPlayerID, sizeof(UnsignedByte));
 		m_packetLen += sizeof(UnsignedByte);
 
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
@@ -4825,68 +4795,58 @@ Bool NetPacket::addGameCommand(NetCommandRef *msg) {
 
 		++m_numCommands;
 
-		deleteInstance(m_lastCommand);
+		if (m_lastCommand != NULL) {
+			deleteInstance(m_lastCommand);
+			m_lastCommand = NULL;
+		}
 		m_lastCommand = NEW_NETCOMMANDREF(msg->getCommand());
 		m_lastCommand->setRelay(msg->getRelay());
 
 		retval = TRUE;
 	}
 
-	deleteInstance(gmsg);
-	gmsg = NULL;
+	if (gmsg) {
+		deleteInstance(gmsg);
+		gmsg = NULL;
+	}
 
 	return retval;
 }
 
 void NetPacket::writeGameMessageArgumentToPacket(GameMessageArgumentDataType type, GameMessageArgumentType arg) {
-
-	switch(type) {
-
-	case ARGUMENTDATATYPE_INTEGER:
+	if (type == ARGUMENTDATATYPE_INTEGER) {
 		memcpy(m_packet + m_packetLen, &(arg.integer), sizeof(arg.integer));
 		m_packetLen += sizeof(arg.integer);
-		break;
-	case ARGUMENTDATATYPE_REAL:
+	} else if (type == ARGUMENTDATATYPE_REAL) {
 		memcpy(m_packet + m_packetLen, &(arg.real), sizeof(arg.real));
 		m_packetLen += sizeof(arg.real);
-		break;
-	case ARGUMENTDATATYPE_BOOLEAN:
+	} else if (type == ARGUMENTDATATYPE_BOOLEAN) {
 		memcpy(m_packet + m_packetLen, &(arg.boolean), sizeof(arg.boolean));
 		m_packetLen += sizeof(arg.boolean);
-		break;
-	case ARGUMENTDATATYPE_OBJECTID:
+	} else if (type == ARGUMENTDATATYPE_OBJECTID) {
 		memcpy(m_packet + m_packetLen, &(arg.objectID), sizeof(arg.objectID));
 		m_packetLen += sizeof(arg.objectID);
-		break;
-	case ARGUMENTDATATYPE_DRAWABLEID:
+	} else if (type == ARGUMENTDATATYPE_DRAWABLEID) {
 		memcpy(m_packet + m_packetLen, &(arg.drawableID), sizeof(arg.drawableID));
 		m_packetLen += sizeof(arg.drawableID);
-		break;
-	case ARGUMENTDATATYPE_TEAMID:
+	} else if (type == ARGUMENTDATATYPE_TEAMID) {
 		memcpy(m_packet + m_packetLen, &(arg.teamID), sizeof(arg.teamID));
 		m_packetLen += sizeof(arg.teamID);
-		break;
-	case ARGUMENTDATATYPE_LOCATION:
+	} else if (type == ARGUMENTDATATYPE_LOCATION) {
 		memcpy(m_packet + m_packetLen, &(arg.location), sizeof(arg.location));
 		m_packetLen += sizeof(arg.location);
-		break;
-	case ARGUMENTDATATYPE_PIXEL:
+	} else if (type == ARGUMENTDATATYPE_PIXEL) {
 		memcpy(m_packet + m_packetLen, &(arg.pixel), sizeof(arg.pixel));
 		m_packetLen += sizeof(arg.pixel);
-		break;
-	case ARGUMENTDATATYPE_PIXELREGION:
+	} else if (type == ARGUMENTDATATYPE_PIXELREGION) {
 		memcpy(m_packet + m_packetLen, &(arg.pixelRegion), sizeof(arg.pixelRegion));
 		m_packetLen += sizeof(arg.pixelRegion);
-		break;
-	case ARGUMENTDATATYPE_TIMESTAMP:
+	} else if (type == ARGUMENTDATATYPE_TIMESTAMP) {
 		memcpy(m_packet + m_packetLen, &(arg.timestamp), sizeof(arg.timestamp));
 		m_packetLen += sizeof(arg.timestamp);
-		break;
-	case ARGUMENTDATATYPE_WIDECHAR:
+	} else if (type == ARGUMENTDATATYPE_WIDECHAR) {
 		memcpy(m_packet + m_packetLen, &(arg.wChar), sizeof(arg.wChar));
 		m_packetLen += sizeof(arg.wChar);
-		break;
-
 	}
 }
 
@@ -4928,47 +4888,30 @@ Bool NetPacket::isRoomForGameMessage(NetCommandRef *msg, GameMessage *gmsg) {
 	while (arg != NULL) {
 		msglen += 2 * sizeof(UnsignedByte); // for the type and number of args of that type declaration.
 		GameMessageArgumentDataType type = arg->getType();
-
-		switch (type) {
-
-		case ARGUMENTDATATYPE_INTEGER:
+		if (type == ARGUMENTDATATYPE_INTEGER) {
 			msglen += arg->getArgCount() * sizeof(Int);
-			break;
-		case ARGUMENTDATATYPE_REAL:
+		} else if (type == ARGUMENTDATATYPE_REAL) {
 			msglen += arg->getArgCount() * sizeof(Real);
-			break;
-		case ARGUMENTDATATYPE_BOOLEAN:
+		} else if (type == ARGUMENTDATATYPE_BOOLEAN) {
 			msglen += arg->getArgCount() * sizeof(Bool);
-			break;
-		case ARGUMENTDATATYPE_OBJECTID:
+		} else if (type == ARGUMENTDATATYPE_OBJECTID) {
 			msglen += arg->getArgCount() * sizeof(ObjectID);
-			break;
-		case ARGUMENTDATATYPE_DRAWABLEID:
+		} else if (type == ARGUMENTDATATYPE_DRAWABLEID) {
 			msglen += arg->getArgCount() * sizeof(DrawableID);
-			break;
-		case ARGUMENTDATATYPE_TEAMID:
+		} else if (type == ARGUMENTDATATYPE_TEAMID) {
 			msglen += arg->getArgCount() * sizeof(UnsignedInt);
-			break;
-		case ARGUMENTDATATYPE_LOCATION:
+		} else if (type == ARGUMENTDATATYPE_LOCATION) {
 			msglen += arg->getArgCount() * sizeof(Coord3D);
-			break;
-		case ARGUMENTDATATYPE_PIXEL:
+		} else if (type == ARGUMENTDATATYPE_PIXEL) {
 			msglen += arg->getArgCount() * sizeof(ICoord2D);
-			break;
-		case ARGUMENTDATATYPE_PIXELREGION:
+		} else if (type == ARGUMENTDATATYPE_PIXELREGION) {
 			msglen += arg->getArgCount() * sizeof(IRegion2D);
-			break;
-		case ARGUMENTDATATYPE_TIMESTAMP:
+		} else if (type == ARGUMENTDATATYPE_TIMESTAMP) {
 			msglen += arg->getArgCount() * sizeof(UnsignedInt);
-			break;
-		case ARGUMENTDATATYPE_WIDECHAR:
+		} else if (type == ARGUMENTDATATYPE_WIDECHAR) {
 			msglen += arg->getArgCount() * sizeof(WideChar);
-			break;
-
 		}
-
 		arg = arg->getNext();
-
 	}
 
 	deleteInstance(parser);
@@ -4999,35 +4942,27 @@ NetCommandList * NetPacket::getCommandList() {
 
 	Int i = 0;
 	while (i < m_packetLen) {
-
-		switch(m_packet[i]) {
-
-		case 'T':
+		if (m_packet[i] == 'T') {
 			++i;
 			memcpy(&commandType, m_packet + i, sizeof(UnsignedByte));
 			i += sizeof(UnsignedByte);
-			break;
-		case 'F':
+		} else if (m_packet[i] == 'F') {
 			++i;
 			memcpy(&frame, m_packet + i, sizeof(UnsignedInt));
 			i += sizeof(UnsignedInt);
-			break;
-		case 'P':
+		} else if (m_packet[i] == 'P') {
 			++i;
 			memcpy(&playerID, m_packet + i, sizeof(UnsignedByte));
 			i += sizeof(UnsignedByte);
-			break;
-		case 'R':
+		} else if (m_packet[i] == 'R') {
 			++i;
 			memcpy(&relay, m_packet + i, sizeof(UnsignedByte));
 			i += sizeof(UnsignedByte);
-			break;
-		case 'C':
+		} else if (m_packet[i] == 'C') {
 			++i;
 			memcpy(&commandID, m_packet + i, sizeof(UnsignedShort));
 			i += sizeof(UnsignedShort);
-			break;
-		case 'D': {
+		} else if (m_packet[i] == 'D') {
 			++i;
 
 			NetCommandMsg *msg = NULL;
@@ -5171,60 +5106,46 @@ NetCommandList * NetPacket::getCommandList() {
 				DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket::getCommandList - failed to set relay for message %d", msg->getID()));
 			}
 
-			deleteInstance(lastCommand);
+			if (lastCommand != NULL) {
+				deleteInstance(lastCommand);
+				lastCommand = NULL;
+			}
 			lastCommand = newInstance(NetCommandRef)(msg);
 
 			msg->detach();  // Need to detach from new NetCommandMsg created by the "readXMessage" above.
 
 			// since the message is part of the list now, we don't have to keep track of it.  So we'll just set it to NULL.
 			msg = NULL;
-			break;
-		}
-
-		case 'Z': {
-
+		} else if (m_packet[i] == 'Z') {
 			++i;
 			// Repeat the last command, doing some funky cool byte-saving stuff
 			if (lastCommand == NULL) {
 				DEBUG_CRASH(("Got a repeat command with no command to repeat."));
 			}
-
 			NetCommandMsg *msg = NULL;
-
-			switch(commandType) {
-
-			case NETCOMMANDTYPE_ACKSTAGE1: {
+			if (commandType == NETCOMMANDTYPE_ACKSTAGE1) {
 				msg = newInstance(NetAckStage1CommandMsg)();
-				NetAckStage1CommandMsg* laststageone = (NetAckStage1CommandMsg*)(lastCommand->getCommand());
-				((NetAckStage1CommandMsg*)msg)->setCommandID(laststageone->getCommandID() + 1);
-				((NetAckStage1CommandMsg*)msg)->setOriginalPlayerID(laststageone->getOriginalPlayerID());
-				break;
-			}
-			case NETCOMMANDTYPE_ACKSTAGE2: {
+				NetAckStage1CommandMsg *last = (NetAckStage1CommandMsg *)(lastCommand->getCommand());
+				((NetAckStage1CommandMsg *)msg)->setCommandID(last->getCommandID() + 1);
+				((NetAckStage1CommandMsg *)msg)->setOriginalPlayerID(last->getOriginalPlayerID());
+			} else if (commandType == NETCOMMANDTYPE_ACKSTAGE2) {
 				msg = newInstance(NetAckStage2CommandMsg)();
-				NetAckStage2CommandMsg* laststagetwo = (NetAckStage2CommandMsg*)(lastCommand->getCommand());
-				((NetAckStage2CommandMsg*)msg)->setCommandID(laststagetwo->getCommandID() + 1);
-				((NetAckStage2CommandMsg*)msg)->setOriginalPlayerID(laststagetwo->getOriginalPlayerID());
-				break;
-			}
-			case NETCOMMANDTYPE_ACKBOTH: {
+				NetAckStage2CommandMsg *last = (NetAckStage2CommandMsg *)(lastCommand->getCommand());
+				((NetAckStage2CommandMsg *)msg)->setCommandID(last->getCommandID() + 1);
+				((NetAckStage2CommandMsg *)msg)->setOriginalPlayerID(last->getOriginalPlayerID());
+			} else if (commandType == NETCOMMANDTYPE_ACKBOTH) {
 				msg = newInstance(NetAckBothCommandMsg)();
-				NetAckBothCommandMsg* lastboth = (NetAckBothCommandMsg*)(lastCommand->getCommand());
-				((NetAckBothCommandMsg*)msg)->setCommandID(lastboth->getCommandID() + 1);
-				((NetAckBothCommandMsg*)msg)->setOriginalPlayerID(lastboth->getOriginalPlayerID());
-				break;
-			}
-			case NETCOMMANDTYPE_FRAMEINFO: {
+				NetAckBothCommandMsg *last = (NetAckBothCommandMsg *)(lastCommand->getCommand());
+				((NetAckBothCommandMsg *)msg)->setCommandID(last->getCommandID() + 1);
+				((NetAckBothCommandMsg *)msg)->setOriginalPlayerID(last->getOriginalPlayerID());
+			} else if (commandType == NETCOMMANDTYPE_FRAMEINFO) {
 				msg = newInstance(NetFrameCommandMsg)();
 				++frame; // this is set below.
-				((NetFrameCommandMsg*)msg)->setCommandCount(0);
+				((NetFrameCommandMsg *)msg)->setCommandCount(0);
 				DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("Read a repeated frame command, frame = %d, player = %d, commandID = %d", frame, playerID, commandID));
-				break;
-			}
-			default:
+			} else {
 				DEBUG_CRASH(("Trying to repeat a command that shouldn't be repeated."));
 				continue;
-
 			}
 
 			msg->setExecutionFrame(frame);
@@ -5246,6 +5167,7 @@ NetCommandList * NetPacket::getCommandList() {
 			}
 
 			deleteInstance(lastCommand);
+			lastCommand = NULL;
 //			lastCommand = newInstance(NetCommandRef)(msg);
 			lastCommand = NEW_NETCOMMANDREF(msg);
 
@@ -5253,24 +5175,19 @@ NetCommandList * NetPacket::getCommandList() {
 
 			// since the message is part of the list now, we don't have to keep track of it.  So we'll just set it to NULL.
 			msg = NULL;
-			break;
-		}
-
-		default:
+		} else {
 			// we don't recognize this command, but we have to increment i so we don't fall into an infinite loop.
 			DEBUG_CRASH(("Unrecognized packet entry, ignoring."));
 			DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("NetPacket::getCommandList - Unrecognized packet entry at index %d", i));
 			dumpPacketToLog();
 			++i;
-			break;
-
 		}
-
 	}
 
-	deleteInstance(lastCommand);
-	lastCommand = NULL;
-
+	if (lastCommand != NULL) {
+		deleteInstance(lastCommand);
+		lastCommand = NULL;
+	}
 	return retval;
 }
 
@@ -5344,101 +5261,84 @@ NetCommandMsg * NetPacket::readGameMessage(UnsignedByte *data, Int &i)
 }
 
 void NetPacket::readGameMessageArgumentFromPacket(GameMessageArgumentDataType type, NetGameCommandMsg *msg, UnsignedByte *data, Int &i) {
-
-	GameMessageArgumentType arg;
-
-	switch (type) {
-
-	case ARGUMENTDATATYPE_INTEGER:
+	if (type == ARGUMENTDATATYPE_INTEGER) {
+		GameMessageArgumentType arg;
 		Int theint;
 		memcpy(&theint, data + i, sizeof(theint));
 		i += sizeof(theint);
 		arg.integer = theint;
 		msg->addArgument(type, arg);
-		break;
-
-	case ARGUMENTDATATYPE_REAL:
+	} else if (type == ARGUMENTDATATYPE_REAL) {
+		GameMessageArgumentType arg;
 		Real thereal;
 		memcpy(&thereal, data + i, sizeof(thereal));
 		i += sizeof(thereal);
 		arg.real = thereal;
 		msg->addArgument(type, arg);
-		break;
-
-	case ARGUMENTDATATYPE_BOOLEAN:
+	} else if (type == ARGUMENTDATATYPE_BOOLEAN) {
+		GameMessageArgumentType arg;
 		Bool thebool;
 		memcpy(&thebool, data + i, sizeof(thebool));
 		i += sizeof(thebool);
 		arg.boolean = thebool;
 		msg->addArgument(type, arg);
-		break;
-
-	case ARGUMENTDATATYPE_OBJECTID:
-		ObjectID theobjectid;
-		memcpy(&theobjectid, data + i, sizeof(theobjectid));
-		i += sizeof(theobjectid);
-		arg.objectID = theobjectid;
+	} else if (type == ARGUMENTDATATYPE_OBJECTID) {
+		GameMessageArgumentType arg;
+		ObjectID theint;
+		memcpy(&theint, data + i, sizeof(theint));
+		i += sizeof(theint);
+		arg.objectID = theint;
 		msg->addArgument(type, arg);
-		break;
-
-	case ARGUMENTDATATYPE_DRAWABLEID:
-		DrawableID thedrawableid;
-		memcpy(&thedrawableid, data + i, sizeof(thedrawableid));
-		i += sizeof(thedrawableid);
-		arg.drawableID = thedrawableid;
+	} else if (type == ARGUMENTDATATYPE_DRAWABLEID) {
+		GameMessageArgumentType arg;
+		DrawableID theint;
+		memcpy(&theint, data + i, sizeof(theint));
+		i += sizeof(theint);
+		arg.drawableID = theint;
 		msg->addArgument(type, arg);
-		break;
-
-	case ARGUMENTDATATYPE_TEAMID:
-		UnsignedInt theunsignedint;
-		memcpy(&theunsignedint, data + i, sizeof(theunsignedint));
-		i += sizeof(theunsignedint);
-		arg.teamID = theunsignedint;
+	} else if (type == ARGUMENTDATATYPE_TEAMID) {
+		GameMessageArgumentType arg;
+		UnsignedInt theint;
+		memcpy(&theint, data + i, sizeof(theint));
+		i += sizeof(theint);
+		arg.teamID = theint;
 		msg->addArgument(type, arg);
-		break;
-
-	case ARGUMENTDATATYPE_LOCATION:
+	} else if (type == ARGUMENTDATATYPE_LOCATION) {
+		GameMessageArgumentType arg;
 		Coord3D coord;
 		memcpy(&coord, data + i, sizeof(coord));
 		i += sizeof(coord);
 		arg.location = coord;
 		msg->addArgument(type, arg);
-		break;
-
-	case ARGUMENTDATATYPE_PIXEL:
+	} else if (type == ARGUMENTDATATYPE_PIXEL) {
+		GameMessageArgumentType arg;
 		ICoord2D pixel;
 		memcpy(&pixel, data + i, sizeof(pixel));
 		i += sizeof(pixel);
 		arg.pixel = pixel;
 		msg->addArgument(type, arg);
-		break;
-
-	case ARGUMENTDATATYPE_PIXELREGION:
+	} else if (type == ARGUMENTDATATYPE_PIXELREGION) {
+		GameMessageArgumentType arg;
 		IRegion2D reg;
 		memcpy(&reg, data + i, sizeof(reg));
 		i += sizeof(reg);
 		arg.pixelRegion = reg;
 		msg->addArgument(type, arg);
-		break;
-
-	case ARGUMENTDATATYPE_TIMESTAMP:
+	} else if (type == ARGUMENTDATATYPE_TIMESTAMP) {
+		GameMessageArgumentType arg;
 		UnsignedInt stamp;
 		memcpy(&stamp, data + i, sizeof(stamp));
 		i += sizeof(stamp);
 		arg.timestamp = stamp;
 		msg->addArgument(type, arg);
-		break;
-
-	case ARGUMENTDATATYPE_WIDECHAR:
+	} else if (type == ARGUMENTDATATYPE_WIDECHAR) {
+		GameMessageArgumentType arg;
 		WideChar c;
 		memcpy(&c, data + i, sizeof(c));
 		i += sizeof(c);
 		arg.wChar = c;
 		msg->addArgument(type, arg);
-		break;
-
 	}
-
 }
 
 /**

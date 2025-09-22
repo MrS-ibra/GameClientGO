@@ -68,7 +68,9 @@ FenceOptions::FenceOptions(CWnd* pParent /*=NULL*/)
 
 FenceOptions::~FenceOptions(void)
 {
-	deleteInstance(m_objectsList);
+	if (m_objectsList) {
+		deleteInstance(m_objectsList);
+	}
 	m_objectsList = NULL;
 }
 

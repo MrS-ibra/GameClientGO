@@ -1178,7 +1178,7 @@ protected:
 	StateMachine *m_actionMachine;
 
 };
-inline DozerActionState::~DozerActionState( void ) { deleteInstance(m_actionMachine); }
+inline DozerActionState::~DozerActionState( void ) { if (m_actionMachine) deleteInstance(m_actionMachine); }
 
 // ------------------------------------------------------------------------------------------------
 /** CRC */
@@ -1477,7 +1477,8 @@ DozerAIUpdate::~DozerAIUpdate( void )
 {
 
 	// delete our behavior state machine
-	deleteInstance(m_dozerMachine);
+	if( m_dozerMachine )
+		deleteInstance(m_dozerMachine);
 
 	// no orders
 	for( Int i = 0; i < DOZER_NUM_TASKS; i++ )

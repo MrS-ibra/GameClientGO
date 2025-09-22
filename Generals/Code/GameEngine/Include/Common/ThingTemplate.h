@@ -158,7 +158,8 @@ public:
 	~AudioArray()
 	{
 		for (Int i = 0; i < TTAUDIO_COUNT; ++i)
-			deleteInstance(m_audio[i]);
+			if (m_audio[i])
+				deleteInstance(m_audio[i]);
 	}
 
 	AudioArray(const AudioArray& that)

@@ -79,6 +79,9 @@ const Char *g_strFile = "data\\Generals.str";
 const Char *g_csfFile = "data\\%s\\Generals.csf";
 const char *gAppPrefix = ""; /// So WB can have a different debug log file name.
 
+#define DEFAULT_XRESOLUTION 800
+#define DEFAULT_YRESOLUTION 600
+
 static Bool gInitializing = false;
 static Bool gDoPaint = true;
 static Bool isWinMainActive = false;
@@ -316,7 +319,14 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 		// handle all window messages
 		switch( message )
 		{
-
+#if defined(GENERALS_ONLINE)
+		case WM_MOVE:
+		{
+			if (TheMouse)
+				TheMouse->setMouseLimits();
+			break;
+		}
+#endif
 			//-------------------------------------------------------------------------
 			case WM_NCHITTEST:
 			// Prevent the user from selecting the menu in fullscreen mode
@@ -403,8 +413,8 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 				if( TheKeyboard )
 					TheKeyboard->resetKeys();
 
-				if (TheMouse)
-					TheMouse->regainFocus();
+				if (TheWin32Mouse)
+					TheWin32Mouse->lostFocus(FALSE);
 
 #if defined(GENERALS_ONLINE)
 				if (TheMouse)
@@ -415,35 +425,26 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 			}  // end set focus
 
 			//-------------------------------------------------------------------------
-			case WM_MOVE:
-			{
-				if (TheMouse)
-					TheMouse->refreshCursorCapture();
-
-				break;
-			}
-
-			//-------------------------------------------------------------------------
 			case WM_SIZE:
-			{
 				// When W3D initializes, it resizes the window.  So stop repainting.
 				if (!gInitializing)
 					gDoPaint = false;
 
+#if defined(GENERALS_ONLINE)
 				if (TheMouse)
-					TheMouse->refreshCursorCapture();
+					TheMouse->setMouseLimits();
+#endif
+				
 
 				break;
-			}
 
 			//-------------------------------------------------------------------------
 			case WM_KILLFOCUS:
 			{
 				if (TheKeyboard )
 					TheKeyboard->resetKeys();
-
-				if (TheMouse)
-					TheMouse->loseFocus();
+				if (TheWin32Mouse)
+					TheWin32Mouse->lostFocus(TRUE);
 
 				break;
 			}
@@ -486,20 +487,27 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 			{
 				Int active = LOWORD( wParam );
 
+				//
+				// when window is becoming deactivated we must release mouse cursor
+				// locks on our region, otherwise set the mouse limit region again
+				// which will clip the cursor to our window
+				//
 				if( active == WA_INACTIVE )
 				{
+
+					ClipCursor( NULL );
 					if (TheAudio)
 						TheAudio->loseFocus();
-				}
+				}  // end if
 				else
 				{
+					if( TheMouse )
+						TheMouse->setMouseLimits();
+
 					if (TheAudio)
 						TheAudio->regainFocus();
 
-					// Cursor can only be captured after one of the activation events.
-					if (TheMouse)
-						TheMouse->refreshCursorCapture();
-				}
+				}  // end else
 				break;
 
 			}  // end case activate
@@ -623,11 +631,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 						Int savContext = ::SaveDC(dc);
 						HDC tmpDC = ::CreateCompatibleDC(dc);
 						HBITMAP savBitmap = (HBITMAP)::SelectObject(tmpDC, gLoadScreenBitmap);
-#if defined(GENERALS_ONLINE)
-						::BitBlt(dc, 0, 0, DEFAULT_DISPLAY_WIDTH_SPLASH, DEFAULT_DISPLAY_HEIGHT_SPLASH, tmpDC, 0, 0, SRCCOPY);
-#else
-						::BitBlt(dc, 0, 0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, tmpDC, 0, 0, SRCCOPY);
-#endif
+						::BitBlt(dc, 0, 0, DEFAULT_XRESOLUTION, DEFAULT_YRESOLUTION, tmpDC, 0, 0, SRCCOPY);
 						::SelectObject(tmpDC, savBitmap);
 						::DeleteDC(tmpDC);
 						::RestoreDC(dc, savContext);
@@ -709,14 +713,8 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 static Bool initializeAppWindows( HINSTANCE hInstance, Int nCmdShow, Bool runWindowed )
 {
 	DWORD windowStyle;
-
-#if defined(GENERALS_ONLINE)
-	Int startWidth = DEFAULT_DISPLAY_WIDTH_SPLASH,
-		startHeight = DEFAULT_DISPLAY_HEIGHT_SPLASH;
-#else
-	Int startWidth = DEFAULT_DISPLAY_WIDTH,
-			startHeight = DEFAULT_DISPLAY_HEIGHT;
-#endif
+	Int startWidth = DEFAULT_XRESOLUTION,
+			startHeight = DEFAULT_YRESOLUTION;
 
 	// register the window class
 
@@ -742,14 +740,8 @@ static Bool initializeAppWindows( HINSTANCE hInstance, Int nCmdShow, Bool runWin
 	AdjustWindowRect (&rect, windowStyle, FALSE);
 	if (runWindowed) {
 		// Makes the normal debug 800x600 window center in the screen.
-
-#if defined(GENERALS_ONLINE)
-		startWidth = DEFAULT_DISPLAY_WIDTH_SPLASH;
-		startHeight = DEFAULT_DISPLAY_HEIGHT_SPLASH;
-#else
-		startWidth = DEFAULT_DISPLAY_WIDTH;
-		startHeight= DEFAULT_DISPLAY_HEIGHT;
-#endif
+		startWidth = DEFAULT_XRESOLUTION;
+		startHeight= DEFAULT_YRESOLUTION;
 	}
 
 	gInitializing = true;
@@ -803,15 +795,6 @@ static Bool initializeAppWindows( HINSTANCE hInstance, Int nCmdShow, Bool runWin
 // Necessary to allow memory managers and such to have useful critical sections
 static CriticalSection critSec1, critSec2, critSec3, critSec4, critSec5;
 
-// UnHandledExceptionFilter ===================================================
-/** Handler for unhandled win32 exceptions. */
-//=============================================================================
-static LONG WINAPI UnHandledExceptionFilter( struct _EXCEPTION_POINTERS* e_info )
-{
-	DumpExceptionInfo( e_info->ExceptionRecord->ExceptionCode, e_info );
-	return EXCEPTION_EXECUTE_HANDLER;
-}
-
 // WinMain ====================================================================
 /** Application entry point */
 //=============================================================================
@@ -826,7 +809,7 @@ Int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 	try {
 
-		SetUnhandledExceptionFilter( UnHandledExceptionFilter );
+		_set_se_translator( DumpExceptionInfo ); // Hook that allows stack trace.
 		//
 		// there is something about checkin in and out the .dsp and .dsw files
 		// that blows the working directory information away on each of the

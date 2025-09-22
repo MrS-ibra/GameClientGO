@@ -36,6 +36,8 @@
 #include "GameNetwork/GameSpy/PersistentStorageThread.h"
 #include "GameNetwork/GameSpy/ThreadUtils.h"
 
+#include "Common/StackDump.h"
+
 #include "mutex.h"
 #include "thread.h"
 
@@ -260,6 +262,7 @@ GPProfile GameSpyBuddyMessageQueue::getLocalProfileID( void )
 void BuddyThreadClass::Thread_Function()
 {
 	try {
+	_set_se_translator( DumpExceptionInfo ); // Hook that allows stack trace.
 	GPConnection gpCon;
 	GPConnection *con = &gpCon;
 	gpInitialize( con, 675, 0, GP_PARTNERID_GAMESPY );

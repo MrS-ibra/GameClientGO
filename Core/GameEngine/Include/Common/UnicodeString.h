@@ -114,10 +114,6 @@ protected:
 
 public:
 
-	typedef WideChar value_type;
-	typedef value_type* pointer;
-	typedef const value_type* const_pointer;
-
 	enum
 	{
 		MAX_FORMAT_BUF_LEN = 2048,		///< max total len of string created by format/format_va
@@ -146,17 +142,11 @@ public:
 	/**
 		Constructor -- from a literal string. Constructs an UnicodeString
 		with the given string. Note that a copy of the string is made;
-		the input ptr is not saved.
-		Note that this is no longer explicit, as the conversion is almost
-		always wanted, anyhow.
+		the input ptr is not saved. Note also that this is declared
+		'explicit' to avoid implicit conversions from const-WideChar-*
+		(e.g., as input arguments).
 	*/
-	UnicodeString(const WideChar* s);
-
-	/**
-		Constructs an UnicodeString with the given string and length.
-		The length must not be larger than the actual string length.
-	*/
-	UnicodeString(const WideChar* s, int len);
+	explicit UnicodeString(const WideChar* s);
 
 	/**
 		Destructor. Not too exciting... clean up the works and such.
@@ -210,19 +200,11 @@ public:
 		refcount.)
 	*/
 	void set(const UnicodeString& stringSrc);
-
 	/**
 		Replace the contents of self with the given string.
 		Note that a copy of the string is made; the input ptr is not saved.
 	*/
 	void set(const WideChar* s);
-
-	/**
-		Replace the contents of self with the given string and length.
-		Note that a copy of the string is made; the input ptr is not saved.
-		The length must not be larger than the actual string length.
-	*/
-	void set(const WideChar* s, int len);
 
 	/**
 		replace contents of self with the given string. Note the

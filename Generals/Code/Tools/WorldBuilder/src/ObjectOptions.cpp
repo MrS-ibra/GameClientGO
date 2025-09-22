@@ -64,7 +64,9 @@ ObjectOptions::ObjectOptions(CWnd* pParent /*=NULL*/)
 
 ObjectOptions::~ObjectOptions(void)
 {
-	deleteInstance(m_objectsList);
+	if (m_objectsList) {
+		deleteInstance(m_objectsList);
+	}
 	m_objectsList = NULL;
 }
 
