@@ -64,8 +64,8 @@ enum class ELobbyUpdateField
 	LOBBY_LIMIT_SUPERWEAPONS = 6,
 	HOST_ACTION_FORCE_START = 7,
 	LOCAL_PLAYER_HAS_MAP = 8,
-	GAME_STARTED = 9,
-	GAME_FINISHED = 10,
+	UNUSED_1 = 9,
+	UNUSED_2 = 10,
 	HOST_ACTION_KICK_USER = 11,
 	HOST_ACTION_SET_SLOT_STATE = 12,
 	AI_SIDE = 13,
@@ -146,46 +146,6 @@ void NGMP_OnlineServices_LobbyInterface::UpdateCurrentLobby_StartingCash(Unsigne
 
 		});
 }
-
-void NGMP_OnlineServices_LobbyInterface::MarkCurrentGameAsStarted()
-{
-	std::string strURI = std::format("{}/{}", NGMP_OnlineServicesManager::GetAPIEndpoint("Lobby"), m_CurrentLobby.lobbyID);
-	std::map<std::string, std::string> mapHeaders;
-
-	nlohmann::json j;
-	j["field"] = ELobbyUpdateField::GAME_STARTED;
-	std::string strPostData = j.dump();
-
-	// convert
-	NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPOSTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, strPostData.c_str(), [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
-		{
-
-		});
-}
-
-void NGMP_OnlineServices_LobbyInterface::MarkCurrentGameAsFinished()
-{
-	if (m_bMarkedGameAsFinished)
-	{
-		return;
-	}
-
-	m_bMarkedGameAsFinished = true;
-
-	std::string strURI = std::format("{}/{}", NGMP_OnlineServicesManager::GetAPIEndpoint("Lobby"), m_CurrentLobby.lobbyID);
-	std::map<std::string, std::string> mapHeaders;
-
-	nlohmann::json j;
-	j["field"] = ELobbyUpdateField::GAME_FINISHED;
-	std::string strPostData = j.dump();
-
-	// convert
-	NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPOSTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, strPostData.c_str(), [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
-		{
-
-		});
-}
-
 
 void NGMP_OnlineServices_LobbyInterface::UpdateCurrentLobby_HasMap()
 {

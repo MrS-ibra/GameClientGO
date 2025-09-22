@@ -186,9 +186,6 @@ public:
 
 	void OnJoinedOrCreatedLobby(bool bAlreadyUpdatedDetails, std::function<void(void)> fnCallback);
 
-	void MarkCurrentGameAsStarted();
-	void MarkCurrentGameAsFinished();
-
 	UnicodeString GetCurrentLobbyDisplayName();
 	UnicodeString GetCurrentLobbyMapDisplayName();
 	AsciiString GetCurrentLobbyMapPath();

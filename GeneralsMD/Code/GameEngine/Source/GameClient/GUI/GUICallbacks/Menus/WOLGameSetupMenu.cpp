@@ -1042,9 +1042,6 @@ static void StartPressed(void)
 						// reset autostart just incase
 						pLobbyInterface->ClearAutoReadyCountdown();
 
-						// host mark as ready on backend
-						pLobbyInterface->MarkCurrentGameAsStarted();
-
 						//PeerRequest req;
 						//req.peerRequestType = PeerRequest::PEERREQUEST_STARTGAME;
 						//TheGameSpyPeerMessageQueue->addRequest(req);
