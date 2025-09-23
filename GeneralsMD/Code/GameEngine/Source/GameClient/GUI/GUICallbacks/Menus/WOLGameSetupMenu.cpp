@@ -486,8 +486,62 @@ static void playerTooltip(GameWindow *window,
 				}
 			}
 
+#if defined(GENERALS_ONLINE)
+	int64_t localPlayerID = -1;
+	NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
+	if (pAuthInterface != nullptr)
+	{
+		localPlayerID = pAuthInterface->GetUserID();
+	}
+
+	bool bIsConnected = false;
+	int latency = -1;
+	std::string strConnectionType = "";
+
+	LobbyMemberEntry member = pLobbyInterface->GetRoomMemberFromID(slot->m_userID);
+
+	if (localPlayerID != slot->m_userID)
+	{
+		if (NGMP_OnlineServicesManager::GetNetworkMesh() != nullptr)
+		{
+			PlayerConnection* pConnection = NGMP_OnlineServicesManager::GetNetworkMesh()->GetConnectionForUser(slot->m_userID);
+
+			if (pConnection != nullptr)
+			{
+				strConnectionType = pConnection->GetConnectionType();
+				if (pConnection->GetState() == EConnectionState::CONNECTED_DIRECT)
+				{
+					bIsConnected = true;
+				}
+				else
+				{
+					bIsConnected = false;
+				}
+				latency = pConnection->GetLatency();
+			}
+		}
+	}
+
+	if (localPlayerID == slot->m_userID)
+	{
+		// local user wont have a connection
+		playerInfo.format(L"\nWins: %d\nLosses: %d\nDisconnects: %d\nFavorite Army: %s",
+			totalWins, totalLosses, totalDiscons, favoriteSide.str());
+	}
+	else if (bIsConnected)
+	{
+		playerInfo.format(L"\nConnection State: Connected (%hs)\nLatency: %d ms\nWins: %d\nLosses: %d\nDisconnects: %d\nFavorite Army: %s",
+			strConnectionType.c_str(), latency, totalWins, totalLosses, totalDiscons, favoriteSide.str());
+	}
+	else
+	{
+		playerInfo.format(L"\nConnection State: Connecting...\nLatency: %d ms\nWins: %d\nLosses: %d\nDisconnects: %d\nFavorite Army: %s",
+			latency, totalWins, totalLosses, totalDiscons, favoriteSide.str());
+	}
+#else
 			playerInfo.format(L"\nLatency: %d ms\nWins: %d\nLosses: %d\nDisconnects: %d\nFavorite Army: %s",
 				slot->getPingAsInt(), totalWins, totalLosses, totalDiscons, favoriteSide.str());
+#endif
 
 			UnicodeString tooltip = UnicodeString::TheEmptyString;
 			if (isLocalPlayer)
@@ -1258,6 +1312,7 @@ void WOLDisplaySlotList( void )
 		{
 			bool bIsConnected = false;
 			int latency = -1;
+			std::string strConnectionType = "";
 
 			LobbyMemberEntry member = pLobbyInterface->GetRoomMemberFromID(slot->m_userID);
 
@@ -1267,24 +1322,18 @@ void WOLDisplaySlotList( void )
 
 				if (pConnection != nullptr)
 				{
+					strConnectionType = pConnection->GetConnectionType();
 					if (pConnection->GetState() == EConnectionState::CONNECTED_DIRECT)
 					{
 						bIsConnected = true;
 					}
 					else
 					{
-						bIsConnected = true;
+						bIsConnected = false;
 					}
 					latency = pConnection->GetLatency();
 				}
 			}
-
-			UnicodeString ucTooltip;
-			ucTooltip.format(L"Display Name: %s\nConnection Type: %hs\nLatency: %d", from_utf8(member.display_name).c_str(),
-				bIsConnected ? "Connected" : "Not Connected",
-				latency);
-
-			slot->setPingString(ucTooltip);
 
 			if (genericPingWindow[i])
 			{
@@ -1300,17 +1349,20 @@ void WOLDisplaySlotList( void )
 				}
 				else
 				{
-					if (latency < 250)
+					if (latency > 0)
 					{
-						genericPingWindow[i]->winSetEnabledImage(0, pingImages[0]);
-					}
-					else if (latency < 500)
-					{
-						genericPingWindow[i]->winSetEnabledImage(0, pingImages[1]);
-					}
-					else
-					{
-						genericPingWindow[i]->winSetEnabledImage(0, pingImages[2]);
+						if (latency < 250)
+						{
+							genericPingWindow[i]->winSetEnabledImage(0, pingImages[0]);
+						}
+						else if (latency < 500)
+						{
+							genericPingWindow[i]->winSetEnabledImage(0, pingImages[1]);
+						}
+						else
+						{
+							genericPingWindow[i]->winSetEnabledImage(0, pingImages[2]);
+						}
 					}
 				}
 			}
@@ -1702,6 +1754,9 @@ void WOLGameSetupMenuInit( WindowLayout *layout, void *userData )
 					}
 #endif
 				}
+
+				// update UI
+				WOLDisplaySlotList();
 			});
 	}
 
@@ -3462,94 +3517,6 @@ Bool handleGameSetupSlashCommands(UnicodeString uText)
 				GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"You are not the lobby owner."), GameMakeColor(255, 0, 0, 255), -1, -1);
 			}
 		}
-
-		return TRUE; // was a slash command
-	}
-	else if (token == "connections" || token == "conns" || token == "c")
-	{
-		// TODO_NGMP: Disable this on retail builds
-		std::map<int64_t, PlayerConnection>& connections = NGMP_OnlineServicesManager::GetNetworkMesh()->GetAllConnections();
-
-		UnicodeString msg;
-		msg.format(L"Displaying %d network connection(s) to this lobby:", connections.size());
-		GadgetListBoxAddEntryText(listboxGameSetupChat, msg, GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
-
-		NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
-		if (pLobbyInterface == nullptr)
-		{
-			return TRUE;
-		}
-
-		auto lobbyMembers = pLobbyInterface->GetMembersListForCurrentRoom();
-
-		int highestLatency = 0;
-
-		int i = 0;
-		for (auto& kvPair : connections)
-		{
-			PlayerConnection& conn = kvPair.second;
-
-			std::string strState = "Unknown";
-
-			switch (conn.m_State)
-			{
-			case EConnectionState::NOT_CONNECTED:
-				strState = "Not Connected";
-				break;
-
-			case EConnectionState::CONNECTING_DIRECT:
-				strState = "Connecting";
-				break;
-			case EConnectionState::FINDING_ROUTE:
-				strState = "Connecting (Finding Route)";
-				break;
-
-			case EConnectionState::CONNECTED_DIRECT:
-				strState = "Connected";
-				break;
-
-			case EConnectionState::CONNECTION_FAILED:
-				strState = "Connection Failed";
-				break;
-
-			case EConnectionState::CONNECTION_DISCONNECTED:
-				strState = "Disconnected (Was Connected Previously)";
-				break;
-
-			default:
-				strState = "Unknown";
-				break;
-			}
-
-			std::wstring strDisplayName = L"Unknown";
-			for (auto& member : lobbyMembers)
-			{
-				if (member.user_id == kvPair.first)
-				{
-					strDisplayName = from_utf8(member.display_name);
-					break;
-				}
-			}
-
-			std::string strConnectionType = conn.GetConnectionType();
-
-			UnicodeString msg;
-			msg.format(L"        Connection %d - name %s - State: %hs - Latency: %d game frames (%d ms) - %d GenTool frames - Connection Type %hs",
-				i, strDisplayName.c_str(), strState.c_str(), ConvertMSLatencyToFrames(conn.GetLatency()), conn.GetLatency(), ConvertMSLatencyToGenToolFrames(conn.GetLatency()), strConnectionType.c_str());
-			GadgetListBoxAddEntryText(listboxGameSetupChat, msg, GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
-
-			if (conn.GetLatency() > highestLatency)
-			{
-				highestLatency = conn.GetLatency();
-			}
-
-			++i;
-		}
-
-		// show overall latency expectations
-		UnicodeString msgOverall;
-		msgOverall.format(L"Based on the current lobby players, the game latency will be %d game frames (%d ms)(%d GenTool frames):", ConvertMSLatencyToFrames(highestLatency), highestLatency, ConvertMSLatencyToGenToolFrames(highestLatency));
-		GadgetListBoxAddEntryText(listboxGameSetupChat, msgOverall, GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
 
 		return TRUE; // was a slash command
 	}
