@@ -855,6 +855,10 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 				// add playlists
 				UnicodeString s;
 
+				// clear ui element
+				GadgetComboBoxReset(comboBoxNumPlayers);
+
+
 				for (PlaylistEntry& playlist : vecPlaylists)
 				{
 					s.format(L"%hs", playlist.Name.c_str());
