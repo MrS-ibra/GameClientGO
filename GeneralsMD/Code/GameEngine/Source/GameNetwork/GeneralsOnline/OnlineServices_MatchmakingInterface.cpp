@@ -40,6 +40,7 @@ void NGMP_OnlineServices_MatchmakingInterface::RetrievePlaylists(std::function<v
 
 						mapEntryIter["Name"].get_to(mapEntry.Name);
 						mapEntryIter["Path"].get_to(mapEntry.Path);
+						mapEntryIter["Custom"].get_to(mapEntry.Custom);
 
 						playlistEntry.Maps.push_back(mapEntry);
 					}

@@ -460,8 +460,6 @@ WindowMsgHandledType WOLMapSelectMenuSystem( GameWindow *window, UnsignedInt msg
 					else
 						asciiMap.translate( map );
 
-					// TODO_NGMP: Sync all of this back to the lobby service
-
 					int newMaxPlayers = -1;
 					AsciiString strMapName;
 					bool bOfficialMap = false;

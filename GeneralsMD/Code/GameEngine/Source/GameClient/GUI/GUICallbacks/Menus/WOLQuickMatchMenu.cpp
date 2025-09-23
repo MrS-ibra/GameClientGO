@@ -614,8 +614,19 @@ static void populateQuickMatchMapSelectListbox( QuickMatchPreferences& pref )
 				// maps
 				for (PlaylistMapEntry& mapEntry : plEntry.Maps)
 				{
-					// format into game format (Maps\\name\\name.map)
-					std::string correctedMapPath = std::format("Maps\\{}\\{}.map", mapEntry.Path, mapEntry.Path);
+					// format into game format (Maps\\name\\name.map) for official EA maps or full path for custom maps
+					std::string correctedMapPath;
+					
+					// custom maps need the full path
+					if (mapEntry.Custom)
+					{
+						correctedMapPath = std::format("{}Maps\\{}\\{}.map", TheGlobalData->getPath_UserData().str(), mapEntry.Path, mapEntry.Path);
+					}
+					else
+					{
+						correctedMapPath = std::format("Maps\\{}\\{}.map", mapEntry.Path, mapEntry.Path);
+					}
+
 					maps.push_back(AsciiString(correctedMapPath.c_str()));
 				}
 			}
@@ -876,6 +887,19 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 		pLobbyInterface->RegisterForMatchmakingStartGameCallback([]()
 			{
 				NetworkLog(ELogVerbosity::LOG_DEBUG, "[QUICKMATCH] GOT START GAME EVENT");
+
+				// mark everyone as having the map, we dont allow user provided custom maps or map transfers in QM
+				// TODO_QUICKMATCH: Do this automatically for game type quickmatch, or better yet, do it on the service
+				for (int i = 0; i < MAX_SLOTS; i++)
+				{
+					GameSlot* slot = TheNGMPGame->getSlot(i);
+					if (slot != nullptr)
+					{
+						slot->setMapAvailability(TRUE);
+					}
+				}
+
+				// start
 				NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
 				NGMPGame* myGame = pLobbyInterface == nullptr ? nullptr : pLobbyInterface->GetCurrentGame();
 

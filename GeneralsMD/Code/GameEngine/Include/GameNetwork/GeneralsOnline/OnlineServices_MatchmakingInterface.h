@@ -6,6 +6,7 @@ struct PlaylistMapEntry
 {
 	std::string Name = std::string();
 	std::string Path = std::string();
+	bool Custom = false;
 };
 
 struct PlaylistEntry

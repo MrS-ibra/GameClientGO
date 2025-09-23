@@ -63,7 +63,40 @@ NGMPGame::~NGMPGame()
 void NGMPGame::SyncWithLobby(LobbyEntry& lobby)
 {
 	// map
-	setMap(lobby.map_path.c_str());
+	// correct if custom (game needs full path, this is done in vanilla for CM only, and not QM, but our QM has custom maps, so just do it here for safety)
+
+	AsciiString asciiMapOfficial(lobby.map_path.c_str());
+	std::string correctedMapPath = std::format("{}{}", TheGlobalData->getPath_UserData().str(), lobby.map_path.c_str());
+	AsciiString asciiMapCustom(correctedMapPath.c_str());
+	//TheNGMPGame->setMap(asciiMap);
+	asciiMapOfficial.toLower();
+	asciiMapCustom.toLower();
+	std::map<AsciiString, MapMetaData>::iterator itOfficial = TheMapCache->find(asciiMapOfficial);
+	std::map<AsciiString, MapMetaData>::iterator itCustom = TheMapCache->find(asciiMapCustom);
+
+	// is it official?
+
+
+	if (itOfficial != TheMapCache->end())
+	{
+		TheNGMPGame->getGameSpySlot(0)->setMapAvailability(TRUE);
+		TheNGMPGame->setMapCRC(itOfficial->second.m_CRC);
+		TheNGMPGame->setMapSize(itOfficial->second.m_filesize);
+
+		setMap(asciiMapOfficial);
+	}
+	else if (itCustom != TheMapCache->end())
+	{
+		TheNGMPGame->getGameSpySlot(0)->setMapAvailability(TRUE);
+		TheNGMPGame->setMapCRC(itCustom->second.m_CRC);
+		TheNGMPGame->setMapSize(itCustom->second.m_filesize);
+
+		setMap(asciiMapCustom);
+	}
+	else // fallback
+	{
+		setMap(lobby.map_path.c_str());
+	}
 
 	// superweapon
 	setSuperweaponRestriction(lobby.limit_superweapons);
