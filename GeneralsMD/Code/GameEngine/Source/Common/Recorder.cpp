@@ -727,20 +727,25 @@ void RecorderClass::stopRecording() {
 		}
 	}
 
-#if defined(GENERALS_ONLINE)
-	if (TheNGMPGame != nullptr)
+	if (m_file != NULL)
 	{
-		NGMP_OnlineServicesManager* pOnlineServicesMgr = NGMP_OnlineServicesManager::GetInstance();
-		if (pOnlineServicesMgr != nullptr)
-		{
-			pOnlineServicesMgr->CommitReplay(m_file);
-		}
-	}
-#endif
-
-	if (m_file != NULL) {
 		fclose(m_file);
 		m_file = NULL;
+
+		// upload
+#if defined(GENERALS_ONLINE)
+		if (TheNGMPGame != nullptr)
+		{
+			NGMP_OnlineServicesManager* pOnlineServicesMgr = NGMP_OnlineServicesManager::GetInstance();
+			if (pOnlineServicesMgr != nullptr)
+			{
+				AsciiString absoluteReplayPath = getReplayDir();
+				absoluteReplayPath.concat(m_fileName);
+
+				pOnlineServicesMgr->CommitReplay(absoluteReplayPath);
+			}
+		}
+#endif
 	}
 	m_fileName.clear();
 }

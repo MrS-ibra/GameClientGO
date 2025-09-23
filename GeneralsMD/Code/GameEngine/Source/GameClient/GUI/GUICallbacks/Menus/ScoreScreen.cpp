@@ -266,12 +266,15 @@ void ScoreScreenEnableControls(Bool enable)
 extern Bool DontShowMainMenu; //KRIS
 Bool g_playMusic = FALSE;
 Bool ReplayWasPressed = FALSE;
+
+Bool g_bHasDoneEOGScreenshot = FALSE;
 /** Initialize the ScoreScreen */
 //-------------------------------------------------------------------------------------------------
 void ScoreScreenInit( WindowLayout *layout, void *userData )
 {
 	//Play music after subsystems get reset including the audio...
 	g_playMusic = TRUE;
+	g_bHasDoneEOGScreenshot = FALSE;
 	
 	if (TheGameSpyInfo)
 	{
@@ -408,6 +411,13 @@ void FixupScoreScreenMovieWindow( void )
 //-------------------------------------------------------------------------------------------------
 void ScoreScreenShutdown( WindowLayout *layout, void *userData )
 {
+	if (!g_bHasDoneEOGScreenshot)
+	{
+		g_bHasDoneEOGScreenshot = true;
+
+		NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshotForProbe(EScreenshotType::SCREENSHOT_TYPE_SCORESCREEN);
+	}
+
 	DontShowMainMenu = FALSE; //KRIS
 
 	// hide the layout

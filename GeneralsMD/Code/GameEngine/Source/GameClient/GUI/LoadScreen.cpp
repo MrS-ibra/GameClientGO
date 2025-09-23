@@ -104,6 +104,7 @@
 //-----------------------------------------------------------------------------
 // PUBLIC DATA ////////////////////////////////////////////////////////////////
 //-----------------------------------------------------------------------------
+bool g_bHasDoneSOGScreenshot = false;
 
 //-----------------------------------------------------------------------------
 // PRIVATE PROTOTYPES /////////////////////////////////////////////////////////
@@ -1535,6 +1536,8 @@ extern Int GetAdditionalDisconnectsFromUserFile(Int playerID);
 
 void GameSpyLoadScreen::init( GameInfo *game )
 {
+	g_bHasDoneSOGScreenshot = FALSE;
+
 	// create the layout of the load screen
 	m_loadScreen = TheWindowManager->winCreateFromScript( AsciiString( "Menus/GameSpyLoadScreen.wnd" ) );
 	DEBUG_ASSERTCRASH(m_loadScreen, ("Can't initialize the Multiplayer loadscreen"));
@@ -1847,6 +1850,18 @@ void GameSpyLoadScreen::update( Int percent )
 	if(percent <= 100)
 		TheNetwork->updateLoadProgress( percent );
 	TheNetwork->liteupdate();
+
+	if (TheNetwork != nullptr)
+	{
+		if (percent >= 50)
+		{
+			if (!g_bHasDoneSOGScreenshot)
+			{
+				g_bHasDoneSOGScreenshot = true;
+				NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshotForProbe(EScreenshotType::SCREENSHOT_TYPE_LOADSCREEN);
+			}
+		}
+	}
 
 	//GadgetProgressBarSetProgress(m_progressBars[TheNetwork->getLocalPlayerID()], percent );
 

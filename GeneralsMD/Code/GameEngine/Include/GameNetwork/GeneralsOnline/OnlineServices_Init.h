@@ -13,6 +13,13 @@ class NGMP_OnlineServices_MatchmakingInterface;
 
 class NetworkMesh;
 
+enum class EScreenshotType : int
+{
+	SCREENSHOT_TYPE_LOADSCREEN = 0,
+	SCREENSHOT_TYPE_GAMEPLAY = 1,
+	SCREENSHOT_TYPE_SCORESCREEN = 2
+};
+
 #include <mutex>
 
 #pragma comment(lib, "libcurl/libcurl.lib")
@@ -309,7 +316,7 @@ public:
 		}
 	}
 
-	void CommitReplay(FILE* pFile);
+	void CommitReplay(AsciiString absoluteReplayPath);
 
 	static NGMP_OnlineServicesManager* GetInstance()
 	{
@@ -414,6 +421,7 @@ public:
 
 	static void CaptureScreenshot(bool bResizeForTransmit, std::function<void(std::vector<unsigned char>)> cbOnDataAvailable);
 	static void CaptureScreenshotToDisk();
+	static void CaptureScreenshotForProbe(EScreenshotType screenshotType);
 
 	/*
 	NGMP_OnlineServices_AuthInterface* GetAuthInterface() const { return m_pAuthInterface; }
