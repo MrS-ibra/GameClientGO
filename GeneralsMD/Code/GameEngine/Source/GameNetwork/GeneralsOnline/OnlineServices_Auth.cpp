@@ -52,7 +52,7 @@ struct MOTDResponse
 
 std::string GenerateGamecode()
 {
-#if _DEBUG
+#if defined(_DEBUG) && !defined(USE_TEST_ENV)
 	return "ILOVECODE";
 #else
 	std::string result;
@@ -227,7 +227,7 @@ void NGMP_OnlineServices_AuthInterface::BeginLogin()
 		ClearGSMessageBoxes();
 		GSMessageBoxNoButtons(UnicodeString(L"Logging In"), UnicodeString(L"Please continue in your web browser"), true);
 
-#if !_DEBUG
+#if !defined(_DEBUG) || defined(USE_TEST_ENV)
 		ShellExecuteA(NULL, "open", strURI.c_str(), NULL, NULL, SW_SHOWNORMAL);
 #endif
 			
@@ -253,7 +253,7 @@ void NGMP_OnlineServices_AuthInterface::DoReAuth()
 	std::string strURI = std::format("http://www.playgenerals.online/login/?gamecode={}", m_strCode.c_str());
 #endif
 
-#if !_DEBUG
+#if !defined(_DEBUG) || defined(USE_TEST_ENV)
 	ShellExecuteA(NULL, "open", strURI.c_str(), NULL, NULL, SW_SHOWNORMAL);
 #endif
 }
@@ -404,7 +404,7 @@ void NGMP_OnlineServices_AuthInterface::SaveCredentials(const char* szRefreshTok
 
 bool NGMP_OnlineServices_AuthInterface::GetCredentials(std::string& strRefreshToken)
 {
-#if _DEBUG
+#if defined(_DEBUG) && !defined(USE_TEST_ENV)
 	return false;
 #endif
 	std::vector<uint8_t> vecBytes;
@@ -481,7 +481,7 @@ bool NGMP_OnlineServices_AuthInterface::GetCredentials(std::string& strRefreshTo
 std::string NGMP_OnlineServices_AuthInterface::GetCredentialsFilePath()
 {
 	// debug supports multi inst, so needs seperate tokens
-#if _DEBUG
+#if defined(_DEBUG) && !defined(USE_TEST_ENV)
 	std::string strCredsPath = std::format("{}/GeneralsOnlineData/credentials_dev_env_{}.json", TheGlobalData->getPath_UserData().str(), rts::ClientInstance::getInstanceIndex());
 #else
 	std::string strCredsPath = std::format("{}/GeneralsOnlineData/{}", TheGlobalData->getPath_UserData().str(), CREDENTIALS_FILENAME);

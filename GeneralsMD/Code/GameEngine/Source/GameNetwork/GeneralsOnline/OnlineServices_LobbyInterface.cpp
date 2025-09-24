@@ -645,6 +645,9 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 						if (TheNGMPGame->isGameInProgress())
 						{
 							NetworkLog(ELogVerbosity::LOG_RELEASE, "Ignoring lobby members update request during gameplay.");
+
+							// still store the lobby though
+							m_CurrentLobby = lobbyEntry;
 						}
 						else
 						{
@@ -739,7 +742,8 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 								m_bHostMigrated = true;
 							}
 
-							// update NGMP Game if it exists
+							// store
+							m_CurrentLobby = lobbyEntry;
 
 							// inform game instance too
 							if (TheNGMPGame != nullptr)
@@ -758,11 +762,6 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 								}
 							}
 						}
-
-						// store
-						m_CurrentLobby = lobbyEntry;
-
-						
 
 						if (fnCallback != nullptr)
 						{

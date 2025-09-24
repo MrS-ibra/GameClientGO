@@ -1994,25 +1994,6 @@ void WOLGameSetupMenuInit( WindowLayout *layout, void *userData )
 		AsciiString asciiMap = game->getMap();
 		asciiMap.toLower();
 
-		// TODO_NGMP: Sync map availability back to host, he needs it
-		std::map<AsciiString, MapMetaData>::iterator it = TheMapCache->find(asciiMap);
-		if (it != TheMapCache->end())
-		{
-			// TODO_NGMP: Urgent, this crashes when you join a 2/2 game as the 3rd player, because we shouldnt let you join...
-			if (game->getLocalSlotNum() != -1)
-			{
-				game->getSlot(game->getLocalSlotNum())->setMapAvailability(true);
-				game->setMapCRC(it->second.m_CRC);
-				game->setMapSize(it->second.m_filesize);
-			}
-		}
-		else
-		{
-			game->getSlot(game->getLocalSlotNum())->setMapAvailability(false);
-			game->setMapCRC(0);
-			game->setMapSize(0);
-		}
-
 		/*
 		req.peerRequestType = PeerRequest::PEERREQUEST_UTMPLAYER;
 		req.UTM.isStagingRoom = TRUE;
