@@ -411,7 +411,7 @@ void FixupScoreScreenMovieWindow( void )
 //-------------------------------------------------------------------------------------------------
 void ScoreScreenShutdown( WindowLayout *layout, void *userData )
 {
-	if (!g_bHasDoneEOGScreenshot)
+	if (TheNetwork != nullptr && !g_bHasDoneEOGScreenshot)
 	{
 		g_bHasDoneEOGScreenshot = true;
 

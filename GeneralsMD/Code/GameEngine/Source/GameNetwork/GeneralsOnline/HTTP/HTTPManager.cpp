@@ -83,7 +83,7 @@ void HTTPManager::Tick()
 	// perform and poll
 	int numReqs = 0;
 	curl_multi_perform(m_pCurl, &numReqs);
-	curl_multi_poll(m_pCurl, NULL, 0, 1, NULL);
+	curl_multi_poll(m_pCurl, NULL, 0, 0, NULL);
 
 	// are we done?
 	int msgq = 0;
