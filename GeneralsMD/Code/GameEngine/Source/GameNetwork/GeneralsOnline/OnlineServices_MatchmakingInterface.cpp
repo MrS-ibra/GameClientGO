@@ -120,4 +120,11 @@ void NGMP_OnlineServices_MatchmakingInterface::CancelMatchmaking()
 		{
 		
 		});
+
+	// also reset host migration flags on lobby
+	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+	if (pLobbyInterface != nullptr)
+	{
+		pLobbyInterface->ResetHostMigrationFlags();
+	}
 }

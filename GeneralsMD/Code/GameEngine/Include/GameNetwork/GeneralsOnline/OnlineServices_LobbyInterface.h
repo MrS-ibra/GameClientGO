@@ -32,6 +32,13 @@ struct LobbyMemberEntry : public NetworkMemberBase
 	}
 };
 
+enum class ELobbyType
+{
+	UNKNOWN = -1,
+	CustomGame = 0,
+	QuickMatch = 1
+};
+
 struct LobbyEntry
 {
 	int64_t lobbyID = -1;
@@ -54,6 +61,8 @@ struct LobbyEntry
 	uint32_t ini_crc;
 
 	uint64_t match_id = 0;
+
+	ELobbyType lobby_type = ELobbyType::UNKNOWN;
 
 	int rng_seed = -1;
 
@@ -429,6 +438,12 @@ public:
 	void JoinLobby(LobbyEntry lobby, std::string strPassword);
 
 	void LeaveCurrentLobby();
+
+	void ResetHostMigrationFlags()
+	{
+		m_bHostMigrated = false;
+		m_bPendingHostHasLeft = false;
+	}
 
 	LobbyEntry GetLobbyFromID(int64_t lobbyID);
 	LobbyEntry GetLobbyFromIndex(int index);

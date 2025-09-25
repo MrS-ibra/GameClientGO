@@ -486,6 +486,7 @@ void NGMP_OnlineServices_LobbyInterface::SearchForLobbies(std::function<void()> 
 				lobbyEntryIter["ExeCRC"].get_to(lobbyEntry.exe_crc);
 				lobbyEntryIter["IniCRC"].get_to(lobbyEntry.ini_crc);
 				lobbyEntryIter["MatchID"].get_to(lobbyEntry.match_id);
+				lobbyEntryIter["LobbyType"].get_to(lobbyEntry.lobby_type);
 
 				// correct map path
 				if (lobbyEntry.map_official)
@@ -618,6 +619,7 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 						lobbyEntryIter["ExeCRC"].get_to(lobbyEntry.exe_crc);
 						lobbyEntryIter["IniCRC"].get_to(lobbyEntry.ini_crc);
 						lobbyEntryIter["MatchID"].get_to(lobbyEntry.match_id);
+						lobbyEntryIter["LobbyType"].get_to(lobbyEntry.lobby_type);
 
 						// correct map path
 						if (lobbyEntry.map_official)
@@ -739,7 +741,11 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 							// did the host change?
 							if (lobbyEntry.owner != m_CurrentLobby.owner)
 							{
-								m_bHostMigrated = true;
+								// no host migration in QM since it doesn't even have a lobby
+								if (lobbyEntry.lobby_type != ELobbyType::QuickMatch)
+								{
+									m_bHostMigrated = true;
+								}
 							}
 
 							// store
@@ -964,6 +970,9 @@ void NGMP_OnlineServices_LobbyInterface::JoinLobby(LobbyEntry lobbyInfo, std::st
 
 void NGMP_OnlineServices_LobbyInterface::LeaveCurrentLobby()
 {
+	// reset host migration flags
+	ResetHostMigrationFlags();
+
 	// kill mesh
 	if (m_pLobbyMesh != nullptr)
 	{
