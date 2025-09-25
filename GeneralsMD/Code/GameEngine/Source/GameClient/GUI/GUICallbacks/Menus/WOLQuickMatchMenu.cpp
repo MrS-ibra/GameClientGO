@@ -620,11 +620,11 @@ static void populateQuickMatchMapSelectListbox( QuickMatchPreferences& pref )
 					// custom maps need the full path
 					if (mapEntry.Custom)
 					{
-						correctedMapPath = std::format("{}Maps\\{}\\{}.map", TheGlobalData->getPath_UserData().str(), mapEntry.Path, mapEntry.Path);
+						correctedMapPath = std::format("{}maps\\{}\\{}.map", TheGlobalData->getPath_UserData().str(), mapEntry.Path, mapEntry.Path);
 					}
 					else
 					{
-						correctedMapPath = std::format("Maps\\{}\\{}.map", mapEntry.Path, mapEntry.Path);
+						correctedMapPath = std::format("maps\\{}\\{}.map", mapEntry.Path, mapEntry.Path);
 					}
 
 					maps.push_back(AsciiString(correctedMapPath.c_str()));
@@ -727,7 +727,7 @@ static void saveQuickMatchOptions( void )
 				for (PlaylistMapEntry& mapEntry : plEntry.Maps)
 				{
 					// format into game format (Maps\\name\\name.map)
-					std::string correctedMapPath = std::format("Maps\\{}\\{}.map", mapEntry.Path, mapEntry.Path);
+					std::string correctedMapPath = std::format("maps\\{}\\{}.map", mapEntry.Path, mapEntry.Path);
 					maps.push_back(AsciiString(correctedMapPath.c_str()));
 				}
 

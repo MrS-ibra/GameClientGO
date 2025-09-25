@@ -490,7 +490,7 @@ void NGMP_OnlineServices_LobbyInterface::SearchForLobbies(std::function<void()> 
 				// correct map path
 				if (lobbyEntry.map_official)
 				{
-					lobbyEntry.map_path = std::format("Maps\\{}", lobbyEntry.map_path.c_str());
+					lobbyEntry.map_path = std::format("maps\\{}", lobbyEntry.map_path.c_str());
 				}
 				else
 				{
@@ -622,7 +622,7 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 						// correct map path
 						if (lobbyEntry.map_official)
 						{
-							lobbyEntry.map_path = std::format("Maps\\{}", lobbyEntry.map_path.c_str());
+							lobbyEntry.map_path = std::format("maps\\{}", lobbyEntry.map_path.c_str());
 						}
 						else
 						{
@@ -635,7 +635,7 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 
 						// did the map change? cache that we need to reset and transmit our ready state
 						bool bNeedsHasMapUpdate = false;
-						if (strcmp(lobbyEntry.map_path.c_str(), TheNGMPGame->getMap().str()) != 0)
+						if (strcasecmp(lobbyEntry.map_path.c_str(), TheNGMPGame->getMap().str()) != 0)
 						{
 							bNeedsHasMapUpdate = true;
 						}
