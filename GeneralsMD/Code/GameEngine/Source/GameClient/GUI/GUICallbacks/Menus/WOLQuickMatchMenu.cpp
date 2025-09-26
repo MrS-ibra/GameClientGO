@@ -839,7 +839,7 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 {
 #if defined(GENERALS_ONLINE)
 	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
-
+	
 	// cannot connect to the lobby we joined
 	pLobbyInterface->RegisterForCannotConnectToLobbyCallback([](void)
 		{
@@ -959,6 +959,7 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 				{
 					pMesh->RegisterForConnectionEvents([](int64_t userID, std::wstring strDisplayName, PlayerConnection* connection)
 						{
+#if _DEBUG // not enabled in quickmatch because then people see their opponent during matchmaking
 							std::string strState = "Unknown";
 
 							EConnectionState connState = connection->GetState();
@@ -1018,6 +1019,7 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 									GadgetListBoxSetItemData(quickmatchTextWindow, (void*)-1, index);
 								}
 							}
+#endif
 						});
 				}
 
@@ -1273,6 +1275,11 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 		comboBoxMaxPing->winEnable(FALSE);
 	if (comboBoxMaxDisconnects)
 		comboBoxMaxDisconnects->winEnable(FALSE);
+
+	// welcome msg + instructions
+	GadgetListBoxAddEntryText(quickmatchTextWindow, UnicodeString(L"Welcome to QuickMatch. Choose Setup to select playlists and maps."), GameMakeColor(255, 194, 25, 255), -1, -1);
+	GadgetListBoxAddEntryText(quickmatchTextWindow, UnicodeString(L"Special thanks to map makers Tanso, ReLaX, cncHD, Specovik, Mp3, Jundiyy & Bamovich for making quickmatch possible."), GameMakeColor(255, 194, 25, 255), -1, -1);
+
 #endif
 } // WOLQuickMatchMenuInit
 

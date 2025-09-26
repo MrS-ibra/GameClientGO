@@ -407,6 +407,14 @@ void FixupScoreScreenMovieWindow( void )
 //-------------------------------------------------------------------------------------------------
 void ScoreScreenShutdown( WindowLayout *layout, void *userData )
 {
+	// TODO_NGMP: Find a better way of doing this... before the user exists
+	if (NGMP_OnlineServicesManager::GetInstance() != nullptr && !g_bHasDoneEOGScreenshot)
+	{
+		g_bHasDoneEOGScreenshot = true;
+
+		NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshotForProbe(EScreenshotType::SCREENSHOT_TYPE_SCORESCREEN);
+	}
+
 	DontShowMainMenu = FALSE; //KRIS
 
 	// hide the layout
@@ -458,18 +466,6 @@ void ScoreScreenUpdate( WindowLayout * layout, void *userData)
 			event.setShouldFade( TRUE );
 			TheAudio->addAudioEvent( &event );
 			TheAudio->update();//Since GameEngine::update() is suspended until after I am gone... 
-		}
-
-
-	}
-
-	if (TheGameInfo)
-	{
-		if (NGMP_OnlineServicesManager::GetInstance() != nullptr && !g_bHasDoneEOGScreenshot)
-		{
-			g_bHasDoneEOGScreenshot = true;
-
-			NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshotForProbe(EScreenshotType::SCREENSHOT_TYPE_SCORESCREEN);
 		}
 	}
 }
@@ -607,13 +603,16 @@ WindowMsgHandledType ScoreScreenSystem( GameWindow *window, UnsignedInt msg,
 						{
 							uint64_t currentMatchID = pLobbyInterface->GetCurrentMatchID();
 
-							AsciiString strMatchURL;
+							if (currentMatchID != 0)
+							{
+								AsciiString strMatchURL;
 #if defined(USE_TEST_ENV)
-							strMatchURL.format("https://www.playgenerals.online/viewmatch?match=%" PRIu64 "&env=test", currentMatchID);
+								strMatchURL.format("https://www.playgenerals.online/viewmatch?match=%" PRIu64 "&env=test", currentMatchID);
 #else
-							strMatchURL.format("https://www.playgenerals.online/viewmatch?match=%" PRIu64, currentMatchID);
+								strMatchURL.format("https://www.playgenerals.online/viewmatch?match=%" PRIu64, currentMatchID);
 #endif
-							ShellExecuteA(NULL, "open", strMatchURL.str(), NULL, NULL, SW_SHOWNORMAL);
+								ShellExecuteA(NULL, "open", strMatchURL.str(), NULL, NULL, SW_SHOWNORMAL);
+							}
 						}
 					}
 				}
@@ -1124,16 +1123,31 @@ void initInternetMultiPlayer(void)
  			strMatchID.format(L"\nMatch ID: %" PRIu64, lobby.match_id);
  
  			UnicodeString strMatchURL;
+
+			if (lobby.match_id == 0) // probably AI or < 2 humans
+			{
+				buttonContinue->winHide(TRUE);
+
+				GadgetListBoxAddEntryText(listboxAcademyWindowScoreScreen, UnicodeString(L"\nMatch data is not available online because the match had AI present OR less than 2 human players."), GameSpyColor[GSCOLOR_DEFAULT], -1);
+			}
+			else
+			{
+				buttonContinue->winHide(FALSE);
+
 #if defined(USE_TEST_ENV)
- 			strMatchURL.format(L"\nView match data, participants, replays, anti-cheat data: https://www.playgenerals.online/viewmatch?match=%" PRIu64 "&env=test", lobby.match_id);
+				strMatchURL.format(L"\nView match data, participants, replays, anti-cheat data: https://www.playgenerals.online/viewmatch?match=%" PRIu64 "&env=test", lobby.match_id);
 #else
-			strMatchURL.format(L"\nView match data, participants, replays, anti-cheat data: https://www.playgenerals.online/viewmatch?match=%" PRIu64, lobby.match_id);
+				strMatchURL.format(L"\nView match data, participants, replays, anti-cheat data: https://www.playgenerals.online/viewmatch?match=%" PRIu64, lobby.match_id);
 #endif
 
-			buttonContinue->winSetText(UnicodeString(L"VIEW MATCH ONLINE"));
+				buttonContinue->winSetText(UnicodeString(L"VIEW MATCH ONLINE"));
 
- 			GadgetListBoxAddEntryText(listboxAcademyWindowScoreScreen, strMatchID, GameSpyColor[GSCOLOR_DEFAULT], -1);
- 			GadgetListBoxAddEntryText(listboxAcademyWindowScoreScreen, strMatchURL, GameSpyColor[GSCOLOR_DEFAULT], -1);
+				GadgetListBoxAddEntryText(listboxAcademyWindowScoreScreen, strMatchID, GameSpyColor[GSCOLOR_DEFAULT], -1);
+				GadgetListBoxAddEntryText(listboxAcademyWindowScoreScreen, strMatchURL, GameSpyColor[GSCOLOR_DEFAULT], -1);
+			}
+
+
+ 			
 
 		}
 

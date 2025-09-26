@@ -1824,22 +1824,23 @@ PlayerLeaveCode ConnectionManager::disconnectPlayer(Int slot) {
 #if defined(GENERALS_ONLINE)
 PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
 {
-	if (TheNGMPGame != nullptr)
-	{
-		for (int slot = 0; slot < MAX_SLOTS; ++slot)
-		{
-			NGMPGameSlot* pSlot = (NGMPGameSlot*)TheNGMPGame->getSlot(slot);
-			if (pSlot)
-			{
-				if (pSlot->m_userID == userID)
-				{
-					return disconnectPlayer(slot);
-				}
-			}
-		}
-	}
-
 	return PLAYERLEAVECODE_UNKNOWN;
+// 	if (TheNGMPGame != nullptr)
+// 	{
+// 		for (int slot = 0; slot < MAX_SLOTS; ++slot)
+// 		{
+// 			NGMPGameSlot* pSlot = (NGMPGameSlot*)TheNGMPGame->getSlot(slot);
+// 			if (pSlot)
+// 			{
+// 				if (pSlot->m_userID == userID)
+// 				{
+// 					return disconnectPlayer(slot);
+// 				}
+// 			}
+// 		}
+// 	}
+// 
+// 	return PLAYERLEAVECODE_UNKNOWN;
 }
 #endif
 
