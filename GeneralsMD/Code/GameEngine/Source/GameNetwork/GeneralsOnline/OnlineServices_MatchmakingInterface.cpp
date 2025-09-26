@@ -80,6 +80,8 @@ void NGMP_OnlineServices_MatchmakingInterface::StartMatchmaking(uint16_t playlis
 	nlohmann::json j;
 	j["playlist"] = playlistID;
 	j["maps"] = vecSelectedMapIndexes;
+	j["exe_crc"] = TheGlobalData->m_exeCRC;
+	j["ini_crc"] = TheGlobalData->m_iniCRC;
 
 	std::map<std::string, std::string> mapHeaders;
 	std::string strPostData = j.dump();
