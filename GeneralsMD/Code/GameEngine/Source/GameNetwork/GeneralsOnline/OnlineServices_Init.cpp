@@ -122,25 +122,30 @@ void NGMP_OnlineServicesManager::CaptureScreenshotForProbe(EScreenshotType scree
 {
 	NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshot(true, [=](std::vector<unsigned char> vecData)
 	{
-		nlohmann::json j;
-		j["img"] = nullptr;
-		j["imgres"] = -1;
-		j["imgtype"] = (int)screenshotType;
+		NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+		if (pLobbyInterface != nullptr)
+		{
+			uint64_t currentMatchID = pLobbyInterface->GetCurrentMatchID();
 
-		// send screenshot
-		std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("MatchUpdate");
-		std::map<std::string, std::string> mapHeaders;
+			nlohmann::json j;
+			j["img"] = nullptr;
+			j["imgtype"] = (int)screenshotType;
+			j["match_id"] = currentMatchID;
 
-		// encode body
-		j["img"] = Base64Encode(vecData);
-		j["imgres"] = 1;
+			// send screenshot
+			std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("MatchUpdate");
+			std::map<std::string, std::string> mapHeaders;
 
-		std::string strPostData = j.dump();
+			// encode body
+			j["img"] = Base64Encode(vecData);
 
-		NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPUTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, strPostData.c_str(), [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
-			{
+			std::string strPostData = j.dump();
 
-			});
+			NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPUTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, strPostData.c_str(), [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
+				{
+
+				}, nullptr, HTTP_UPLOAD_TIMEOUT);
+		}
 	});
 }
 
@@ -192,6 +197,14 @@ std::string NGMP_OnlineServicesManager::GetAPIEndpoint(const char* szEndpoint)
 
 void NGMP_OnlineServicesManager::CommitReplay(AsciiString absoluteReplayPath)
 {
+	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+	if (pLobbyInterface == nullptr)
+	{
+		return;
+	}
+
+	uint64_t currentMatchID = pLobbyInterface->GetCurrentMatchID();
+
 	FILE* pFile = fopen(absoluteReplayPath.str(), "rb");
 
 	std::vector<unsigned char> replayData;
@@ -211,12 +224,16 @@ void NGMP_OnlineServicesManager::CommitReplay(AsciiString absoluteReplayPath)
 	std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("MatchReplay");
 	std::map<std::string, std::string> mapHeaders;
 
-	std::string strPostData = Base64Encode(replayData);
+	nlohmann::json j;
+	j["replaydata"] = Base64Encode(replayData);
+	j["match_id"] = currentMatchID;
+
+	std::string strPostData = j.dump();
 
 	NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPUTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, strPostData.c_str(), [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
 		{
 
-		});
+		}, nullptr, HTTP_UPLOAD_TIMEOUT);
 }
 
 void NGMP_OnlineServicesManager::Shutdown()

@@ -253,21 +253,25 @@ void NGMP_OnlineServices_StatsInterface::CommitMyOutcome(ScoreKeeper* pScoreKeep
 		return;
 	}
 
-	nlohmann::json j;
-	j["buildings_built"] = pScoreKeeper->getTotalBuildingsBuilt();
-	j["buildings_killed"] = pScoreKeeper->getTotalBuildingsDestroyed();
-	j["buildings_lost"] = pScoreKeeper->getTotalBuildingsLost();
-	j["units_built"] = pScoreKeeper->getTotalUnitsBuilt();
-	j["units_killed"] = pScoreKeeper->getTotalUnitsDestroyed();
-	j["units_lost"] = pScoreKeeper->getTotalUnitsLost();
-	j["total_money"] = pScoreKeeper->getTotalMoneyEarned();
-	j["won"] = bWon;
-
-	std::string strPostData = j.dump();
-
 	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
 	if (pLobbyInterface != nullptr)
 	{
+
+		uint64_t currentMatchID = pLobbyInterface->GetCurrentMatchID();
+
+		nlohmann::json j;
+		j["buildings_built"] = pScoreKeeper->getTotalBuildingsBuilt();
+		j["buildings_killed"] = pScoreKeeper->getTotalBuildingsDestroyed();
+		j["buildings_lost"] = pScoreKeeper->getTotalBuildingsLost();
+		j["units_built"] = pScoreKeeper->getTotalUnitsBuilt();
+		j["units_killed"] = pScoreKeeper->getTotalUnitsDestroyed();
+		j["units_lost"] = pScoreKeeper->getTotalUnitsLost();
+		j["total_money"] = pScoreKeeper->getTotalMoneyEarned();
+		j["won"] = bWon;
+		j["match_id"] = currentMatchID;
+
+		std::string strPostData = j.dump();
+	
 		std::string strURI = std::format("{}/Outcome", NGMP_OnlineServicesManager::GetAPIEndpoint("Lobby"));
 		std::map<std::string, std::string> mapHeaders;
 

@@ -486,6 +486,11 @@ public:
 	std::string GetLobbyTurnUsername() { return m_strTURNUsername; }
 	std::string GetLobbyTurnToken() { return m_strTURNToken; }
 
+	uint64_t GetCurrentMatchID()
+	{
+		return m_CurrentMatchID;
+	}
+
 private:
 	std::function<void(bool)> m_cb_CreateLobbyPendingCallback = nullptr;
 
@@ -509,4 +514,6 @@ private:
 	bool m_bSearchInProgress = false;
 
 	bool m_bMarkedGameAsFinished = false;
+
+	uint64_t m_CurrentMatchID = 0;
 };

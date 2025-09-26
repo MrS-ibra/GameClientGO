@@ -157,10 +157,6 @@ static Bool s_needToFinishSinglePlayerInit = FALSE;
 static Bool buttonIsFinishCampaign = FALSE;
 static WindowLayout *s_blankLayout = NULL;
 
-#if defined(GENERALS_ONLINE)
-static uint64_t currentMatchID = 0;
-#endif
-
 void initSkirmish( void );
 void initLANMultiPlayer(void);
 void initInternetMultiPlayer(void);
@@ -411,13 +407,6 @@ void FixupScoreScreenMovieWindow( void )
 //-------------------------------------------------------------------------------------------------
 void ScoreScreenShutdown( WindowLayout *layout, void *userData )
 {
-	if (TheNetwork != nullptr && !g_bHasDoneEOGScreenshot)
-	{
-		g_bHasDoneEOGScreenshot = true;
-
-		NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshotForProbe(EScreenshotType::SCREENSHOT_TYPE_SCORESCREEN);
-	}
-
 	DontShowMainMenu = FALSE; //KRIS
 
 	// hide the layout
@@ -472,6 +461,16 @@ void ScoreScreenUpdate( WindowLayout * layout, void *userData)
 		}
 
 
+	}
+
+	if (TheGameInfo)
+	{
+		if (NGMP_OnlineServicesManager::GetInstance() != nullptr && !g_bHasDoneEOGScreenshot)
+		{
+			g_bHasDoneEOGScreenshot = true;
+
+			NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshotForProbe(EScreenshotType::SCREENSHOT_TYPE_SCORESCREEN);
+		}
 	}
 }
 
@@ -603,13 +602,19 @@ WindowMsgHandledType ScoreScreenSystem( GameWindow *window, UnsignedInt msg,
 					}
 					else if (screenType == SCORESCREEN_INTERNET)
 					{
-						AsciiString strMatchURL;
+						NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+						if (pLobbyInterface != nullptr)
+						{
+							uint64_t currentMatchID = pLobbyInterface->GetCurrentMatchID();
+
+							AsciiString strMatchURL;
 #if defined(USE_TEST_ENV)
-						strMatchURL.format("https://www.playgenerals.online/viewmatch?match=%" PRIu64 "&env=test", currentMatchID);
+							strMatchURL.format("https://www.playgenerals.online/viewmatch?match=%" PRIu64 "&env=test", currentMatchID);
 #else
-						strMatchURL.format("https://www.playgenerals.online/viewmatch?match=%" PRIu64, currentMatchID);
+							strMatchURL.format("https://www.playgenerals.online/viewmatch?match=%" PRIu64, currentMatchID);
 #endif
-						ShellExecuteA(NULL, "open", strMatchURL.str(), NULL, NULL, SW_SHOWNORMAL);
+							ShellExecuteA(NULL, "open", strMatchURL.str(), NULL, NULL, SW_SHOWNORMAL);
+						}
 					}
 				}
 			}
@@ -1126,9 +1131,6 @@ void initInternetMultiPlayer(void)
 #endif
 
 			buttonContinue->winSetText(UnicodeString(L"VIEW MATCH ONLINE"));
-
-			// store, we'll need it later
-			currentMatchID = lobby.match_id;
 
  			GadgetListBoxAddEntryText(listboxAcademyWindowScoreScreen, strMatchID, GameSpyColor[GSCOLOR_DEFAULT], -1);
  			GadgetListBoxAddEntryText(listboxAcademyWindowScoreScreen, strMatchURL, GameSpyColor[GSCOLOR_DEFAULT], -1);

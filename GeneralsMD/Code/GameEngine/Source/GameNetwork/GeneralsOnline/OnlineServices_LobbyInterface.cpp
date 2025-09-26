@@ -621,6 +621,9 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 						lobbyEntryIter["MatchID"].get_to(lobbyEntry.match_id);
 						lobbyEntryIter["LobbyType"].get_to(lobbyEntry.lobby_type);
 
+						// store, we'll need it later and lobby obj gets destroyed on leave
+						m_CurrentMatchID = lobbyEntry.match_id;
+
 						// correct map path
 						if (lobbyEntry.map_official)
 						{

@@ -125,6 +125,8 @@ void NGMP_OnlineServices_MatchmakingInterface::CancelMatchmaking()
 	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
 	if (pLobbyInterface != nullptr)
 	{
+		pLobbyInterface->LeaveCurrentLobby();
+
 		pLobbyInterface->ResetHostMigrationFlags();
 	}
 }
