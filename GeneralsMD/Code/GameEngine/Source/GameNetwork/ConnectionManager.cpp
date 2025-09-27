@@ -1252,7 +1252,9 @@ void ConnectionManager::updateRunAhead(Int oldRunAhead, Int frameRate, Bool didS
 			// The runahead should always be rounded up to the next integer value to prevent variations in latency from causing stutter
 			// The network slack pushes the runahead up to the next value when the latency is within the slack percentage of the current runahead
 			const Real runAheadSlackScale = 1.0f + ((Real)TheGlobalData->m_networkRunAheadSlack / 100.0f);
-			Int newRunAhead = ceilf(getMaximumLatency() * runAheadSlackScale * (Real)minFps);
+
+			const float latencyDivFactor = TheNGMPGame == nullptr ? 1.0f : 2.0f;
+			Int newRunAhead = ceilf((getMaximumLatency() / latencyDivFactor) * runAheadSlackScale * (Real)minFps);
 
 			// TheSuperHackers @info if the runahead goes below 3 logic frames it can start to introduce stutter
 			// We also limit the upper range of the runahead to prevent it getting out of hand

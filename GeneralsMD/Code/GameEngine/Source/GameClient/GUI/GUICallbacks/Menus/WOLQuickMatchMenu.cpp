@@ -1331,6 +1331,9 @@ void WOLQuickMatchMenuShutdown( WindowLayout *layout, void *userData )
 		pLobbyInterface->DeregisterForMatchmakingMessageCallback();
 		pLobbyInterface->DeRegisterForMatchmakingMatchFoundCallback();
 		pLobbyInterface->DeregisterForMatchmakingStartGameCallback();
+
+		pLobbyInterface->DeregisterForJoinLobbyCallback();
+		pLobbyInterface->DeregisterForCannotConnectToLobbyCallback();
 	}
 #endif
 
