@@ -450,22 +450,27 @@ void ScoreScreenUpdate( WindowLayout * layout, void *userData)
 	if( TheGameInfo && g_playMusic )
 	{
 		g_playMusic = FALSE;
-		
-		GameSlot *lSlot = TheGameInfo->getSlot(TheGameInfo->getLocalSlotNum());
-		const PlayerTemplate* pt;
 
-		if (lSlot && lSlot->getPlayerTemplate() >= 0)
-			pt = ThePlayerTemplateStore->getNthPlayerTemplate(lSlot->getPlayerTemplate());
-		else
-			pt = ThePlayerTemplateStore->findPlayerTemplate( TheNameKeyGenerator->nameToKey("FactionObserver") );
-		AsciiString musicName = pt->getScoreScreenMusic();
-		if ( !musicName.isEmpty() )
+		Int localSlotNum = TheGameInfo->getLocalSlotNum();
+
+		if (localSlotNum != -1)
 		{
-			TheAudio->removeAudioEvent( AHSV_StopTheMusicFade );
-			AudioEventRTS event( musicName );
-			event.setShouldFade( TRUE );
-			TheAudio->addAudioEvent( &event );
-			TheAudio->update();//Since GameEngine::update() is suspended until after I am gone... 
+			GameSlot* lSlot = TheGameInfo->getSlot(localSlotNum);
+			const PlayerTemplate* pt;
+
+			if (lSlot && lSlot->getPlayerTemplate() >= 0)
+				pt = ThePlayerTemplateStore->getNthPlayerTemplate(lSlot->getPlayerTemplate());
+			else
+				pt = ThePlayerTemplateStore->findPlayerTemplate(TheNameKeyGenerator->nameToKey("FactionObserver"));
+			AsciiString musicName = pt->getScoreScreenMusic();
+			if (!musicName.isEmpty())
+			{
+				TheAudio->removeAudioEvent(AHSV_StopTheMusicFade);
+				AudioEventRTS event(musicName);
+				event.setShouldFade(TRUE);
+				TheAudio->addAudioEvent(&event);
+				TheAudio->update();//Since GameEngine::update() is suspended until after I am gone... 
+			}
 		}
 	}
 }

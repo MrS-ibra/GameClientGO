@@ -837,194 +837,6 @@ static void saveQuickMatchOptions( void )
 //-------------------------------------------------------------------------------------------------
 void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 {
-#if defined(GENERALS_ONLINE)
-	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
-	
-	// cannot connect to the lobby we joined
-	pLobbyInterface->RegisterForCannotConnectToLobbyCallback([](void)
-		{
-			// TODO_QUICKMATCH: Show error message + stop matchmaking + enable buttons again
-		});
-
-	// get playlist list
-	NGMP_OnlineServices_MatchmakingInterface* pMatchmakingInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_MatchmakingInterface>();
-	if (pMatchmakingInterface != nullptr)
-	{
-		pMatchmakingInterface->RetrievePlaylists([](std::vector<PlaylistEntry> vecPlaylists)
-			{
-				// add playlists
-				UnicodeString s;
-
-				// clear ui element
-				GadgetComboBoxReset(comboBoxNumPlayers);
-
-
-				for (PlaylistEntry& playlist : vecPlaylists)
-				{
-					s.format(L"%hs", playlist.Name.c_str());
-					GadgetComboBoxAddEntry(comboBoxNumPlayers, s, GameSpyColor[GSCOLOR_DEFAULT]);
-				}
-
-				GadgetComboBoxSetSelectedPos(comboBoxNumPlayers, 0);
-			});
-	}
-#endif
-
-	
-	if (pLobbyInterface != nullptr)
-	{
-		// TODO_QUICKMATCH: Deregister when leaving QM
-		pLobbyInterface->RegisterForMatchmakingMessageCallback([](std::string strMsg)
-			{
-				UnicodeString uMsg;
-				uMsg.format(L"%hs", strMsg.c_str());
-
-				Int index = GadgetListBoxAddEntryText(quickmatchTextWindow, uMsg, GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
-				GadgetListBoxSetItemData(quickmatchTextWindow, (void*)-1, index);
-			});
-
-		pLobbyInterface->RegisterForMatchmakingMatchFoundCallback([]()
-			{
-				buttonStop->winEnable(FALSE);
-			});
-
-		pLobbyInterface->RegisterForMatchmakingStartGameCallback([]()
-			{
-				NetworkLog(ELogVerbosity::LOG_DEBUG, "[QUICKMATCH] GOT START GAME EVENT");
-
-				// mark everyone as having the map, we dont allow user provided custom maps or map transfers in QM
-				// TODO_QUICKMATCH: Do this automatically for game type quickmatch, or better yet, do it on the service
-				for (int i = 0; i < MAX_SLOTS; i++)
-				{
-					GameSlot* slot = TheNGMPGame->getSlot(i);
-					if (slot != nullptr)
-					{
-						slot->setMapAvailability(TRUE);
-					}
-				}
-
-				// start
-				NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
-				NGMPGame* myGame = pLobbyInterface == nullptr ? nullptr : pLobbyInterface->GetCurrentGame();
-
-				if (pLobbyInterface == nullptr || !myGame || !myGame->isInGame())
-				{
-					NetworkLog(ELogVerbosity::LOG_DEBUG, "[QUICKMATCH] Checks failed, %d, %d, %d", pLobbyInterface == nullptr, !myGame, !myGame->isInGame());
-					return;
-				}
-
-				if (!TheNGMPGame)
-				{
-					NetworkLog(ELogVerbosity::LOG_DEBUG, "[QUICKMATCH] NO NGMP GAME INSTANCE");
-					return;
-				}
-
-
-				// TODO_NGMP
-				//SendStatsToOtherPlayers(TheNGMPGame);
-
-				// we've started, there's no going back
-				// i.e. disable the back button.
-				buttonBack->winEnable(FALSE);
-				GameWindow* buttonBuddy = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("GameSpyGameOptionsMenu.wnd:ButtonCommunicator"));
-				if (buttonBuddy)
-					buttonBuddy->winEnable(FALSE);
-				GameSpyCloseOverlay(GSOVERLAY_BUDDY);
-
-				*TheNGMPGame = *myGame;
-				TheNGMPGame->startGame(0);
-			});
-
-		pLobbyInterface->RegisterForJoinLobbyCallback([](EJoinLobbyResult result)
-			{
-				NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
-
-				if (!pLobbyInterface->IsInLobby())
-				{
-					return;
-				}
-
-				if (TheNGMPGame == nullptr)
-				{
-					TheNGMPGame = new NGMPGame();
-				}
-				pLobbyInterface->UpdateRoomDataCache([]()
-				{
-					
-				});
-
-				// connection events (for debug really)
-				NetworkMesh* pMesh = NGMP_OnlineServicesManager::GetNetworkMesh();
-				if (pMesh != nullptr)
-				{
-					pMesh->RegisterForConnectionEvents([](int64_t userID, std::wstring strDisplayName, PlayerConnection* connection)
-						{
-#if _DEBUG // not enabled in quickmatch because then people see their opponent during matchmaking
-							std::string strState = "Unknown";
-
-							EConnectionState connState = connection->GetState();
-							std::string strConnectionType = connection->GetConnectionType();
-
-							switch (connState)
-							{
-							case EConnectionState::NOT_CONNECTED:
-								strState = "Not Connected";
-								break;
-
-							case EConnectionState::CONNECTING_DIRECT:
-								strState = "Connecting";
-								break;
-							case EConnectionState::FINDING_ROUTE:
-								strState = "Connecting (Finding Route)";
-								break;
-
-							case EConnectionState::CONNECTED_DIRECT:
-								strState = "Connected";
-								break;
-
-							case EConnectionState::CONNECTION_FAILED:
-								strState = "Connection Failed";
-								break;
-
-							case EConnectionState::CONNECTION_DISCONNECTED:
-								strState = "Disconnected (Was Connected Previously)";
-								break;
-
-							default:
-								strState = "Unknown";
-								break;
-							}
-
-							UnicodeString strConnectionMessage;
-							if (connState == EConnectionState::CONNECTING_DIRECT || connState == EConnectionState::FINDING_ROUTE)
-							{
-								strConnectionMessage.format(L"Connecting to %s", strDisplayName.c_str());
-
-								Int index = GadgetListBoxAddEntryText(quickmatchTextWindow, strConnectionMessage, GameMakeColor(255, 194, 15, 255), -1, -1);
-								GadgetListBoxSetItemData(quickmatchTextWindow, (void*)-1, index);
-							}
-							else if (connState == EConnectionState::CONNECTED_DIRECT)
-							{
-								strConnectionMessage.format(L"Connected to %s", strDisplayName.c_str());
-
-								Int index = GadgetListBoxAddEntryText(quickmatchTextWindow, strConnectionMessage, GameMakeColor(255, 194, 15, 255), -1, -1);
-								GadgetListBoxSetItemData(quickmatchTextWindow, (void*)-1, index);
-							}
-							else
-							{
-								if (connState == EConnectionState::CONNECTION_FAILED || connState == EConnectionState::CONNECTION_DISCONNECTED)
-								{
-									strConnectionMessage.format(L"Connection failed to %s", strDisplayName.c_str());
-									Int index = GadgetListBoxAddEntryText(quickmatchTextWindow, strConnectionMessage, GameMakeColor(255, 194, 15, 255), -1, -1);
-									GadgetListBoxSetItemData(quickmatchTextWindow, (void*)-1, index);
-								}
-							}
-#endif
-						});
-				}
-
-		});
-	}
 	isInInit = TRUE;
 	if (TheGameSpyGame && TheGameSpyGame->isGameInProgress())
 	{
@@ -1281,6 +1093,195 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 	GadgetListBoxAddEntryText(quickmatchTextWindow, UnicodeString(L"Special thanks to map makers Tanso, ReLaX, cncHD, Specovik, Mp3, Jundiyy & Bamovich for making quickmatch possible."), GameMakeColor(255, 194, 25, 255), -1, -1);
 
 #endif
+
+#if defined(GENERALS_ONLINE)
+	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+
+	// cannot connect to the lobby we joined
+	pLobbyInterface->RegisterForCannotConnectToLobbyCallback([](void)
+		{
+			// TODO_QUICKMATCH: Show error message + stop matchmaking + enable buttons again
+		});
+
+	// get playlist list
+	NGMP_OnlineServices_MatchmakingInterface* pMatchmakingInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_MatchmakingInterface>();
+	if (pMatchmakingInterface != nullptr)
+	{
+		pMatchmakingInterface->RetrievePlaylists([](std::vector<PlaylistEntry> vecPlaylists)
+			{
+				// add playlists
+				UnicodeString s;
+
+				// clear ui element
+				GadgetComboBoxReset(comboBoxNumPlayers);
+
+
+				for (PlaylistEntry& playlist : vecPlaylists)
+				{
+					s.format(L"%hs", playlist.Name.c_str());
+					GadgetComboBoxAddEntry(comboBoxNumPlayers, s, GameSpyColor[GSCOLOR_DEFAULT]);
+				}
+
+				GadgetComboBoxSetSelectedPos(comboBoxNumPlayers, 0);
+			});
+	}
+#endif
+
+
+	if (pLobbyInterface != nullptr)
+	{
+		// TODO_QUICKMATCH: Deregister when leaving QM
+		pLobbyInterface->RegisterForMatchmakingMessageCallback([](std::string strMsg)
+			{
+				UnicodeString uMsg;
+				uMsg.format(L"%hs", strMsg.c_str());
+
+				Int index = GadgetListBoxAddEntryText(quickmatchTextWindow, uMsg, GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
+				GadgetListBoxSetItemData(quickmatchTextWindow, (void*)-1, index);
+			});
+
+		pLobbyInterface->RegisterForMatchmakingMatchFoundCallback([]()
+			{
+				buttonStop->winEnable(FALSE);
+			});
+
+		pLobbyInterface->RegisterForMatchmakingStartGameCallback([]()
+			{
+				NetworkLog(ELogVerbosity::LOG_DEBUG, "[QUICKMATCH] GOT START GAME EVENT");
+
+				// mark everyone as having the map, we dont allow user provided custom maps or map transfers in QM
+				// TODO_QUICKMATCH: Do this automatically for game type quickmatch, or better yet, do it on the service
+				for (int i = 0; i < MAX_SLOTS; i++)
+				{
+					GameSlot* slot = TheNGMPGame->getSlot(i);
+					if (slot != nullptr)
+					{
+						slot->setMapAvailability(TRUE);
+					}
+				}
+
+				// start
+				NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+				NGMPGame* myGame = pLobbyInterface == nullptr ? nullptr : pLobbyInterface->GetCurrentGame();
+
+				if (pLobbyInterface == nullptr || !myGame || !myGame->isInGame())
+				{
+					NetworkLog(ELogVerbosity::LOG_DEBUG, "[QUICKMATCH] Checks failed, %d, %d, %d", pLobbyInterface == nullptr, !myGame, !myGame->isInGame());
+					return;
+				}
+
+				if (!TheNGMPGame)
+				{
+					NetworkLog(ELogVerbosity::LOG_DEBUG, "[QUICKMATCH] NO NGMP GAME INSTANCE");
+					return;
+				}
+
+
+				// TODO_NGMP
+				//SendStatsToOtherPlayers(TheNGMPGame);
+
+				// we've started, there's no going back
+				// i.e. disable the back button.
+				buttonBack->winEnable(FALSE);
+				GameWindow* buttonBuddy = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("GameSpyGameOptionsMenu.wnd:ButtonCommunicator"));
+				if (buttonBuddy)
+					buttonBuddy->winEnable(FALSE);
+				GameSpyCloseOverlay(GSOVERLAY_BUDDY);
+
+				*TheNGMPGame = *myGame;
+				TheNGMPGame->startGame(0);
+			});
+
+		pLobbyInterface->RegisterForJoinLobbyCallback([](EJoinLobbyResult result)
+			{
+				NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+
+				if (!pLobbyInterface->IsInLobby())
+				{
+					return;
+				}
+
+				if (TheNGMPGame == nullptr)
+				{
+					TheNGMPGame = new NGMPGame();
+				}
+				pLobbyInterface->UpdateRoomDataCache([]()
+					{
+
+					});
+
+				// connection events (for debug really)
+				NetworkMesh* pMesh = NGMP_OnlineServicesManager::GetNetworkMesh();
+				if (pMesh != nullptr)
+				{
+					pMesh->RegisterForConnectionEvents([](int64_t userID, std::wstring strDisplayName, PlayerConnection* connection)
+						{
+#if _DEBUG // not enabled in quickmatch because then people see their opponent during matchmaking
+							std::string strState = "Unknown";
+
+							EConnectionState connState = connection->GetState();
+							std::string strConnectionType = connection->GetConnectionType();
+
+							switch (connState)
+							{
+							case EConnectionState::NOT_CONNECTED:
+								strState = "Not Connected";
+								break;
+
+							case EConnectionState::CONNECTING_DIRECT:
+								strState = "Connecting";
+								break;
+							case EConnectionState::FINDING_ROUTE:
+								strState = "Connecting (Finding Route)";
+								break;
+
+							case EConnectionState::CONNECTED_DIRECT:
+								strState = "Connected";
+								break;
+
+							case EConnectionState::CONNECTION_FAILED:
+								strState = "Connection Failed";
+								break;
+
+							case EConnectionState::CONNECTION_DISCONNECTED:
+								strState = "Disconnected (Was Connected Previously)";
+								break;
+
+							default:
+								strState = "Unknown";
+								break;
+							}
+
+							UnicodeString strConnectionMessage;
+							if (connState == EConnectionState::CONNECTING_DIRECT || connState == EConnectionState::FINDING_ROUTE)
+							{
+								strConnectionMessage.format(L"Connecting to %s", strDisplayName.c_str());
+
+								Int index = GadgetListBoxAddEntryText(quickmatchTextWindow, strConnectionMessage, GameMakeColor(255, 194, 15, 255), -1, -1);
+								GadgetListBoxSetItemData(quickmatchTextWindow, (void*)-1, index);
+							}
+							else if (connState == EConnectionState::CONNECTED_DIRECT)
+							{
+								strConnectionMessage.format(L"Connected to %s", strDisplayName.c_str());
+
+								Int index = GadgetListBoxAddEntryText(quickmatchTextWindow, strConnectionMessage, GameMakeColor(255, 194, 15, 255), -1, -1);
+								GadgetListBoxSetItemData(quickmatchTextWindow, (void*)-1, index);
+							}
+							else
+							{
+								if (connState == EConnectionState::CONNECTION_FAILED || connState == EConnectionState::CONNECTION_DISCONNECTED)
+								{
+									strConnectionMessage.format(L"Connection failed to %s", strDisplayName.c_str());
+									Int index = GadgetListBoxAddEntryText(quickmatchTextWindow, strConnectionMessage, GameMakeColor(255, 194, 15, 255), -1, -1);
+									GadgetListBoxSetItemData(quickmatchTextWindow, (void*)-1, index);
+								}
+							}
+#endif
+						});
+				}
+
+			});
+	}
 } // WOLQuickMatchMenuInit
 
 //-------------------------------------------------------------------------------------------------

@@ -1245,7 +1245,7 @@ void ConnectionManager::updateRunAhead(Int oldRunAhead, Int frameRate, Bool didS
 			}
 
 			// TheSuperHackers @info this clamps the logic time scale fps in network games
-			minFps = clamp<Int>(MIN_LOGIC_FRAMES, minFps, TheGlobalData->m_framesPerSecondLimit);
+			minFps = clamp<Int>(MIN_LOGIC_FRAMES, minFps, TheNetwork->getFrameRate());
 			DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("ConnectionManager::updateRunAhead - minFps after adjustment is %d", minFps));
 
 			// TheSuperHackers @bugfix Mauller 21/08/2025 calculate the runahead so it always follows the latency
@@ -1253,8 +1253,7 @@ void ConnectionManager::updateRunAhead(Int oldRunAhead, Int frameRate, Bool didS
 			// The network slack pushes the runahead up to the next value when the latency is within the slack percentage of the current runahead
 			const Real runAheadSlackScale = 1.0f + ((Real)TheGlobalData->m_networkRunAheadSlack / 100.0f);
 
-			const float latencyDivFactor = TheNGMPGame == nullptr ? 1.0f : 2.0f;
-			Int newRunAhead = ceilf((getMaximumLatency() / latencyDivFactor) * runAheadSlackScale * (Real)minFps);
+			Int newRunAhead = ceilf((getMaximumLatency()) * runAheadSlackScale * (Real)minFps);
 
 			// TheSuperHackers @info if the runahead goes below 3 logic frames it can start to introduce stutter
 			// We also limit the upper range of the runahead to prevent it getting out of hand
@@ -1349,7 +1348,7 @@ void ConnectionManager::updateRunAhead(Int oldRunAhead, Int frameRate, Bool didS
 			msg->detach();
 			msg2->detach();
 		}
-		else {
+		else if (m_packetRouterSlot != -1) {
 			// We are not the packet router, send our metrics info to the packet router.
 			NetRunAheadMetricsCommandMsg* msg = newInstance(NetRunAheadMetricsCommandMsg);
 			msg->setPlayerID(m_localSlot);
