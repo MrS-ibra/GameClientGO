@@ -1369,7 +1369,15 @@ void ConnectionManager::updateRunAhead(Int oldRunAhead, Int frameRate, Bool didS
 			else {
 				//DEBUG_LOG(("ConnectionManager::updateRunAhead - average latency = %f, average fps = %d, didSelfSlug = false", m_frameMetrics.getAverageLatency(), m_frameMetrics.getAverageFPS()));
 			}
-			m_connections[m_packetRouterSlot]->sendNetCommandMsg(msg, 1 << m_packetRouterSlot);
+
+			if (m_packetRouterSlot != -1)
+			{
+				Connection* connection = m_connections[m_packetRouterSlot];
+				if (connection != nullptr)
+				{
+					connection->sendNetCommandMsg(msg, 1 << m_packetRouterSlot);
+				}
+			}
 			msg->detach();
 		}
 		lasttimesent = curTime;
