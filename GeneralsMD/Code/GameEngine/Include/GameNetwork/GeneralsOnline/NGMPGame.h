@@ -63,6 +63,8 @@ private:
 	Int m_reportedNumPlayers;
 	Int m_reportedMaxPlayers;
 	Int m_reportedNumObservers;
+
+	bool m_bHasCommittedOutcome = false;
 	
 	std::chrono::system_clock::time_point matchStartTime;
 
@@ -76,6 +78,9 @@ public:
 	NGMPGame();
 	virtual ~NGMPGame();
 	virtual void reset(void);
+
+	bool HasCommittedOutcome() const { return m_bHasCommittedOutcome; }
+	void SetHasCommittedOutcome() { m_bHasCommittedOutcome = true; }
 
 #if defined(GENERALS_ONLINE_ENABLE_MATCH_START_COUNTDOWN)
 	void StartCountdown();

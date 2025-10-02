@@ -1886,7 +1886,6 @@ winName.format("ScoreScreen.wnd:StaticTextScore%d", pos);
 							// play against all ai players -- no stats to gather.
 
 							// even though we don't want to register stats, we still want to register the match outcome, since we started it on the backend, it needs finishing too
-							pStatsInterface->CommitMyOutcome(s, TheVictoryConditions->isLocalAlliedVictory());
 
 							return;
 						}
@@ -1897,7 +1896,6 @@ winName.format("ScoreScreen.wnd:StaticTextScore%d", pos);
 							// No wonder we fired the whole department.
 
 							// even though we don't want to register stats, we still want to register the match outcome, since we started it on the backend, it needs finishing too
-							pStatsInterface->CommitMyOutcome(s, TheVictoryConditions->isLocalAlliedVictory());
 
 							return;
 						}
@@ -1927,7 +1925,6 @@ winName.format("ScoreScreen.wnd:StaticTextScore%d", pos);
 							DEBUG_LOG(("Not sending results - we didn't finish a game. %d\n", TheVictoryConditions->getEndFrame()));
 
 							// even though we don't want to register stats, we still want to register the match outcome, since we started it on the backend, it needs finishing too
-							pStatsInterface->CommitMyOutcome(s, TheVictoryConditions->isLocalAlliedVictory());
 
 							return;
 						}
@@ -2207,7 +2204,6 @@ winName.format("ScoreScreen.wnd:StaticTextScore%d", pos);
 #else
 
 						pStatsInterface->UpdateMyStats(stats);
-						pStatsInterface->CommitMyOutcome(s, TheVictoryConditions->isLocalAlliedVictory());
 
 						
 

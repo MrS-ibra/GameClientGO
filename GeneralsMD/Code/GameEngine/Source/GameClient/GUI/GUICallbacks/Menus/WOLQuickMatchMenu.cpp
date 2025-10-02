@@ -930,7 +930,7 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 		GadgetComboBoxReset( comboBoxDisabledLadder );
 
 #if defined(GENERALS_ONLINE)
-		index = GadgetListBoxAddEntryText(comboBoxDisabledLadder, UnicodeString(L"Automatic Ladder"), normalColor, -1);
+		index = GadgetComboBoxAddEntry(comboBoxDisabledLadder, UnicodeString(L"Automatic Ladder"), normalColor);
 #else
 		index = GadgetComboBoxAddEntry( comboBoxDisabledLadder, TheGameText->fetch("GUI:NoLadder"), normalColor );
 #endif

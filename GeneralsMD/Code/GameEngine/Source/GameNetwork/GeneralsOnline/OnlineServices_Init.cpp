@@ -468,8 +468,8 @@ void NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit, std:
 			unsigned char* pBufferToWrite = rgbData;
 			if (bResizeForTransmit)
 			{
-				int new_width = 844;
-				int new_height = 506;
+				int new_width = 557;
+				int new_height = 333;
 				int channels = 3;
 				unsigned char* resized = new unsigned char[new_width * new_height * channels];
 
