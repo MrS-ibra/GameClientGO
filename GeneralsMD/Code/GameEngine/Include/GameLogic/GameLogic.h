@@ -251,6 +251,10 @@ public:
 	void initTimeOutValues( void );
 	UnsignedInt getObjectCount( void );
 
+#if defined(GENERALS_ONLINE)
+	bool IsLoadScreenActive() const { return m_loadScreen != nullptr; }
+#endif
+
 	Int getRankLevelLimit() const { return m_rankLevelLimit; }
 	void setRankLevelLimit(Int limit)
 	{
@@ -399,7 +403,16 @@ private:
 	Bool m_mouseVisibleMemory;
 
 	Bool m_progressComplete[MAX_SLOTS];
+#if defined(GENERALS_ONLINE)
+	Int m_progressMade[MAX_SLOTS];
+#endif
+
+#if defined(GENERALS_ONLINE)
+	enum { PROGRESS_COMPLETE_TIMEOUT_PROGRESS_MADE = 30000 };							///< Timeout we wait for when we've completed our Load, if they made SOME progress
+	enum { PROGRESS_COMPLETE_TIMEOUT_ZERO_PROGRESS_MADE = 5000 };							///< Timeout we wait for when we've completed our Load, when they made zero progress
+#else
 	enum { PROGRESS_COMPLETE_TIMEOUT = 60000 };							///< Timeout we wait for when we've completed our Load
+#endif
 	Int m_progressCompleteTimeout[MAX_SLOTS];
 	void testTimeOut( void );
 	void lastHeardFrom( Int playerId );

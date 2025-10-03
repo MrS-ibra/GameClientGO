@@ -3,6 +3,7 @@
 #include "GameNetwork/GeneralsOnline/HTTP/HTTPManager.h"
 #include "GameNetwork/GeneralsOnline/OnlineServices_Init.h"
 #include "GameClient/MapUtil.h"
+#include "GameLogic/GameLogic.h"
 
 extern void OnKickedFromLobby();
 
@@ -744,7 +745,7 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 
 						// dont let the service be authoritative during gameplay over play list, the game host handles connections at this point
 						// we do care about everything else up until members list though, because we need things like matchID which is determined as the game transitions to in progress
-						if (TheNGMPGame->isGameInProgress())
+						if (TheNGMPGame->isGameInProgress() && !TheGameLogic->IsLoadScreenActive())
 						{
 							NetworkLog(ELogVerbosity::LOG_RELEASE, "Ignoring lobby members update request during gameplay.");
 

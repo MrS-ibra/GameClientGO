@@ -233,6 +233,10 @@ GameLogic::GameLogic( void )
 	{
 		m_progressComplete[i] = FALSE;
 		m_progressCompleteTimeout[i] = 0;
+
+#if defined(GENERALS_ONLINE)
+		m_progressMade[i] = 0;
+#endif
 	}
 
 	m_shouldValidateCRCs = FALSE;
@@ -441,6 +445,10 @@ void GameLogic::init( void )
 	{
 		m_progressComplete[i] = FALSE;
 		m_progressCompleteTimeout[i] = 0;
+
+#if defined(GENERALS_ONLINE)
+		m_progressMade[i] = 0;
+#endif
 	}
 	m_forceGameStartByTimeOut = FALSE;
 
@@ -496,6 +504,10 @@ void GameLogic::reset( void )
 	{
 		m_progressComplete[i] = FALSE;
 		m_progressCompleteTimeout[i] = 0;
+
+#if defined(GENERALS_ONLINE)
+		m_progressMade[i] = 0;
+#endif
 	}
 	m_forceGameStartByTimeOut = FALSE;
 
@@ -1389,6 +1401,10 @@ void GameLogic::startNewGame( Bool loadingSaveGame )
 			if (!slot || !slot->isHuman())
 			{
 				m_progressComplete[i] = TRUE;
+
+#if defined(GENERALS_ONLINE)
+				m_progressMade[i] = 100;
+#endif
 				lastHeardFrom(i);
 			}
 
@@ -4544,6 +4560,8 @@ void GameLogic::processProgress(Int playerId, Int percentage)
 	if(m_loadScreen)
 		m_loadScreen->processProgress(playerId, percentage);
 	lastHeardFrom(playerId);
+
+	m_progressMade[playerId] = percentage;
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -4609,8 +4627,16 @@ void GameLogic::testTimeOut( void )
 		// If they've completed their progress, ignore them
 		if(m_progressComplete[i])
 			continue;
-		if(	m_progressCompleteTimeout[i] + PROGRESS_COMPLETE_TIMEOUT > curTime )
+
+#if defined(GENERALS_ONLINE)
+		// which timeout value do we want to use? we give them a bigger grace period if they made some progress on loading, otherwise we give them a very short timeout
+		const Int timeoutValToUse = m_progressMade[i] > 0 ? PROGRESS_COMPLETE_TIMEOUT_PROGRESS_MADE : PROGRESS_COMPLETE_TIMEOUT_ZERO_PROGRESS_MADE;
+		if (m_progressCompleteTimeout[i] + timeoutValToUse > curTime)
 			return;
+#else
+		if (m_progressCompleteTimeout[i] + PROGRESS_COMPLETE_TIMEOUT > curTime)
+			return;
+#endif
 	}
 	// if we made it this far, that means everyone has timed out.
 	m_forceGameStartByTimeOut = TRUE;
