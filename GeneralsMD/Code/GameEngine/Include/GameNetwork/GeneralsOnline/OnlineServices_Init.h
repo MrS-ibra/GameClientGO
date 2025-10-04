@@ -1,7 +1,6 @@
 #pragma once
 
 #include "NGMP_include.h"
-#include "PortMapper.h"
 
 #include <thread>
 
@@ -445,18 +444,10 @@ public:
 
 	void Tick();
 
-#if defined(USE_PORT_MAPPER)
-	PortMapper& GetPortMapper() { return m_PortMapper; }
-#endif
-
 	void ProcessMOTD(const char* szMOTD)
 	{
 		m_strMOTD = std::string(szMOTD);
 	}
-
-	std::function<void()> m_cbPortMapperCallback = nullptr;
-	void RegisterForPortMapperChanges(std::function<void()> cbPortMapper) { m_cbPortMapperCallback = cbPortMapper; }
-	void DeregisterForPortMapperChanges() { m_cbPortMapperCallback = nullptr; }
 
 	std::string& GetMOTD() { return m_strMOTD; }
 
@@ -486,10 +477,6 @@ private:
 	// main thread SS Upload
 	static std::mutex m_ScreenshotMutex;
 	static std::vector<std::string> m_vecGuardedSSData;
-
-#if defined(USE_PORT_MAPPER)
-	PortMapper m_PortMapper;
-#endif
 
 	ServiceConfig m_ServiceConfig;
 
