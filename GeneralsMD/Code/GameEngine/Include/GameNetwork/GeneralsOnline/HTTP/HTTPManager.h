@@ -6,6 +6,7 @@
 #include <mutex>
 #include <thread>
 #include <winhttp.h>
+#include "../NGMP_include.h"
 
 #pragma comment(lib, "winhttp.lib")
 
@@ -46,35 +47,7 @@ public:
 
 	bool IsProxyEnabled() const { return m_bProxyEnabled; }
 
-	bool DeterminePlatformProxySettings()
-	{
-		WINHTTP_CURRENT_USER_IE_PROXY_CONFIG pProxyConfig;
-		WinHttpGetIEProxyConfigForCurrentUser(&pProxyConfig);
-
-		if (pProxyConfig.lpszProxy != nullptr)
-		{
-			LPWSTR ws = pProxyConfig.lpszProxy;
-			std::string strFullProxy;
-			strFullProxy.reserve(wcslen(ws));
-			for (; *ws; ws++)
-				strFullProxy += (char)*ws;
-
-			int ipStart = strFullProxy.find("=") + 1;
-			int ipEnd = strFullProxy.find(":", ipStart);
-
-			m_strProxyAddr = strFullProxy.substr(ipStart, ipEnd - ipStart);
-
-			int portStart = ipEnd + 1;
-			int portEnd = strFullProxy.find(";", portStart);
-			std::string strPort = strFullProxy.substr(portStart, portEnd - portStart);
-
-			m_proxyPort = (uint16_t)atoi(strPort.c_str());
-		}
-
-		m_bProxyEnabled = pProxyConfig.lpszProxy != nullptr;
-		return m_bProxyEnabled;
-	}
-
+	bool DeterminePlatformProxySettings();
 	std::string& GetProxyAddress() { return m_strProxyAddr; }
 	uint16_t GetProxyPort() const { return m_proxyPort; }
 
@@ -91,8 +64,6 @@ private:
 
 	std::vector<HTTPRequest*> m_vecRequestsPendingStart = std::vector<HTTPRequest*>();
 	std::vector<HTTPRequest*> m_vecRequestsInFlight = std::vector<HTTPRequest*>();
-
-	std::recursive_mutex m_Mutex;
 };
 
 

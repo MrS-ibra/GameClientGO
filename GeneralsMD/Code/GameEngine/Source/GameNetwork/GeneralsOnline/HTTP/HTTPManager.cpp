@@ -1,5 +1,6 @@
 #include "GameNetwork/GeneralsOnline/HTTP/HTTPManager.h"
 #include "../NGMP_include.h"
+#include "../OnlineServices_Init.h"
 
 HTTPManager::HTTPManager() noexcept
 {
@@ -8,7 +9,7 @@ HTTPManager::HTTPManager() noexcept
 
 void HTTPManager::SendGETRequest(const char* szURI, EIPProtocolVersion protover, std::map<std::string, std::string>& inHeaders, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback, std::function<void(size_t bytesReceived)> progressCallback, int timeoutMS)
 {
-	std::scoped_lock<std::recursive_mutex> lock(m_Mutex);
+	CHECK_MAIN_THREAD;
 
 	HTTPRequest* pRequest = PlatformCreateRequest(EHTTPVerb::HTTP_VERB_GET, protover, szURI, inHeaders, completionCallback, progressCallback, timeoutMS);
 
@@ -17,7 +18,7 @@ void HTTPManager::SendGETRequest(const char* szURI, EIPProtocolVersion protover,
 
 void HTTPManager::SendPOSTRequest(const char* szURI, EIPProtocolVersion protover, std::map<std::string, std::string>& inHeaders, const char* szPostData, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback, std::function<void(size_t bytesReceived)> progressCallback, int timeoutMS)
 {
-	std::scoped_lock<std::recursive_mutex> lock(m_Mutex);
+	CHECK_MAIN_THREAD;
 
 	HTTPRequest* pRequest = PlatformCreateRequest(EHTTPVerb::HTTP_VERB_POST, protover, szURI, inHeaders, completionCallback, progressCallback, timeoutMS);
 	pRequest->SetPostData(szPostData);
@@ -27,7 +28,7 @@ void HTTPManager::SendPOSTRequest(const char* szURI, EIPProtocolVersion protover
 
 void HTTPManager::SendPUTRequest(const char* szURI, EIPProtocolVersion protover, std::map<std::string, std::string>& inHeaders, const char* szData, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback, std::function<void(size_t bytesReceived)> progressCallback /*= nullptr*/, int timeoutMS)
 {
-	std::scoped_lock<std::recursive_mutex> lock(m_Mutex);
+	CHECK_MAIN_THREAD;
 
 	HTTPRequest* pRequest = PlatformCreateRequest(EHTTPVerb::HTTP_VERB_PUT, protover, szURI, inHeaders, completionCallback, progressCallback, timeoutMS);
 	pRequest->SetPostData(szData);
@@ -37,7 +38,7 @@ void HTTPManager::SendPUTRequest(const char* szURI, EIPProtocolVersion protover,
 
 void HTTPManager::SendDELETERequest(const char* szURI, EIPProtocolVersion protover, std::map<std::string, std::string>& inHeaders, const char* szData, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback, std::function<void(size_t bytesReceived)> progressCallback /*= nullptr*/, int timeoutMS)
 {
-	std::scoped_lock<std::recursive_mutex> lock(m_Mutex);
+	CHECK_MAIN_THREAD;
 
 	HTTPRequest* pRequest = PlatformCreateRequest(EHTTPVerb::HTTP_VERB_DELETE, protover, szURI, inHeaders, completionCallback, progressCallback, timeoutMS);
 	pRequest->SetPostData(szData);
@@ -47,30 +48,70 @@ void HTTPManager::SendDELETERequest(const char* szURI, EIPProtocolVersion protov
 
 void HTTPManager::Shutdown()
 {
+	CHECK_MAIN_THREAD;
+
 	curl_multi_cleanup(m_pCurl);
 	m_pCurl = nullptr;
 }
 
+
+bool HTTPManager::DeterminePlatformProxySettings()
+{
+	CHECK_MAIN_THREAD;
+
+	WINHTTP_CURRENT_USER_IE_PROXY_CONFIG pProxyConfig;
+	WinHttpGetIEProxyConfigForCurrentUser(&pProxyConfig);
+
+	if (pProxyConfig.lpszProxy != nullptr)
+	{
+		LPWSTR ws = pProxyConfig.lpszProxy;
+		std::string strFullProxy;
+		strFullProxy.reserve(wcslen(ws));
+		for (; *ws; ws++)
+			strFullProxy += (char)*ws;
+
+		int ipStart = strFullProxy.find("=") + 1;
+		int ipEnd = strFullProxy.find(":", ipStart);
+
+		m_strProxyAddr = strFullProxy.substr(ipStart, ipEnd - ipStart);
+
+		int portStart = ipEnd + 1;
+		int portEnd = strFullProxy.find(";", portStart);
+		std::string strPort = strFullProxy.substr(portStart, portEnd - portStart);
+
+		m_proxyPort = (uint16_t)atoi(strPort.c_str());
+	}
+
+	m_bProxyEnabled = pProxyConfig.lpszProxy != nullptr;
+	return m_bProxyEnabled;
+}
+
 HTTPRequest* HTTPManager::PlatformCreateRequest(EHTTPVerb httpVerb, EIPProtocolVersion protover, const char* szURI, std::map<std::string, std::string>& inHeaders, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback, std::function<void(size_t bytesReceived)> progressCallback /*= nullptr*/, int timeoutMS /* = -1 */) noexcept
 {
+	CHECK_MAIN_THREAD;
+
 	HTTPRequest* pNewRequest = new HTTPRequest(httpVerb, protover, szURI, inHeaders, completionCallback, progressCallback, timeoutMS);
 	return pNewRequest;
 }
 
 HTTPManager::~HTTPManager()
 {
+	CHECK_MAIN_THREAD;
+
 	Shutdown();
 }
 
 void HTTPManager::Initialize()
 {
+	CHECK_MAIN_THREAD;
+
 	m_pCurl = curl_multi_init();
 	m_bProxyEnabled = DeterminePlatformProxySettings();
 }
 
 void HTTPManager::Tick()
 {
-	std::scoped_lock<std::recursive_mutex> lock(m_Mutex);
+	CHECK_MAIN_THREAD;
 
 	// start anything needing starting
 	for (HTTPRequest* pRequest : m_vecRequestsPendingStart)
@@ -117,12 +158,14 @@ void HTTPManager::Tick()
 
 void HTTPManager::AddHandleToMulti(CURL* pNewHandle)
 {
-	std::scoped_lock<std::recursive_mutex> lock(m_Mutex);
+	CHECK_MAIN_THREAD;
+
 	curl_multi_add_handle(m_pCurl, pNewHandle);
 }
 
 void HTTPManager::RemoveHandleFromMulti(CURL* pHandleToRemove)
 {
-	std::scoped_lock<std::recursive_mutex> lock(m_Mutex);
+	CHECK_MAIN_THREAD;
+
 	curl_multi_remove_handle(m_pCurl, pHandleToRemove);
 }

@@ -3,6 +3,8 @@
 #include "NGMP_include.h"
 #include "PortMapper.h"
 
+#include <thread>
+
 class HTTPManager;
 
 class NGMP_OnlineServices_AuthInterface;
@@ -274,6 +276,8 @@ public:
 
 	static GenOnlineSettings Settings;
 
+	
+
 	NGMP_OnlineServicesManager();
 	
 	enum EEnvironment
@@ -363,6 +367,8 @@ public:
 
 		return nullptr;
 	}
+
+	static std::thread::id g_MainThreadID;
 
 	static NetworkMesh* GetNetworkMesh();
 
@@ -477,6 +483,10 @@ public:
 	ServiceConfig& GetServiceConfig() { return m_ServiceConfig; }
 
 private:
+	// main thread SS Upload
+	static std::mutex m_ScreenshotMutex;
+	static std::vector<std::string> m_vecGuardedSSData;
+
 #if defined(USE_PORT_MAPPER)
 	PortMapper m_PortMapper;
 #endif

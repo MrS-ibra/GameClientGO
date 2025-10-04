@@ -27,6 +27,12 @@ extern "C"
 	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 
+NGMP_OnlineServicesManager* NGMP_OnlineServicesManager::m_pOnlineServicesManager = nullptr;
+
+
+std::thread::id NGMP_OnlineServicesManager::g_MainThreadID;
+std::mutex NGMP_OnlineServicesManager::m_ScreenshotMutex;
+std::vector<std::string> NGMP_OnlineServicesManager::m_vecGuardedSSData;
 
 NetworkMesh* NGMP_OnlineServicesManager::GetNetworkMesh()
 {
@@ -120,36 +126,32 @@ void NGMP_OnlineServicesManager::CaptureScreenshotToDisk()
 
 void NGMP_OnlineServicesManager::CaptureScreenshotForProbe(EScreenshotType screenshotType)
 {
-	NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshot(true, [=](std::vector<unsigned char> vecData)
+	CHECK_MAIN_THREAD;
+
+	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+	if (pLobbyInterface != nullptr)
 	{
-		NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
-		if (pLobbyInterface != nullptr)
+		uint64_t currentMatchID = pLobbyInterface->GetCurrentMatchID();
+
+		NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshot(true, [currentMatchID, screenshotType](std::vector<unsigned char> vecData)
 		{
-			uint64_t currentMatchID = pLobbyInterface->GetCurrentMatchID();
+			CHECK_WORKER_THREAD;
 
 			nlohmann::json j;
 			j["img"] = nullptr;
 			j["imgtype"] = (int)screenshotType;
 			j["match_id"] = currentMatchID;
 
-			// send screenshot
-			std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("MatchUpdate");
-			std::map<std::string, std::string> mapHeaders;
-
 			// encode body
 			j["img"] = Base64Encode(vecData);
 
 			std::string strPostData = j.dump();
 
-			NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPUTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, strPostData.c_str(), [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
-				{
-
-				}, nullptr, HTTP_UPLOAD_TIMEOUT);
-		}
-	});
+			std::scoped_lock<std::mutex> ssLock(m_ScreenshotMutex);
+			m_vecGuardedSSData.push_back(strPostData);
+		});
+	}
 }
-
-NGMP_OnlineServicesManager* NGMP_OnlineServicesManager::m_pOnlineServicesManager = nullptr;
 
 enum class EVersionCheckResponseResult : int
 {
@@ -393,6 +395,8 @@ void NGMP_OnlineServicesManager::ContinueUpdate()
 
 void NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit, std::function<void(std::vector<unsigned char>)> cbOnDataAvailable)
 {
+	CHECK_MAIN_THREAD;
+
 	// no callback, nothing to do
 	if (cbOnDataAvailable == nullptr)
 	{
@@ -401,10 +405,22 @@ void NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit, std:
 
 	SurfaceClass* surface = DX8Wrapper::_Get_DX8_Back_Buffer();
 
+	if (surface == nullptr)
+	{
+		return;
+	}
+
 	SurfaceClass::SurfaceDescription surfaceDesc;
 	surface->Get_Description(surfaceDesc);
 
-	SurfaceClass* surfaceCopy = NEW_REF(SurfaceClass, (DX8Wrapper::_Create_DX8_Surface(surfaceDesc.Width, surfaceDesc.Height, surfaceDesc.Format)));
+	IDirect3DSurface8* pDXsurf = DX8Wrapper::_Create_DX8_Surface(surfaceDesc.Width, surfaceDesc.Height, surfaceDesc.Format);
+
+	if (pDXsurf == nullptr)
+	{
+		return;
+	}
+
+	SurfaceClass* surfaceCopy = NEW_REF(SurfaceClass, (pDXsurf));
 	DX8Wrapper::_Copy_DX8_Rects(surface->Peek_D3D_Surface(), NULL, 0, surfaceCopy->Peek_D3D_Surface(), NULL);
 
 	HRESULT hr;
@@ -447,6 +463,8 @@ void NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit, std:
 	// process on thread
 	new std::thread([cbOnDataAvailable, width, height, pBits, pitch, rgbData, bResizeForTransmit]()
 		{
+			CHECK_WORKER_THREAD;
+
 			std::vector<unsigned char> vecData;
 
 			int finalWidth = width;
@@ -492,7 +510,8 @@ void NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit, std:
 				}, &vecData, finalWidth, finalHeight, 3, pBufferToWrite, bResizeForTransmit ? 0 : 90);
 
 			cbOnDataAvailable(vecData);
-		});
+		}
+	);
 }
 
 void NGMP_OnlineServicesManager::CancelUpdate()
@@ -598,6 +617,8 @@ void NGMP_OnlineServicesManager::OnLogin(bool bSuccess, const char* szWSAddr)
 
 void NGMP_OnlineServicesManager::Init()
 {
+	g_MainThreadID = std::this_thread::get_id();
+
 	// initialize child classes, these need the platform handle
 	m_pAuthInterface = new NGMP_OnlineServices_AuthInterface();
 	m_pLobbyInterface = new NGMP_OnlineServices_LobbyInterface();
@@ -642,6 +663,25 @@ void NGMP_OnlineServicesManager::Init()
 
 void NGMP_OnlineServicesManager::Tick()
 {
+	// screenshots
+	{
+		// send screenshot
+		std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("MatchUpdate");
+		std::map<std::string, std::string> mapHeaders;
+
+		std::scoped_lock<std::mutex> ssLock(m_ScreenshotMutex);
+
+		for (std::string& b64SSData : m_vecGuardedSSData)
+		{
+			NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPUTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, b64SSData.c_str(),
+				[=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
+				{
+
+				}, nullptr, HTTP_UPLOAD_TIMEOUT);
+		}
+		m_vecGuardedSSData.clear();
+	}
+
 	m_qosMgr.Tick();
 
 	if (m_pWebSocket != nullptr)
