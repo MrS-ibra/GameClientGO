@@ -263,14 +263,15 @@ extern Bool DontShowMainMenu; //KRIS
 Bool g_playMusic = FALSE;
 Bool ReplayWasPressed = FALSE;
 
-Bool g_bHasDoneEOGScreenshot = FALSE;
+Bool g_bNeedToTakeDoneEOGScreenshot = FALSE;
+int64_t g_TimeEnterState = -1;
 /** Initialize the ScoreScreen */
 //-------------------------------------------------------------------------------------------------
 void ScoreScreenInit( WindowLayout *layout, void *userData )
 {
 	//Play music after subsystems get reset including the audio...
 	g_playMusic = TRUE;
-	g_bHasDoneEOGScreenshot = FALSE;
+	g_bNeedToTakeDoneEOGScreenshot = FALSE;
 	
 	if (TheGameSpyInfo)
 	{
@@ -407,14 +408,6 @@ void FixupScoreScreenMovieWindow( void )
 //-------------------------------------------------------------------------------------------------
 void ScoreScreenShutdown( WindowLayout *layout, void *userData )
 {
-	// TODO_NGMP: Find a better way of doing this... before the user exists
-	if (NGMP_OnlineServicesManager::GetInstance() != nullptr && !g_bHasDoneEOGScreenshot)
-	{
-		g_bHasDoneEOGScreenshot = true;
-
-		NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshotForProbe(EScreenshotType::SCREENSHOT_TYPE_SCORESCREEN);
-	}
-
 	DontShowMainMenu = FALSE; //KRIS
 
 	// hide the layout
@@ -435,6 +428,18 @@ void ScoreScreenUpdate( WindowLayout * layout, void *userData)
 	if (popupReplayLayout != NULL) {
 		if (popupReplayLayout->isHidden() == FALSE) {
 			PopupReplayUpdate(popupReplayLayout, NULL);
+		}
+	}
+
+	// TODO_NGMP: Find a better way of doing this... before the user exists
+	if (NGMP_OnlineServicesManager::GetInstance() != nullptr && g_bNeedToTakeDoneEOGScreenshot)
+	{
+		int64_t currTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::utc_clock::now().time_since_epoch()).count();
+		if (currTime - g_TimeEnterState >= 1000)
+		{
+			g_bNeedToTakeDoneEOGScreenshot = false;
+
+			NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshotForProbe(EScreenshotType::SCREENSHOT_TYPE_SCORESCREEN);
 		}
 	}
 
@@ -1178,6 +1183,9 @@ void initInternetMultiPlayer(void)
 #else
 	buttonBuddies->winHide(TRUE);
 #endif
+
+	g_bNeedToTakeDoneEOGScreenshot = true;
+	g_TimeEnterState = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::utc_clock::now().time_since_epoch()).count();
 
 	if (!TheGameSpyBuddyMessageQueue)
 		return;
