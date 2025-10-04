@@ -7,6 +7,9 @@ enum class ELogVerbosity
 	LOG_RELEASE = 1
 };
 
+#define CHECK_MAIN_THREAD assert(std::this_thread::get_id() == NGMP_OnlineServicesManager::g_MainThreadID);
+#define CHECK_WORKER_THREAD assert(std::this_thread::get_id() != NGMP_OnlineServicesManager::g_MainThreadID);
+
 static const ELogVerbosity g_LogVerbosity =
 #if _DEBUG
 ELogVerbosity::LOG_DEBUG;

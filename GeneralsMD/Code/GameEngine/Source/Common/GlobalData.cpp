@@ -984,8 +984,19 @@ GlobalData::GlobalData()
 
 	m_shellMapName.set("Maps\\ShellMap1\\ShellMap1.map");
 	m_shellMapOn =TRUE;
+
+
+#if defined(GENERALS_ONLINE) && defined(_DEBUG)
+	m_playIntro = FALSE;
+#else
 	m_playIntro = TRUE;
+#endif
+
+#if defined(GENERALS_ONLINE)
 	m_playSizzle = TRUE;
+#else
+	m_playSizzle = FALSE;
+#endif
 	m_afterIntro = FALSE;
 	m_allowExitOutOfMovies = FALSE;
 	m_loadScreenRender = FALSE;
