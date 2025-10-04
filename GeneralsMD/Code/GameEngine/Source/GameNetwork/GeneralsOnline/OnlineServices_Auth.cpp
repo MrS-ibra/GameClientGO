@@ -73,12 +73,6 @@ std::string GenerateGamecode()
 
 void NGMP_OnlineServices_AuthInterface::GoToDetermineNetworkCaps()
 {
-	// move on to network capabilities section
-	// this is done in the background, but we'll update the MOTD when done to show the latest status
-#if defined(USE_PORT_MAPPER)
-	NGMP_OnlineServicesManager::GetInstance()->GetPortMapper().DetermineLocalNetworkCapabilities();
-#endif
-
 	// GET MOTD
 	std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("MOTD");
 	std::map<std::string, std::string> mapHeaders;

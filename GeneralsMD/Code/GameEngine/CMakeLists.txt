@@ -1151,7 +1151,6 @@ set(GAMEENGINE_SRC
     Include/GameNetwork/GeneralsOnline/OnlineServices_RoomsInterface.h
     Include/GameNetwork/GeneralsOnline/OnlineServices_StatsInterface.h
     Include/GameNetwork/GeneralsOnline/OnlineServices_MatchmakingInterface.h
-    Include/GameNetwork/GeneralsOnline/PortMapper.h
     Include/GameNetwork/GeneralsOnline/GeneralsOnline_Settings.h
     Include/GameNetwork/GeneralsOnline/HTTP/HTTPManager.h
     Include/GameNetwork/GeneralsOnline/HTTP/HTTPRequest.h
@@ -1167,103 +1166,6 @@ set(GAMEENGINE_SRC
     Include/GameNetwork/GeneralsOnline/Vendor/ValveNetworkingSockets/steam/steamnetworkingtypes.h
     Include/GameNetwork/GeneralsOnline/Vendor/ValveNetworkingSockets/steam/steamtypes.h
     Include/GameNetwork/GeneralsOnline/Vendor/ValveNetworkingSockets/steam/steamuniverse.h
-
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/core.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_aead_aegis128l.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_aead_aegis256.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_aead_aes256gcm.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_aead_chacha20poly1305.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_aead_xchacha20poly1305.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_auth.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_auth_hmacsha256.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_auth_hmacsha512.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_auth_hmacsha512256.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_box.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_box_curve25519xchacha20poly1305.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_box_curve25519xsalsa20poly1305.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_core_ed25519.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_core_hchacha20.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_core_hsalsa20.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_core_ristretto255.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_core_salsa20.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_core_salsa2012.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_core_salsa208.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_generichash.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_generichash_blake2b.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_hash.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_hash_sha256.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_hash_sha512.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_kdf.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_kdf_blake2b.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_kdf_hkdf_sha256.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_kdf_hkdf_sha512.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_kx.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_onetimeauth.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_onetimeauth_poly1305.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_pwhash.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_pwhash_argon2i.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_pwhash_argon2id.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_pwhash_scryptsalsa208sha256.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_scalarmult.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_scalarmult_curve25519.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_scalarmult_ed25519.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_scalarmult_ristretto255.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_secretbox.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_secretbox_xchacha20poly1305.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_secretbox_xsalsa20poly1305.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_secretstream_xchacha20poly1305.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_shorthash.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_shorthash_siphash24.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_sign.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_sign_ed25519.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_sign_edwards25519sha512batch.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_stream.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_stream_chacha20.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_stream_salsa20.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_stream_salsa2012.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_stream_salsa208.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_stream_xchacha20.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_stream_xsalsa20.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_verify_16.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_verify_32.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/crypto_verify_64.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/export.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/randombytes.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/randombytes_internal_random.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/randombytes_sysrandom.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/runtime.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/utils.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/version.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/private/asm_cet.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/private/chacha20_ietf_ext.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/private/common.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/private/ed25519_ref10.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/private/ed25519_ref10_fe_25_5.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/private/ed25519_ref10_fe_51.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/private/implementations.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/private/mutex.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/private/softaes.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libsodium/sodium/private/sse2_64_32.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/plum.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/addr.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/client.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/dummytls.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/http.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/log.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/natpmp.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/net.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/noprotocol.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/pcp.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/protocol.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/lprandom.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/socket.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/tcp.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/thread.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/timestamp.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/udp.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/upnp.h
-Include/GameNetwork/GeneralsOnline/Vendor/libplum/util.h
     Include/GameNetwork/GeneralsOnline/Vendor/sentry/sentry.h
     Include/GameNetwork/GeneralsOnline/Vendor/libcurl/curl.h
     Include/GameNetwork/GeneralsOnline/Vendor/libcurl/curlver.h
@@ -1277,71 +1179,9 @@ Include/GameNetwork/GeneralsOnline/Vendor/libplum/util.h
     Include/GameNetwork/GeneralsOnline/Vendor/libcurl/typecheck-gcc.h
     Include/GameNetwork/GeneralsOnline/Vendor/libcurl/urlapi.h
     Include/GameNetwork/GeneralsOnline/Vendor/libcurl/websockets.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libnatpmp/declspec.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libnatpmp/getgateway.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libnatpmp/natpmp.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libnatpmp/natpmp_declspec.h
-    Include/GameNetwork/GeneralsOnline/Vendor/libnatpmp/wingettimeofday.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/addr_is_reserved.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/codelength.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/connecthostport.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/igd_desc_parse.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/minisoap.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/minissdpc.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/miniupnpc.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/miniupnpctypes.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/miniupnpc_declspec.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/miniupnpc_socketdef.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/miniwget.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/miniwget_private.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/minixml.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/portlistingparse.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/receivedata.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/upnpcommands.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/upnpdev.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/upnperrors.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/upnpreplyparse.h
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc/win32_snprintf.h
-
-Source/GameNetwork/GeneralsOnline/Vendor/libplum/addr.cpp
-Source/GameNetwork/GeneralsOnline/Vendor/libplum/client.cpp
-Source/GameNetwork/GeneralsOnline/Vendor/libplum/dummytls.cpp
-Source/GameNetwork/GeneralsOnline/Vendor/libplum/http.cpp
-Source/GameNetwork/GeneralsOnline/Vendor/libplum/log.cpp
-Source/GameNetwork/GeneralsOnline/Vendor/libplum/natpmp.cpp
-Source/GameNetwork/GeneralsOnline/Vendor/libplum/net.cpp
-Source/GameNetwork/GeneralsOnline/Vendor/libplum/noprotocol.cpp
-Source/GameNetwork/GeneralsOnline/Vendor/libplum/pcp.cpp
-Source/GameNetwork/GeneralsOnline/Vendor/libplum/plum.cpp
-Source/GameNetwork/GeneralsOnline/Vendor/libplum/random.cpp
-Source/GameNetwork/GeneralsOnline/Vendor/libplum/tcp.cpp
-Source/GameNetwork/GeneralsOnline/Vendor/libplum/timestamp.cpp
-Source/GameNetwork/GeneralsOnline/Vendor/libplum/udp.cpp
-Source/GameNetwork/GeneralsOnline/Vendor/libplum/upnp.cpp
-Source/GameNetwork/GeneralsOnline/Vendor/libplum/util.cpp
     Source/GameNetwork/GeneralsOnline/NGMP_Helpers.cpp
     Source/GameNetwork/GeneralsOnline/NGMPGame.cpp
-    Source/GameNetwork/GeneralsOnline/PortMapper.cpp
     Source/GameNetwork/GeneralsOnline/GeneralsOnline_Settings.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/libnatpmp/natpmp.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/libnatpmp/wingettimeofday.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/libnatpmp/getgateway.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/miniupnpc/addr_is_reserved.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/miniupnpc/connecthostport.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/miniupnpc/igd_desc_parse.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/miniupnpc/listdevices.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/miniupnpc/minisoap.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/miniupnpc/minissdpc.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/miniupnpc/miniupnpc.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/miniupnpc/miniwget.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/miniupnpc/minixml.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/miniupnpc/portlistingparse.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/miniupnpc/receivedata.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/miniupnpc/upnpc.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/miniupnpc/upnpcommands.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/miniupnpc/upnpdev.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/miniupnpc/upnperrors.cpp
-    Source/GameNetwork/GeneralsOnline/Vendor/miniupnpc/upnpreplyparse.cpp
     Source/GameNetwork/GeneralsOnline/HTTP/HTTPManager.cpp
     Source/GameNetwork/GeneralsOnline/HTTP/HTTPRequest.cpp
     Source/GameNetwork/GeneralsOnline/NetworkMesh.cpp
@@ -1378,9 +1218,6 @@ target_include_directories(z_gameengine PUBLIC
     Include
 
     Include/GameNetwork/GeneralsOnline/Vendor/
-    Include/GameNetwork/GeneralsOnline/Vendor/libnatpmp
-    Include/GameNetwork/GeneralsOnline/Vendor/miniupnpc
-    Include/GameNetwork/GeneralsOnline/Vendor/libplum
 )
 
 target_link_directories(z_gameengine PUBLIC
