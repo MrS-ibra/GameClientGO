@@ -149,18 +149,18 @@ WindowMsgHandledType PopupJoinGameInput( GameWindow *window, UnsignedInt msg, Wi
 						GameSpyCloseOverlay(GSOVERLAY_GAMEPASSWORD);
 						SetLobbyAttemptHostJoin( FALSE );
 						parentPopup = NULL;
-					}  // end if
+					}
 
 					// don't let key fall through anywhere else
 					return MSG_HANDLED;
 
-				}  // end escape
+				}
 
-			}  // end switch( key )
+			}
 
-		}  // end char
+		}
 
-	}  // end switch( msg )
+	}
 
 	return MSG_IGNORED;
 
@@ -180,14 +180,14 @@ WindowMsgHandledType PopupJoinGameSystem( GameWindow *window, UnsignedInt msg, W
 
 			break;
 
-		}  // end create
+		}
     //---------------------------------------------------------------------------------------------
 		case GWM_DESTROY:
 		{
 
 			break;
 
-		}  // end case
+		}
 
 		//---------------------------------------------------------------------------------------------
 		case GBM_SELECTED:
@@ -213,7 +213,7 @@ WindowMsgHandledType PopupJoinGameSystem( GameWindow *window, UnsignedInt msg, W
 
 			break;
 
-		}  // end input
+		}
     //---------------------------------------------------------------------------------------------
 		case GEM_EDIT_DONE:
 		{
@@ -239,7 +239,7 @@ WindowMsgHandledType PopupJoinGameSystem( GameWindow *window, UnsignedInt msg, W
 		default:
 			return MSG_IGNORED;
 
-	}  // end switch
+	}
 
 	return MSG_HANDLED;
 

@@ -59,7 +59,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 template<>
-const char* WeaponSetFlags::s_bitNameList[] =
+const char* const WeaponSetFlags::s_bitNameList[] =
 {
 	"VETERAN",
 	"ELITE",
@@ -73,6 +73,7 @@ const char* WeaponSetFlags::s_bitNameList[] =
 
 	NULL
 };
+static_assert(ARRAY_SIZE(WeaponSetFlags::s_bitNameList) == WeaponSetFlags::NumBits + 1, "Incorrect array size");
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // PRIVATE DATA ///////////////////////////////////////////////////////////////////////////////////
@@ -193,7 +194,7 @@ WeaponSet::~WeaponSet()
 void WeaponSet::crc( Xfer *xfer )
 {
 
-}  // end crc
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Xfer method
@@ -281,7 +282,7 @@ void WeaponSet::xfer( Xfer *xfer )
 void WeaponSet::loadPostProcess( void )
 {
 
-}  // end loadPostProcess
+}
 
 //-------------------------------------------------------------------------------------------------
 void WeaponSet::updateWeaponSet(const Object* obj)

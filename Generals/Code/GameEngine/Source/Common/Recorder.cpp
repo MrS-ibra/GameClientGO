@@ -46,6 +46,8 @@
 #include "Common/CRCDebug.h"
 #include "Common/version.h"
 
+constexpr const char s_genrep[] = "GENREP";
+constexpr const UnsignedInt replayBufferBytes = 8192;
 
 Int REPLAY_CRC_INTERVAL = 100;
 
@@ -1208,15 +1210,15 @@ Bool RecorderClass::playbackFile(AsciiString filename)
 	DEBUG_LOG(("Player index is %d, replay CRC interval is %d", m_crcInfo->getLocalPlayer(), REPLAY_CRC_INTERVAL));
 
 	Int difficulty = 0;
-	fread(&difficulty, sizeof(difficulty), 1, m_file);
+	m_file->read(&difficulty, sizeof(difficulty));
 
-	fread(&m_originalGameMode, sizeof(m_originalGameMode), 1, m_file);
+	m_file->read(&m_originalGameMode, sizeof(m_originalGameMode));
 
 	Int rankPoints = 0;
-	fread(&rankPoints, sizeof(rankPoints), 1, m_file);
+	m_file->read(&rankPoints, sizeof(rankPoints));
 
 	Int maxFPS = 0;
-	fread(&maxFPS, sizeof(maxFPS), 1, m_file);
+	m_file->read(&maxFPS, sizeof(maxFPS));
 
 	DEBUG_LOG(("RecorderClass::playbackFile() - original game was mode %d", m_originalGameMode));
 

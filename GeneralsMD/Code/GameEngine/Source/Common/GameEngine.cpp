@@ -282,21 +282,21 @@ static void updateWindowTitle()
 }
 
 //-------------------------------------------------------------------------------------------------
-Int GameEngine::getFramesPerSecondLimit( void )
-{
-	return m_maxFPS;
-}
-
-//-------------------------------------------------------------------------------------------------
 GameEngine::GameEngine( void )
 {
 	// Set the time slice size to 1 ms.
 	timeBeginPeriod(1);
 
 	// initialize to non garbage values
-	m_maxFPS = 0;
+	m_maxFPS = BaseFps;
+	m_logicTimeScaleFPS = LOGICFRAMES_PER_SECOND;
+	m_updateTime = 1.0f / BaseFps; // initialized to something to avoid division by zero on first use
+	m_logicTimeAccumulator = 0.0f;
 	m_quitting = FALSE;
 	m_isActive = FALSE;
+	m_enableLogicTimeScale = FALSE;
+	m_isTimeFrozen = FALSE;
+	m_isGameHalted = FALSE;
 
 	_Module.Init(NULL, ApplicationHInstance, NULL);
 }
@@ -335,12 +335,10 @@ GameEngine::~GameEngine()
 	delete TheFileSystem;
 	TheFileSystem = NULL;
 
+	delete TheGameLODManager;
+	TheGameLODManager = NULL;
 	// GENERALS ONLINE
 	NGMP_OnlineServicesManager::DestroyInstance();
-
-	if (TheGameLODManager)
-		delete TheGameLODManager;
-
 	Drawable::killStaticImages();
 
 	_Module.Term();
@@ -353,10 +351,142 @@ GameEngine::~GameEngine()
 	timeEndPeriod(1);
 }
 
-void GameEngine::setFramesPerSecondLimit( Int fps )
+//-------------------------------------------------------------------------------------------------
+void GameEngine::setFramesPerSecondLimit(Int fps)
 {
 	DEBUG_LOG(("GameEngine::setFramesPerSecondLimit() - setting max fps to %d (TheGlobalData->m_useFpsLimit == %d)", fps, TheGlobalData->m_useFpsLimit));
 	m_maxFPS = fps;
+}
+
+//-------------------------------------------------------------------------------------------------
+Int GameEngine::getFramesPerSecondLimit(void)
+{
+	return m_maxFPS;
+}
+
+//-------------------------------------------------------------------------------------------------
+Real GameEngine::getUpdateTime()
+{
+	return m_updateTime;
+}
+
+//-------------------------------------------------------------------------------------------------
+Real GameEngine::getUpdateFps()
+{
+	return 1.0f / m_updateTime;
+}
+
+//-------------------------------------------------------------------------------------------------
+Bool GameEngine::isTimeFrozen()
+{
+	// TheSuperHackers @fix The time can no longer be frozen in Network games. It would disconnect the player.
+	if (TheNetwork != NULL)
+		return false;
+
+	if (TheTacticalView != NULL)
+	{
+		if (TheTacticalView->isTimeFrozen() && !TheTacticalView->isCameraMovementFinished())
+			return true;
+	}
+
+	if (TheScriptEngine != NULL)
+	{
+		if (TheScriptEngine->isTimeFrozenDebug() || TheScriptEngine->isTimeFrozenScript())
+			return true;
+	}
+
+	return false;
+}
+
+//-------------------------------------------------------------------------------------------------
+Bool GameEngine::isGameHalted()
+{
+	if (TheNetwork != NULL)
+	{
+		if (TheNetwork->isStalling())
+			return true;
+	}
+	else
+	{
+		if (TheGameLogic != NULL && TheGameLogic->isGamePaused())
+			return true;
+	}
+
+	return false;
+}
+
+//-------------------------------------------------------------------------------------------------
+void GameEngine::setLogicTimeScaleFps(Int fps)
+{
+	m_logicTimeScaleFPS = fps;
+}
+
+//-------------------------------------------------------------------------------------------------
+Int GameEngine::getLogicTimeScaleFps()
+{
+	return m_logicTimeScaleFPS;
+}
+
+//-------------------------------------------------------------------------------------------------
+void GameEngine::enableLogicTimeScale(Bool enable)
+{
+	m_enableLogicTimeScale = enable;
+}
+
+//-------------------------------------------------------------------------------------------------
+Bool GameEngine::isLogicTimeScaleEnabled()
+{
+	return m_enableLogicTimeScale;
+}
+
+//-------------------------------------------------------------------------------------------------
+Int GameEngine::getActualLogicTimeScaleFps(LogicTimeQueryFlags flags)
+{
+	if (m_isTimeFrozen && (flags & IgnoreFrozenTime) == 0)
+	{
+		return 0;
+	}
+
+	if (m_isGameHalted && (flags & IgnoreHaltedGame) == 0)
+	{
+		return 0;
+	}
+
+	if (TheNetwork != NULL)
+	{
+		return TheNetwork->getFrameRate();
+	}
+
+	if (isLogicTimeScaleEnabled())
+	{
+		return min(getLogicTimeScaleFps(), getFramesPerSecondLimit());
+	}
+
+	return getFramesPerSecondLimit();
+}
+
+//-------------------------------------------------------------------------------------------------
+Real GameEngine::getActualLogicTimeScaleRatio(LogicTimeQueryFlags flags)
+{
+	return (Real)getActualLogicTimeScaleFps(flags) / LOGICFRAMES_PER_SECONDS_REAL;
+}
+
+//-------------------------------------------------------------------------------------------------
+Real GameEngine::getActualLogicTimeScaleOverFpsRatio(LogicTimeQueryFlags flags)
+{
+	// TheSuperHackers @info Clamps ratio to min 1, because the logic
+	// frame rate is currently capped by the render frame rate.
+	return min(1.0f, (Real)getActualLogicTimeScaleFps(flags) / getUpdateFps());
+}
+
+Real GameEngine::getLogicTimeStepSeconds(LogicTimeQueryFlags flags)
+{
+	return SECONDS_PER_LOGICFRAME_REAL * getActualLogicTimeScaleOverFpsRatio(flags);
+}
+
+Real GameEngine::getLogicTimeStepMilliseconds(LogicTimeQueryFlags flags)
+{
+	return MSEC_PER_LOGICFRAME_REAL * getActualLogicTimeScaleOverFpsRatio(flags);
 }
 
 /** -----------------------------------------------------------------------------------------------
@@ -493,7 +623,7 @@ void GameEngine::init()
 
 	#if defined(RTS_DEBUG)
 		// If we're in Debug, load the Debug settings as well.
-		ini.load( AsciiString( "Data\\INI\\GameDataDebug.ini" ), INI_LOAD_OVERWRITE, NULL );
+		ini.loadFileDirectory( AsciiString( "Data\\INI\\GameDataDebug.ini" ), INI_LOAD_OVERWRITE, NULL );
 	#endif
 
 		// special-case: parse command-line parameters after loading global data
@@ -512,10 +642,10 @@ void GameEngine::init()
 		}
 
 		// read the water settings from INI (must do prior to initing GameClient, apparently)
-		ini.load( AsciiString( "Data\\INI\\Default\\Water.ini" ), INI_LOAD_OVERWRITE, &xferCRC );
-		ini.load( AsciiString( "Data\\INI\\Water.ini" ), INI_LOAD_OVERWRITE, &xferCRC );
-		ini.load( AsciiString( "Data\\INI\\Default\\Weather.ini" ), INI_LOAD_OVERWRITE, &xferCRC );
-		ini.load( AsciiString( "Data\\INI\\Weather.ini" ), INI_LOAD_OVERWRITE, &xferCRC );
+		ini.loadFileDirectory( AsciiString( "Data\\INI\\Default\\Water.ini" ), INI_LOAD_OVERWRITE, &xferCRC );
+		ini.loadFileDirectory( AsciiString( "Data\\INI\\Water.ini" ), INI_LOAD_OVERWRITE, &xferCRC );
+		ini.loadFileDirectory( AsciiString( "Data\\INI\\Default\\Weather.ini" ), INI_LOAD_OVERWRITE, &xferCRC );
+		ini.loadFileDirectory( AsciiString( "Data\\INI\\Weather.ini" ), INI_LOAD_OVERWRITE, &xferCRC );
 
 
 
@@ -649,11 +779,11 @@ void GameEngine::init()
 		TheMetaMap->generateMetaMap();
 
 #if defined(RTS_DEBUG)
-		ini.load("Data\\INI\\CommandMapDebug.ini", INI_LOAD_MULTIFILE, NULL);
+		ini.loadFileDirectory("Data\\INI\\CommandMapDebug.ini", INI_LOAD_MULTIFILE, NULL);
 #endif
 
 #if defined(_ALLOW_DEBUG_CHEATS_IN_RELEASE)
-		ini.load("Data\\INI\\CommandMapDemo.ini", INI_LOAD_MULTIFILE, NULL);
+		ini.loadFileDirectory("Data\\INI\\CommandMapDemo.ini", INI_LOAD_MULTIFILE, NULL);
 #endif
 
 
@@ -798,7 +928,7 @@ void GameEngine::init()
 
 	// NGMP_CHANGE: Init our settings
 	NGMP_OnlineServicesManager::Settings.Initialize();
-}  // end init
+}
 
 /** -----------------------------------------------------------------------------------------------
 	* Reset all necessary parts of the game engine to be ready to accept new game data
@@ -820,8 +950,7 @@ void GameEngine::reset( void )
 	if (deleteNetwork)
 	{
 		DEBUG_ASSERTCRASH(TheNetwork, ("Deleting NULL TheNetwork!"));
-		if (TheNetwork)
-			delete TheNetwork;
+		delete TheNetwork;
 		TheNetwork = NULL;
 	}
 	if(background)
@@ -915,7 +1044,7 @@ void GameEngine::update(void)
 
 
 
-	}	// end perfGather
+	}
 
 }
 
@@ -1064,7 +1193,7 @@ void GameEngine::execute(void)
         }
 			}
 
-		}	// perfgather for execute_loop
+		}
 
 #ifdef PERF_TIMERS
 		if (!m_quitting && TheGameLogic->isInGame() && !TheGameLogic->isInShellGame() && !TheGameLogic->isGamePaused())

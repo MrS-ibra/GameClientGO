@@ -112,7 +112,7 @@ Bool DecompressFile		(char *infile, char *outfile)
 		DbgFree(outBlock);
 		return TRUE;
 
-	} // End of if fileptr
+	}
 
 	return FALSE;
 }

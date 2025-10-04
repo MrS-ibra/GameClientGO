@@ -696,7 +696,7 @@ UpdateSleepTime PhysicsBehavior::update()
 
 		obj->setTransformMatrix(&mtx);
 
-	} // if not held
+	}
 
 	// reset the acceleration for accumulation next frame
 	m_accel.zero();
@@ -1641,7 +1641,7 @@ Bool PhysicsBehavior::checkForOverlapCollision(Object *other)
 			crusheeOther->attemptDamage( &damageInfo );
 		}
 
-	} // if crushable
+	}
 
 	return true;
 }
@@ -1655,7 +1655,7 @@ void PhysicsBehavior::crc( Xfer *xfer )
 	// extend base class
 	UpdateModule::crc( xfer );
 
-}  // end crc
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Xfer method
@@ -1735,7 +1735,7 @@ void PhysicsBehavior::xfer( Xfer *xfer )
 	// mag of current vel
 	xfer->xferReal( &m_velMag );
 
-}  // end xfer
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Load post process */
@@ -1746,4 +1746,4 @@ void PhysicsBehavior::loadPostProcess( void )
 	// extend base class
 	UpdateModule::loadPostProcess();
 
-}  // end loadPostProcess
+}

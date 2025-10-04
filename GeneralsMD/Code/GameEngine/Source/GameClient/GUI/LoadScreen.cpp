@@ -202,13 +202,15 @@ SinglePlayerLoadScreen::~SinglePlayerLoadScreen( void )
 	m_objectiveWin = NULL;
 	for(Int i = 0; i < MAX_OBJECTIVE_LINES; ++i)
 		m_objectiveLines[i] = NULL;
-	if(m_videoBuffer)
-		delete m_videoBuffer;
+
+	delete m_videoBuffer;
 	m_videoBuffer = NULL;
 
 	if ( m_videoStream )
+	{
 		m_videoStream->close();
-	m_videoStream = NULL;
+		m_videoStream = NULL;
+	}
 
 	TheAudio->removeAudioEvent( m_ambientLoopHandle );
 	m_ambientLoopHandle = NULL;
@@ -498,8 +500,10 @@ void SinglePlayerLoadScreen::init( GameInfo *game )
 		m_videoBuffer = NULL;
 
 		if ( m_videoStream )
+		{
 			m_videoStream->close();
-		m_videoStream = NULL;
+			m_videoStream = NULL;
+		}
 
 		return;
 	}
@@ -683,12 +687,15 @@ ChallengeLoadScreen::ChallengeLoadScreen( void )
 ChallengeLoadScreen::~ChallengeLoadScreen( void )
 {
 	m_progressBar = NULL;
-	if(m_videoBuffer)
-		delete m_videoBuffer;
+
+	delete m_videoBuffer;
 	m_videoBuffer = NULL;
+
 	if ( m_videoStream )
+	{
 		m_videoStream->close();
-	m_videoStream = NULL;
+		m_videoStream = NULL;
+	}
 
 	m_bioNameLeft = NULL;
 	m_bioAgeLeft = NULL;
@@ -722,8 +729,7 @@ ChallengeLoadScreen::~ChallengeLoadScreen( void )
 	m_overlayVsBackdrop = NULL;
 	m_overlayVs = NULL;
 
-	if(m_wndVideoManager)
-		delete m_wndVideoManager;
+	delete m_wndVideoManager;
 	m_wndVideoManager = NULL;
 
 	TheAudio->removeAudioEvent( m_ambientLoopHandle );
@@ -959,8 +965,10 @@ void ChallengeLoadScreen::init( GameInfo *game )
 		m_videoBuffer = NULL;
 
 		if ( m_videoStream )
+		{
 			m_videoStream->close();
-		m_videoStream = NULL;
+			m_videoStream = NULL;
+		}
 
 		return;
 	}

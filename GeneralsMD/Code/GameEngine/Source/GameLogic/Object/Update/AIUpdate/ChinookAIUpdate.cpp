@@ -1348,7 +1348,7 @@ void ChinookAIUpdate::aiDoCommand(const AICommandParms* parms)
 void ChinookAIUpdate::crc( Xfer *xfer )
 {
 	SupplyTruckAIUpdate::crc(xfer);
-}  // end crc
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Xfer method
@@ -1377,7 +1377,7 @@ void ChinookAIUpdate::xfer( Xfer *xfer )
 		xfer->xferCoord3D( &m_originalPos );
 	}
 
-}  // end xfer
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Load post process */
@@ -1385,7 +1385,7 @@ void ChinookAIUpdate::xfer( Xfer *xfer )
 void ChinookAIUpdate::loadPostProcess( void )
 {
 	SupplyTruckAIUpdate::loadPostProcess();
-}  // end loadPostProcess
+}
 
 
 

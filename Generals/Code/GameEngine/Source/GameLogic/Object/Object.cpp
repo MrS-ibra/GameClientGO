@@ -229,7 +229,7 @@ Object::Object( const ThingTemplate *tt, const ObjectStatusMaskType &objectStatu
 		assert( 0 );
 		return;
 
-	}  // end if
+	}
 
 	// Object's set of these persist for the life of the object.
 	m_partitionLastLook = newInstance(SightingInfo);
@@ -436,7 +436,7 @@ Object::Object( const ThingTemplate *tt, const ObjectStatusMaskType &objectStatu
 	// emit message announcing object's creation
 	TheGameLogic->sendObjectCreated( this );
 
-}  // end Object
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Emit message announcing object's creation
@@ -692,7 +692,7 @@ void Object::onDestroy()
 
 	//Have to remove ourself from looking as well.  RebuildHoleWorkers definately hit here.
 	handlePartitionCellMaintenance();
-}  // end onDestroy
+}
 
 //=============================================================================
 //=============================================================================
@@ -899,7 +899,7 @@ void Object::setStatus( ObjectStatusMaskType objectStatus, Bool set )
 						TheGameLogic->destroyObject(them);
 					}
 				}
-			}// next object
+			}
 
 			if (m_partitionData)
 				m_partitionData->makeDirty(true);
@@ -1073,9 +1073,9 @@ void Object::topple( const Coord3D *toppleDirection, Real toppleSpeed, UnsignedI
 		// apply the topple force
 		toppleUpdate->applyTopplingForce( toppleDirection, toppleSpeed, options );
 
-	}  // end if
+	}
 
-}  // end topple
+}
 
 //=============================================================================
 void Object::reloadAllAmmo(Bool now)
@@ -1762,7 +1762,7 @@ void Object::kill()
 
 	DEBUG_ASSERTCRASH(!damageInfo.out.m_noEffect, ("Attempting to kill an unKillable object (InactiveBody?)"));
 
-}  // end kill
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Restore max health to this Object */
@@ -2285,7 +2285,7 @@ ExitInterface *Object::getObjectExitInterface() const
 
 	return exitInterface;
 
-}  // end getObjectExitInterface
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Checks the object against trigger areas when the position changes. */
@@ -2469,7 +2469,7 @@ void Object::setID( ObjectID id )
 	// add new id to lookup table
 	TheGameLogic->addObjectToLookupTable( this );
 
-}  // end setID
+}
 
 // ------------------------------------------------------------------------------------------------
 Real Object::calculateHeightAboveTerrain(void) const
@@ -2994,7 +2994,7 @@ void Object::maskObject( Bool mask )
 	if (mask)
 		TheGameLogic->deselectObject(this, ~getControllingPlayer()->getPlayerMask(), TRUE);
 
-}  // end maskObject
+}
 
 //-------------------------------------------------------------------------------------------------
 /*
@@ -3471,7 +3471,7 @@ void Object::crc( Xfer *xfer )
 		}
 	}
 
-}  // end crc
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Object xfer implemtation
@@ -3543,7 +3543,7 @@ void Object::xfer( Xfer *xfer )
 		// change the ID of the drawable attached to be the same ID as it was when it was saved
 		draw->setID( drawableID );
 
-	}  // end if
+	}
 
 	// internal name
 	xfer->xferAsciiString( &m_name );
@@ -3766,9 +3766,9 @@ void Object::xfer( Xfer *xfer )
 			// end data block
 			xfer->endBlock();
 
-		}  // end for, it
+		}
 
-	}  // end if, save
+	}
 	else
 	{
 		AsciiString otherModuleIdentifier;
@@ -3792,7 +3792,7 @@ void Object::xfer( Xfer *xfer )
 					break;
 				}
 
-			}  // end for, moduleIt
+			}
 
 			// start of a new block
 			Int dataSize = xfer->beginBlock();
@@ -3812,21 +3812,21 @@ void Object::xfer( Xfer *xfer )
 				// skip this data in the file
 				xfer->skip( dataSize );
 
-			}  // end if
+			}
 			else
 			{
 
 				// xfer the data into this module
 				xfer->xferSnapshot( module );
 
-			}  // end else
+			}
 
 			// end block
 			xfer->endBlock();
 
-		}  // end for, i module count recorded in file
+		}
 
-	}  // end else, load
+	}
 
 
 	if ( version >= 3 )
@@ -3884,7 +3884,7 @@ void Object::xfer( Xfer *xfer )
 	else
 		m_isReceivingDifficultyBonus = FALSE;
 
-}  // end xfer
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Object load game post process phase */
@@ -3896,7 +3896,7 @@ void Object::loadPostProcess()
 	else
 		m_containedBy = NULL;
 
-}  // end loadPostProcess
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Does this object have this upgrade */
@@ -3908,7 +3908,7 @@ Bool Object::hasUpgrade( const UpgradeTemplate *upgradeT ) const
 		return TRUE;
 	}
 	return FALSE;
-}  // end hasUpgrade
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Is this object capable of having this upgrade */
@@ -3938,7 +3938,7 @@ Bool Object::affectedByUpgrade( const UpgradeTemplate *upgradeT ) const
 	}
 	return FALSE;
 
-}  // end affectedByUpgrade
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Give this upgrade to this object */
@@ -3955,7 +3955,7 @@ void Object::giveUpgrade( const UpgradeTemplate *upgradeT )
 		//
 		updateUpgradeModules();
 	}
-}  // end giveUpgrade
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Remove this upgrade from this object */
@@ -4013,7 +4013,7 @@ void Object::onCapture( Player *oldOwner, Player *newOwner )
 		}
 	}
 
-}  // end onCapture
+}
 
 //-------------------------------------------------------------------------------------------------
 /// Object level events that need to happen upon game death
@@ -4994,11 +4994,11 @@ ProductionUpdateInterface* Object::getProductionUpdateInterface( void )
 		if( pui )
 			return pui;
 
-	}  // end for
+	}
 
 	return NULL;
 
-}  // end getProductionUpdateInterface
+}
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -5014,7 +5014,7 @@ DockUpdateInterface *Object::getDockUpdateInterface( void )
 
 	return NULL;
 
-}  // end getDockUpdateInterface
+}
 
 // ------------------------------------------------------------------------------------------------
 // Search our special power modules for a specific one.
@@ -5070,7 +5070,7 @@ SpawnBehaviorInterface* Object::getSpawnBehaviorInterface() const
 		}
 	}
 	return NULL;
-}  // end getSpawnBehaviorInterfaceFromObject
+}
 
 // ------------------------------------------------------------------------------------------------
 // Simply find the special power module that is currently allowing plotting of positions to target.
@@ -5087,7 +5087,7 @@ SpecialPowerUpdateInterface* Object::findSpecialPowerWithOverridableDestinationA
 				return spInterface;
 			}
 		}
-	}  // end for
+	}
 	return NULL;
 }
 
@@ -5106,7 +5106,7 @@ SpecialPowerUpdateInterface* Object::findSpecialPowerWithOverridableDestination(
 				return spInterface;
 			}
 		}
-	}  // end for
+	}
 	return NULL;
 }
 
@@ -5127,7 +5127,7 @@ SpecialAbilityUpdate* Object::findSpecialAbilityUpdate( SpecialPowerType type ) 
 				return spUpdate;
 			}
 		}
-	}  // end for
+	}
 
 	return NULL;
 }
@@ -5431,7 +5431,7 @@ RadarPriorityType Object::getRadarPriority( void ) const
 			priority = RADAR_PRIORITY_STRUCTURE;
 
 
-	}  // end if
+	}
 
 	// Carbombs will show up as units regardless of their default priority
 	if ( testStatus( OBJECT_STATUS_IS_CARBOMB ) )
@@ -5441,7 +5441,7 @@ RadarPriorityType Object::getRadarPriority( void ) const
 	// return the priority we're going to use
 	return priority;
 
-}  // end getRadarPriority
+}
 
 // ------------------------------------------------------------------------------------------------
 AIGroup *Object::getGroup(void)

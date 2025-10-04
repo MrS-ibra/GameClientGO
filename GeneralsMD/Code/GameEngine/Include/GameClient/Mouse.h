@@ -59,13 +59,15 @@
 
 // FORWARD REFERENCES /////////////////////////////////////////////////////////
 
+enum GameMode CPP_11(: Int);
+
 // TYPE DEFINES ///////////////////////////////////////////////////////////////
 
 enum MouseButtonState CPP_11(: Int)
 {
 	MBS_Up = 0,
-	MBS_Down,
-	MBS_DoubleClick,
+		MBS_Down,
+		MBS_DoubleClick,
 };
 
 #define MOUSE_MOVE_RELATIVE 0
@@ -139,13 +141,43 @@ public:
 	Int						numDirections;	//number of directions for cursors like scrolling/panning.
 };
 
+typedef UnsignedInt CursorCaptureMode;
+enum CursorCaptureMode_ CPP_11(: CursorCaptureMode)
+{
+	CursorCaptureMode_EnabledInWindowedGame = 1 << 0, // Captures the cursor when in game while the app is windowed
+		CursorCaptureMode_EnabledInWindowedMenu = 1 << 1, // Captures the cursor when in menu while the app is windowed
+		CursorCaptureMode_EnabledInFullscreenGame = 1 << 2, // Captures the cursor when in game while the app is fullscreen
+		CursorCaptureMode_EnabledInFullscreenMenu = 1 << 3, // Captures the cursor when in menu while the app is fullscreen
+
+		CursorCaptureMode_Default =
+		CursorCaptureMode_EnabledInWindowedGame |
+		CursorCaptureMode_EnabledInFullscreenGame |
+		CursorCaptureMode_EnabledInFullscreenMenu,
+};
+
 // Mouse ----------------------------------------------------------------------
-/** Class interface for working with a mouse pointing device */
+// Class interface for working with a mouse pointing device
+//
+// TheSuperHackers @feature xezon 26/07/2025 Implements mouse cursor capture
+// functionality. The Mouse class handles most of the logic for it internally.
 //-----------------------------------------------------------------------------
 class Mouse : public SubsystemInterface
 {
 
-public:  // enumerations and types
+	// enumerations and types
+
+	typedef UnsignedInt CursorCaptureBlockReasonInt;
+
+	enum CursorCaptureBlockReason
+	{
+		CursorCaptureBlockReason_NoInit,
+		CursorCaptureBlockReason_Paused,
+		CursorCaptureBlockReason_Unfocused,
+
+		CursorCaptureBlockReason_Count
+	};
+
+public:
 
 	// ----------------------------------------------------------------------------------------------
 	/** If you update this enum make sure you update CursorININames[] */
@@ -217,70 +249,78 @@ public:  // enumerations and types
 
 
 		// ***** dont forget to update CursorININames[] *****
-		NUM_MOUSE_CURSORS  // keep this last
+		NUM_MOUSE_CURSORS
 
 	};
 
 	enum RedrawMode
 	{
 
-		RM_WINDOWS=0,	//default Windows cursor - very fast.
+		RM_WINDOWS = 0,	//default Windows cursor - very fast.
 		RM_W3D,				//W3D model tied to frame rate.
 		RM_POLYGON,		//alpha blended polygon tied to frame rate.
 		RM_DX8,			//hardware cursor independent of frame rate.
-		RM_MAX	// keep this last.
+
+		RM_MAX
 	};
 
-	static const char *RedrawModeName[RM_MAX];
+	static const char* const CursorCaptureBlockReasonNames[];
+	static const char* const RedrawModeName[];
 
 	CursorInfo m_cursorInfo[NUM_MOUSE_CURSORS];
 
 public:
 
-	Mouse( void );
-	virtual ~Mouse( void );
+	Mouse(void);
+	virtual ~Mouse(void);
 
 	// you may need to extend these for your device
 	virtual void parseIni(void);	///< parse ini settings associated with mouse (do this before init()).
-	virtual void init( void );		///< init mouse, extend this functionality, do not replace
-	virtual void reset( void );		///< Reset the system
-	virtual void update( void );  ///< update the state of the mouse position and buttons
-	virtual void initCursorResources(void)=0;	///< needed so Win32 cursors can load resources before D3D device created.
+	virtual void init(void);		///< init mouse, extend this functionality, do not replace
+	virtual void reset(void);		///< Reset the system
+	virtual void update(void);  ///< update the state of the mouse position and buttons
+	virtual void initCursorResources(void) = 0;	///< needed so Win32 cursors can load resources before D3D device created.
 
-	virtual void createStreamMessages( void );  /**< given state of device, create
+	virtual void createStreamMessages(void);  /**< given state of device, create
 																									 messages and put them on the
 																									 stream for the raw state. */
 
-	virtual void draw( void );													///< draw the mouse
-	virtual void setPosition( Int x, Int y );						///< set the mouse position
-	virtual void setCursor( MouseCursor cursor ) = 0;		///< set mouse cursor
+	virtual void draw(void);													///< draw the mouse
+	virtual void setPosition(Int x, Int y);						///< set the mouse position
+	virtual void setCursor(MouseCursor cursor) = 0;		///< set mouse cursor
 
-	virtual void capture( void ) = 0;					///< capture the mouse
-	virtual void releaseCapture( void ) = 0;  ///< release mouse capture
+	void setCursorCaptureMode(CursorCaptureMode mode); ///< set the rules for the mouse capture
+	void refreshCursorCapture(); ///< refresh the mouse capture
+	Bool isCursorCaptured(); ///< true if the mouse is captured in the game window
 
 	// access methods for the mouse data
-	const MouseIO *getMouseStatus( void ) { return &m_currMouse; }							///< get current mouse status
+	const MouseIO* getMouseStatus(void) { return &m_currMouse; }							///< get current mouse status
 
-  Int  getCursorTooltipDelay() { return m_tooltipDelay; }
-  void setCursorTooltipDelay(Int delay) { m_tooltipDelay = delay; }
+	Int  getCursorTooltipDelay() { return m_tooltipDelay; }
+	void setCursorTooltipDelay(Int delay) { m_tooltipDelay = delay; }
 
-	void setCursorTooltip( UnicodeString tooltip, Int tooltipDelay = -1, const RGBColor *color = NULL, Real width = 1.0f );		///< set tooltip string at cursor
-	void setMouseText( UnicodeString text, const RGBAColorInt *color, const RGBAColorInt *dropColor );					///< set the cursor text, *NOT* the tooltip text
-	virtual void setMouseLimits( void );					///< update the limit extents the mouse can move in
+	void setCursorTooltip(UnicodeString tooltip, Int tooltipDelay = -1, const RGBColor* color = NULL, Real width = 1.0f);		///< set tooltip string at cursor
+	void setMouseText(UnicodeString text, const RGBAColorInt* color, const RGBAColorInt* dropColor);					///< set the cursor text, *NOT* the tooltip text
+	virtual void setMouseLimits(void);					///< update the limit extents the mouse can move in
 	MouseCursor getMouseCursor(void) { return m_currentCursor; }	///< get the current mouse cursor image type
-	virtual void setRedrawMode(RedrawMode mode)	{m_currentRedrawMode=mode;} ///<set cursor drawing method.
+	virtual void setRedrawMode(RedrawMode mode) { m_currentRedrawMode = mode; } ///<set cursor drawing method.
 	virtual RedrawMode getRedrawMode(void) { return m_currentRedrawMode; } //get cursor drawing method
 	virtual void setVisibility(Bool visible) { m_visible = visible; } // set visibility for load screens, etc
 	inline Bool getVisibility(void) { return m_visible; } // get visibility state
 
-	void drawTooltip( void );					///< draw the tooltip text
-	void drawCursorText( void );			///< draw the mouse cursor text
-	Int getCursorIndex( const AsciiString& name );
-	void resetTooltipDelay( void );
+	void drawTooltip(void);					///< draw the tooltip text
+	void drawCursorText(void);			///< draw the mouse cursor text
+	Int getCursorIndex(const AsciiString& name);
+	void resetTooltipDelay(void);
+
+	virtual void loseFocus();
+	virtual void regainFocus();
 
 	void mouseNotifyResolutionChange(void);
+	void onGameModeChanged(GameMode prev, GameMode next);
+	void onGamePaused(Bool paused);
 
-	Bool isClick(const ICoord2D *anchor, const ICoord2D *dest, UnsignedInt previousMouseClick, UnsignedInt currentMouseClick);
+	Bool isClick(const ICoord2D* anchor, const ICoord2D* dest, UnsignedInt previousMouseClick, UnsignedInt currentMouseClick);
 
 
 	AsciiString m_tooltipFontName;		///< tooltip font
@@ -309,32 +349,41 @@ public:
 
 protected:
 
+	void initCapture();
+	Bool canCapture() const; ///< true if the mouse can be captured
+	void unblockCapture(CursorCaptureBlockReason reason); // unset a reason to block mouse capture
+	void blockCapture(CursorCaptureBlockReason reason); // set a reason to block mouse capture
+	void onCursorCaptured(Bool captured); ///< called when the mouse was successfully captured or released
+
+	virtual void capture(void) = 0; ///< capture the mouse in the game window
+	virtual void releaseCapture(void) = 0; ///< release the mouse capture
+
 	/// you must implement getting a buffered mouse event from you device here
-	virtual UnsignedByte getMouseEvent( MouseIO *result, Bool flush ) = 0;
+	virtual UnsignedByte getMouseEvent(MouseIO* result, Bool flush) = 0;
 
 	//-----------------------------------------------------------------------------------------------
 
 	// internal methods
-	void updateMouseData( );													///< update the mouse with the current device data
-	void processMouseEvent( Int eventToProcess );			///< combine mouse events into final data
-	void checkForDrag( void );												///< check for mouse drag
-	void moveMouse( Int x, Int y, Int relOrAbs );			///< move mouse by delta or absolute
+	void updateMouseData();													///< update the mouse with the current device data
+	void processMouseEvent(Int eventToProcess);			///< combine mouse events into final data
+	void checkForDrag(void);												///< check for mouse drag
+	void moveMouse(Int x, Int y, Int relOrAbs);			///< move mouse by delta or absolute
 
 	//---------------------------------------------------------------------------
 	// internal mouse data members
 
 	UnsignedByte m_numButtons;  ///< number of buttons on this mouse
 	UnsignedByte m_numAxes;			///< number of axes this mouse has
-	Bool m_forceFeedback;				///< set to TRUE if mouse supprots force feedback
+	Bool m_forceFeedback;				///< set to TRUE if mouse supports force feedback
 
 	UnicodeString m_tooltipString;	///< tooltip text
-	DisplayString *m_tooltipDisplayString; ///< tooltipDisplayString
+	DisplayString* m_tooltipDisplayString; ///< tooltipDisplayString
 	Bool m_displayTooltip;  /**< when the mouse has been still long enough this will be
 													set to TRUE indicating it's Ok to fire off a tooltip */
 	Bool m_isTooltipEmpty;
 
 	enum { NUM_MOUSE_EVENTS = 256 };
-	MouseIO m_mouseEvents[ NUM_MOUSE_EVENTS ];  ///< for event list
+	MouseIO m_mouseEvents[NUM_MOUSE_EVENTS];  ///< for event list
 	MouseIO m_currMouse;												///< for current mouse data
 	MouseIO m_prevMouse;												///< for previous mouse data
 
@@ -352,14 +401,15 @@ protected:
 																	relative coordinate changes */
 
 	Bool m_visible;	// visibility status
+	Bool m_isCursorCaptured;
 
 	MouseCursor m_currentCursor;		///< current mouse cursor
 
-	DisplayString *m_cursorTextDisplayString;		///< text to display on the cursor (if specified)
+	DisplayString* m_cursorTextDisplayString;		///< text to display on the cursor (if specified)
 	RGBAColorInt m_cursorTextColor;							///< color of the cursor text
 	RGBAColorInt m_cursorTextDropColor;					///< color of the cursor text drop shadow
 
-  Int m_tooltipDelay;                                ///< millisecond delay for tooltips
+	Int m_tooltipDelay;                                ///< millisecond delay for tooltips
 
 	Int m_highlightPos;
 	UnsignedInt m_highlightUpdateStart;
@@ -369,7 +419,10 @@ protected:
 
 	Int m_eventsThisFrame;
 
-};  // end class Mouse
+	CursorCaptureMode m_cursorCaptureMode;
+	CursorCaptureBlockReasonInt m_captureBlockReasonBits;
+
+};
 
 // TheSuperHackers @feature helmutbuhler 17/05/2025
 // Mouse that does nothing. Used for Headless Mode.
@@ -382,11 +435,11 @@ class MouseDummy : public Mouse
 	virtual void setCursor(MouseCursor cursor) {}
 	virtual void capture() {}
 	virtual void releaseCapture() {}
-	virtual UnsignedByte getMouseEvent(MouseIO *result, Bool flush) { return MOUSE_NONE; }
+	virtual UnsignedByte getMouseEvent(MouseIO* result, Bool flush) { return MOUSE_NONE; }
 };
 
 
 // EXTERNALS //////////////////////////////////////////////////////////////////
-extern Mouse *TheMouse;  ///< extern mouse singleton definition
+extern Mouse* TheMouse;  ///< extern mouse singleton definition
 
 #endif // _MOUSE_H_

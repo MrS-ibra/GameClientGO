@@ -767,7 +767,7 @@ void SlavedUpdate::crc( Xfer *xfer )
 	// extend base class
 	UpdateModule::crc( xfer );
 
-}  // end crc
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Xfer method
@@ -800,7 +800,7 @@ void SlavedUpdate::xfer( Xfer *xfer )
 	// repairing
 	xfer->xferBool( &m_repairing );
 
-}  // end xfer
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Load post process */
@@ -811,5 +811,5 @@ void SlavedUpdate::loadPostProcess( void )
 	// extend base class
 	UpdateModule::loadPostProcess();
 
-}  // end loadPostProcess
+}
 

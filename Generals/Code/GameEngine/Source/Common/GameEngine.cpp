@@ -254,7 +254,10 @@ GameEngine::GameEngine( void )
 	timeBeginPeriod(1);
 
 	// initialize to non garbage values
-	m_maxFPS = 0;
+	m_maxFPS = BaseFps;
+	m_logicTimeScaleFPS = LOGICFRAMES_PER_SECOND;
+	m_updateTime = 1.0f / BaseFps; // initialized to something to avoid division by zero on first use
+	m_logicTimeAccumulator = 0.0f;
 	m_quitting = FALSE;
 	m_isActive = FALSE;
 
@@ -575,7 +578,7 @@ void GameEngine::init()
 	resetSubsystems();
 
 	HideControlBar();
-}  // end init
+}
 
 /** -----------------------------------------------------------------------------------------------
 	* Reset all necessary parts of the game engine to be ready to accept new game data
@@ -597,8 +600,7 @@ void GameEngine::reset( void )
 	if (deleteNetwork)
 	{
 		DEBUG_ASSERTCRASH(TheNetwork, ("Deleting NULL TheNetwork!"));
-		if (TheNetwork)
-			delete TheNetwork;
+		delete TheNetwork;
 		TheNetwork = NULL;
 	}
 	if(background)
@@ -660,7 +662,7 @@ void GameEngine::update( void )
 			TheGameLogic->UPDATE();
 		}
 
-	}	// end perfGather
+	}
 
 }
 
@@ -740,8 +742,8 @@ void GameEngine::execute( void )
 					{
 					}
 					RELEASE_CRASH(("Uncaught Exception in GameEngine::update"));
-				}	// catch
-			}	// perf
+				}
+			}
 
 			{
 
@@ -779,7 +781,7 @@ void GameEngine::execute( void )
         }
 			}
 
-		}	// perfgather for execute_loop
+		}
 
 #ifdef PERF_TIMERS
 		if (!m_quitting && TheGameLogic->isInGame() && !TheGameLogic->isInShellGame() && !TheGameLogic->isGamePaused())

@@ -302,7 +302,7 @@ private:
 	Bool				m_useRealZoomCam;
 	AsciiString		m_cameraSlaveObjectName;
 	AsciiString		m_cameraSlaveObjectBoneName;
-};  // end class W3DView
+};
 
 // EXTERNALS //////////////////////////////////////////////////////////////////////////////////////
 extern Int TheW3DFrameLengthInMsec;	// default is 33msec/frame == 30fps. but we may change it depending on sys config.
