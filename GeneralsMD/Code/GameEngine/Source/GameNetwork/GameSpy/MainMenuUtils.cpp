@@ -231,16 +231,12 @@ static void startOnline( void )
 	DEBUG_ASSERTCRASH( !TheGameSpyPeerMessageQueue, ("TheGameSpyPeerMessageQueue exists!") );
 	DEBUG_ASSERTCRASH( !TheGameSpyInfo, ("TheGameSpyInfo exists!") );
 	SetUpGameSpy(MOTDBuffer, configBuffer);
-	if (MOTDBuffer)
-	{
-		delete[] MOTDBuffer;
-		MOTDBuffer = NULL;
-	}
-	if (configBuffer)
-	{
-		delete[] configBuffer;
-		configBuffer = NULL;
-	}
+
+	delete[] MOTDBuffer;
+	MOTDBuffer = NULL;
+
+	delete[] configBuffer;
+	configBuffer = NULL;
 
 
 #ifdef ALLOW_NON_PROFILED_LOGIN
@@ -335,12 +331,7 @@ static GHTTPBool motdCallback( GHTTPRequest request, GHTTPResult result,
 		return GHTTPTrue;
 	}
 
-	if (MOTDBuffer)
-	{
-		delete[] MOTDBuffer;
-		MOTDBuffer = NULL;
-	}
-
+	delete[] MOTDBuffer;
 	MOTDBuffer = NEW char[bufferLen];
 	memcpy(MOTDBuffer, buffer, bufferLen);
 	MOTDBuffer[bufferLen-1] = 0;
@@ -375,11 +366,8 @@ static GHTTPBool configCallback( GHTTPRequest request, GHTTPResult result,
 		return GHTTPTrue;
 	}
 
-	if (configBuffer)
-	{
-		delete[] configBuffer;
-		configBuffer = NULL;
-	}
+	delete[] configBuffer;
+	configBuffer = NULL;
 
 	if (result != GHTTPSuccess || bufferLen < 100)
 	{
@@ -479,11 +467,8 @@ static GHTTPBool configHeadCallback( GHTTPRequest request, GHTTPResult result,
 						onlineCancelWindow = NULL;
 					}
 
-					if (configBuffer)
-					{
-						delete[] configBuffer;
-						configBuffer = NULL;
-					}
+					delete[] configBuffer;
+					configBuffer = NULL;
 
 					AsciiString fname;
 					fname.format("%sGeneralsOnline\\Config.txt", TheGlobalData->getPath_UserData().str());
@@ -597,16 +582,12 @@ void CancelPatchCheckCallback( void )
 		onlineCancelWindow = NULL;
 	}
 	queuedDownloads.clear();
-	if (MOTDBuffer)
-	{
-		delete[] MOTDBuffer;
-		MOTDBuffer = NULL;
-	}
-	if (configBuffer)
-	{
-		delete[] configBuffer;
-		configBuffer = NULL;
-	}
+
+	delete[] MOTDBuffer;
+	MOTDBuffer = NULL;
+
+	delete[] configBuffer;
+	configBuffer = NULL;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

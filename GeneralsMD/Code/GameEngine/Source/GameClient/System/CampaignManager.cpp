@@ -78,7 +78,7 @@ const FieldParse CampaignManager::m_campaignFieldParseTable[] =
 	{ "IsChallengeCampaign",			INI::parseBool,				NULL, offsetof( Campaign, m_isChallengeCampaign ) },
 	{ "PlayerFaction",		INI::parseAsciiString,					NULL, offsetof( Campaign, m_playerFactionName ) },
 
-	{ NULL,										NULL,													NULL, 0 }  // keep this last
+	{ NULL,										NULL,													NULL, 0 }
 
 };
 
@@ -110,7 +110,7 @@ void INI::parseCampaignDefinition( INI *ini )
 	// parse the ini definition
 	ini->initFromINI( campaign, TheCampaignManager->getFieldParse() );
 
-}  // end parseCampaignDefinition
+}
 
 //-----------------------------------------------------------------------------
 Campaign::Campaign( void ):
@@ -246,7 +246,7 @@ void CampaignManager::init( void )
 {
 	INI ini;
 	// Read from INI all the CampaignManager
-	ini.load( AsciiString( "Data\\INI\\Campaign.ini" ), INI_LOAD_OVERWRITE, NULL );
+	ini.loadFileDirectory( AsciiString( "Data\\INI\\Campaign.ini" ), INI_LOAD_OVERWRITE, NULL );
 }
 
 //-----------------------------------------------------------------------------
@@ -376,7 +376,7 @@ void CampaignManager::parseMissionPart( INI* ini, void *instance, void *store, c
 			{ "LocationNameLabel",INI::parseAsciiString,				NULL, offsetof( Mission, m_locationNameLabel ) },
 			{ "VoiceLength",			INI::parseInt ,								NULL, offsetof( Mission, m_voiceLength ) },
 
-			{ NULL,							NULL,											NULL, 0 }  // keep this last
+			{ NULL,							NULL,											NULL, 0 }
 		};
 	AsciiString name;
 	const char* c = ini->getNextToken();
@@ -473,11 +473,8 @@ void CampaignManager::xfer( Xfer *xfer )
 		}
 		else
 		{
-			if( TheChallengeGameInfo )
-			{
-				delete TheChallengeGameInfo;
-				TheChallengeGameInfo = NULL;
-			}
+			delete TheChallengeGameInfo;
+			TheChallengeGameInfo = NULL;
 		}
 	}
 
@@ -491,7 +488,7 @@ void CampaignManager::xfer( Xfer *xfer )
 		m_xferChallengeGeneralsPlayerTemplateNum = playerTemplateNum;
 	}
 
-}  // end xfer
+}
 
 void CampaignManager::loadPostProcess( void )
 {

@@ -50,9 +50,9 @@ enum ScienceType CPP_11(: Int);
 enum INILoadType CPP_11(: Int)
 {
 	INI_LOAD_INVALID,						///< invalid load type
-	INI_LOAD_OVERWRITE,					///< create new or load *over* existing data instance
-	INI_LOAD_CREATE_OVERRIDES,	///< create new or load into *new* override data instance
-	INI_LOAD_MULTIFILE					///< create new or continue loading into existing data instance.
+		INI_LOAD_OVERWRITE,					///< create new or load *over* existing data instance
+		INI_LOAD_CREATE_OVERRIDES,	///< create new or load into *new* override data instance
+		INI_LOAD_MULTIFILE					///< create new or continue loading into existing data instance.
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -72,33 +72,33 @@ enum
 	// we generally don't care why it failed; but since the code distinguishes,
 	// I didn't want to wipe out that intelligence. if we ever need to distinguish
 	// failure modes at runtime, just put in real values for these.
-	INI_CANT_SEARCH_DIR		= ERROR_BAD_INI,
+	INI_CANT_SEARCH_DIR = ERROR_BAD_INI,
 	INI_INVALID_DIRECTORY = ERROR_BAD_INI,
-	INI_INVALID_PARAMS		= ERROR_BAD_INI,
+	INI_INVALID_PARAMS = ERROR_BAD_INI,
 	INI_INVALID_NAME_LIST = ERROR_BAD_INI,
-	INI_INVALID_DATA			= ERROR_BAD_INI,
+	INI_INVALID_DATA = ERROR_BAD_INI,
 	INI_MISSING_END_TOKEN = ERROR_BAD_INI,
-	INI_UNKNOWN_TOKEN			= ERROR_BAD_INI,
-	INI_BUFFER_TOO_SMALL  = ERROR_BAD_INI,
-	INI_FILE_NOT_OPEN			= ERROR_BAD_INI,
+	INI_UNKNOWN_TOKEN = ERROR_BAD_INI,
+	INI_BUFFER_TOO_SMALL = ERROR_BAD_INI,
+	INI_FILE_NOT_OPEN = ERROR_BAD_INI,
 	INI_FILE_ALREADY_OPEN = ERROR_BAD_INI,
-	INI_CANT_OPEN_FILE		= ERROR_BAD_INI,
-	INI_UNKNOWN_ERROR			= ERROR_BAD_INI,
-	INI_END_OF_FILE				= ERROR_BAD_INI
+	INI_CANT_OPEN_FILE = ERROR_BAD_INI,
+	INI_UNKNOWN_ERROR = ERROR_BAD_INI,
+	INI_END_OF_FILE = ERROR_BAD_INI
 };
 
 //-------------------------------------------------------------------------------------------------
 /** Function typedef for parsing data block fields.
 	*
 	* buffer - the character buffer of the line from INI that we are reading and parsing
-	* instance - instance of what we're loading (for example a thingtemplate instance)
+	* instance - instance of what we're loading (for example a ThingTemplate instance)
 	* store - where to store the data parsed, this is a field in the *instance* 'instance'
 	*/
-//-------------------------------------------------------------------------------------------------
-typedef void (*INIFieldParseProc)( INI *ini, void *instance, void *store, const void* userData );
+	//-------------------------------------------------------------------------------------------------
+typedef void (*INIFieldParseProc)(INI* ini, void* instance, void* store, const void* userData);
 
 //-------------------------------------------------------------------------------------------------
-typedef const char* ConstCharPtr;
+typedef const char* const ConstCharPtr;
 typedef ConstCharPtr* ConstCharPtrArray;
 
 //-------------------------------------------------------------------------------------------------
@@ -107,16 +107,16 @@ struct LookupListRec
 	const char* name;
 	Int value;
 };
-typedef const LookupListRec *ConstLookupListRecArray;
+typedef const LookupListRec* ConstLookupListRecArray;
 
 //-------------------------------------------------------------------------------------------------
 /** Parse tables for all fields of each data block are created using these */
 //-------------------------------------------------------------------------------------------------
 struct FieldParse
 {
-	const char*					token;						///< token of the field
+	const char* token;						///< token of the field
 	INIFieldParseProc		parse;						///< the parse function
-	const void*					userData;					///< field-specific data
+	const void* userData;					///< field-specific data
 	Int									offset;						///< offset to data field
 
 	inline void set(const char* t, INIFieldParseProc p, const void* u, Int o)
@@ -143,7 +143,7 @@ public:
 	{
 		//Added By Sadullah Nader
 		//Initializations missing and needed
-		for(Int i = 0; i < MAX_MULTI_FIELDS; i++)
+		for (Int i = 0; i < MAX_MULTI_FIELDS; i++)
 			m_extraOffset[i] = 0;
 		//
 
@@ -159,7 +159,7 @@ public:
 //-------------------------------------------------------------------------------------------------
 /** Function typedef for parsing INI types blocks */
 //-------------------------------------------------------------------------------------------------
-typedef void (*INIBlockParse)( INI *ini );
+typedef void (*INIBlockParse)(INI* ini);
 typedef void (*BuildMultiIniFieldProc)(MultiIniFieldParse& p);
 
 //-------------------------------------------------------------------------------------------------
@@ -167,155 +167,166 @@ typedef void (*BuildMultiIniFieldProc)(MultiIniFieldParse& p);
 //-------------------------------------------------------------------------------------------------
 class INI
 {
-  INI(const INI&);
-  INI& operator=(const INI&);
+	INI(const INI&);
+	INI& operator=(const INI&);
 
 public:
 
 	INI();
 	~INI();
 
-	void loadDirectory( AsciiString dirName, Bool subdirs, INILoadType loadType, Xfer *pXfer );  ///< load directory of INI files
-	void load( AsciiString filename, INILoadType loadType, Xfer *pXfer );		///< load INI file
+	// TheSuperHackers @feature xezon 19/08/2025
+	// Load a specific INI file by name and/or INI files from a directory (and its subdirectories).
+	// For example "Data\INI\Armor" loads "Data\INI\Armor.ini" and all *.ini files in "Data\INI\Armor".
+	// Throws if not a single INI file is found or one is not read correctly.
+	UnsignedInt loadFileDirectory(AsciiString fileDirName, INILoadType loadType, Xfer* pXfer, Bool subdirs = TRUE);
 
-	static Bool isDeclarationOfType( AsciiString blockType, AsciiString blockName, char *bufferToCheck );
-	static Bool isEndOfBlock( char *bufferToCheck );
+	// Load INI files from a directory (and its subdirectories).
+	// Throws if one INI file is not read correctly.
+	UnsignedInt loadDirectory(AsciiString dirName, INILoadType loadType, Xfer* pXfer, Bool subdirs = TRUE);
+
+	// Load one specific INI file by name.
+	// Throws if the INI file is not found or is not read correctly.
+	UnsignedInt load(AsciiString filename, INILoadType loadType, Xfer* pXfer);
+
+	static Bool isDeclarationOfType(AsciiString blockType, AsciiString blockName, char* bufferToCheck);
+	static Bool isEndOfBlock(char* bufferToCheck);
 
 	// data type parsing (the highest level of what type of thing we're parsing)
-	static void parseObjectDefinition( INI *ini );
-	static void parseObjectReskinDefinition( INI *ini );
-	static void parseWeaponTemplateDefinition( INI *ini );
-	static void parseScienceDefinition( INI *ini );
-	static void parseRankDefinition( INI *ini );
-	static void parseCrateTemplateDefinition( INI *ini );
-	static void parseLocomotorTemplateDefinition( INI *ini );
-	static void parseLanguageDefinition( INI *ini );
-	static void parsePlayerTemplateDefinition( INI *ini );
-	static void parseGameDataDefinition( INI *ini );
-	static void parseMapDataDefinition( INI *ini );
-	static void parseAnim2DDefinition( INI *ini );
-	static void parseAudioEventDefinition( INI *ini );
-	static void parseDialogDefinition( INI *ini );
-	static void parseMusicTrackDefinition( INI *ini );
-	static void parseWebpageURLDefinition( INI *ini );
-	static void parseHeaderTemplateDefinition( INI *ini );
-	static void parseParticleSystemDefinition( INI *ini );
-	static void parseWaterSettingDefinition( INI *ini );
-	static void parseWaterTransparencyDefinition( INI *ini );
-	static void parseWeatherDefinition( INI *ini );
-	static void parseMappedImageDefinition( INI *ini );
-	static void parseArmorDefinition( INI *ini );
-	static void parseDamageFXDefinition( INI *ini );
-	static void parseDrawGroupNumberDefinition( INI *ini );
-	static void parseTerrainDefinition( INI *ini );
-	static void parseTerrainRoadDefinition( INI *ini );
-	static void parseTerrainBridgeDefinition( INI *ini );
-	static void parseMetaMapDefinition( INI *ini );
-	static void parseFXListDefinition( INI *ini );
-	static void parseObjectCreationListDefinition( INI* ini );
-	static void parseMultiplayerSettingsDefinition( INI* ini );
-	static void parseMultiplayerColorDefinition( INI* ini );
-  static void parseMultiplayerStartingMoneyChoiceDefinition( INI* ini );
-	static void parseOnlineChatColorDefinition( INI* ini );
-	static void parseMapCacheDefinition( INI* ini );
-	static void parseVideoDefinition( INI* ini );
-	static void parseCommandButtonDefinition( INI *ini );
-	static void parseCommandSetDefinition( INI *ini );
-	static void parseUpgradeDefinition( INI *ini );
-	static void parseMouseDefinition( INI* ini );
-	static void parseMouseCursorDefinition( INI* ini );
-	static void parseAIDataDefinition( INI *ini );
-	static void parseSpecialPowerDefinition( INI *ini );
-	static void parseInGameUIDefinition( INI *ini );
-	static void parseControlBarSchemeDefinition( INI *ini );
-	static void parseControlBarResizerDefinition( INI *ini );
-	static void parseShellMenuSchemeDefinition( INI *ini );
-	static void parseCampaignDefinition( INI *ini );
-	static void parseAudioSettingsDefinition( INI *ini );
-	static void parseMiscAudio( INI *ini );
-	static void parseStaticGameLODDefinition( INI *ini);
-	static void parseDynamicGameLODDefinition( INI *ini);
-	static void parseStaticGameLODLevel( INI* ini, void * , void *store, const void*);
-	static void parseDynamicGameLODLevel( INI* ini, void * , void *store, const void*);
-	static void parseLODPreset( INI* ini);
-	static void parseBenchProfile( INI* ini);
-	static void parseEvaEvent( INI* ini );
-	static void parseCredits( INI* ini );
-	static void parseWindowTransitions( INI* ini );
-	static void parseChallengeModeDefinition( INI* ini );
+	static void parseObjectDefinition(INI* ini);
+	static void parseObjectReskinDefinition(INI* ini);
+	static void parseWeaponTemplateDefinition(INI* ini);
+	static void parseScienceDefinition(INI* ini);
+	static void parseRankDefinition(INI* ini);
+	static void parseCrateTemplateDefinition(INI* ini);
+	static void parseLocomotorTemplateDefinition(INI* ini);
+	static void parseLanguageDefinition(INI* ini);
+	static void parsePlayerTemplateDefinition(INI* ini);
+	static void parseGameDataDefinition(INI* ini);
+	static void parseMapDataDefinition(INI* ini);
+	static void parseAnim2DDefinition(INI* ini);
+	static void parseAudioEventDefinition(INI* ini);
+	static void parseDialogDefinition(INI* ini);
+	static void parseMusicTrackDefinition(INI* ini);
+	static void parseWebpageURLDefinition(INI* ini);
+	static void parseHeaderTemplateDefinition(INI* ini);
+	static void parseParticleSystemDefinition(INI* ini);
+	static void parseWaterSettingDefinition(INI* ini);
+	static void parseWaterTransparencyDefinition(INI* ini);
+	static void parseWeatherDefinition(INI* ini);
+	static void parseMappedImageDefinition(INI* ini);
+	static void parseArmorDefinition(INI* ini);
+	static void parseDamageFXDefinition(INI* ini);
+	static void parseDrawGroupNumberDefinition(INI* ini);
+	static void parseTerrainDefinition(INI* ini);
+	static void parseTerrainRoadDefinition(INI* ini);
+	static void parseTerrainBridgeDefinition(INI* ini);
+	static void parseMetaMapDefinition(INI* ini);
+	static void parseFXListDefinition(INI* ini);
+	static void parseObjectCreationListDefinition(INI* ini);
+	static void parseMultiplayerSettingsDefinition(INI* ini);
+	static void parseMultiplayerColorDefinition(INI* ini);
+	static void parseMultiplayerStartingMoneyChoiceDefinition(INI* ini);
+	static void parseOnlineChatColorDefinition(INI* ini);
+	static void parseMapCacheDefinition(INI* ini);
+	static void parseVideoDefinition(INI* ini);
+	static void parseCommandButtonDefinition(INI* ini);
+	static void parseCommandSetDefinition(INI* ini);
+	static void parseUpgradeDefinition(INI* ini);
+	static void parseMouseDefinition(INI* ini);
+	static void parseMouseCursorDefinition(INI* ini);
+	static void parseAIDataDefinition(INI* ini);
+	static void parseSpecialPowerDefinition(INI* ini);
+	static void parseInGameUIDefinition(INI* ini);
+	static void parseControlBarSchemeDefinition(INI* ini);
+	static void parseControlBarResizerDefinition(INI* ini);
+	static void parseShellMenuSchemeDefinition(INI* ini);
+	static void parseCampaignDefinition(INI* ini);
+	static void parseAudioSettingsDefinition(INI* ini);
+	static void parseMiscAudio(INI* ini);
+	static void parseStaticGameLODDefinition(INI* ini);
+	static void parseDynamicGameLODDefinition(INI* ini);
+	static void parseStaticGameLODLevel(INI* ini, void*, void* store, const void*);
+	static void parseDynamicGameLODLevel(INI* ini, void*, void* store, const void*);
+	static void parseLODPreset(INI* ini);
+	static void parseBenchProfile(INI* ini);
+	static void parseEvaEvent(INI* ini);
+	static void parseCredits(INI* ini);
+	static void parseWindowTransitions(INI* ini);
+	static void parseChallengeModeDefinition(INI* ini);
 
-	inline AsciiString getFilename( void ) const { return m_filename; }
-	inline INILoadType getLoadType( void ) const { return m_loadType; }
-	inline UnsignedInt getLineNum( void ) const { return m_lineNum; }
-	inline const char *getSeps( void ) const { return m_seps; }
-	inline const char *getSepsPercent( void ) const { return m_sepsPercent; }
-	inline const char *getSepsColon( void ) const { return m_sepsColon; }
-	inline const char *getSepsQuote( void ) { return m_sepsQuote; }
-	inline Bool isEOF( void ) const { return m_endOfFile; }
+	inline AsciiString getFilename(void) const { return m_filename; }
+	inline INILoadType getLoadType(void) const { return m_loadType; }
+	inline UnsignedInt getLineNum(void) const { return m_lineNum; }
+	inline const char* getSeps(void) const { return m_seps; }
+	inline const char* getSepsPercent(void) const { return m_sepsPercent; }
+	inline const char* getSepsColon(void) const { return m_sepsColon; }
+	inline const char* getSepsQuote(void) { return m_sepsQuote; }
+	inline Bool isEOF(void) const { return m_endOfFile; }
 
-	void initFromINI( void *what, const FieldParse* parseTable );
-	void initFromINIMulti( void *what, const MultiIniFieldParse& parseTableList );
-	void initFromINIMultiProc( void *what, BuildMultiIniFieldProc proc );
+	void initFromINI(void* what, const FieldParse* parseTable);
+	void initFromINIMulti(void* what, const MultiIniFieldParse& parseTableList);
+	void initFromINIMultiProc(void* what, BuildMultiIniFieldProc proc);
 
-	static void parseUnsignedByte( INI *ini, void *instance, void *store, const void* userData );
-	static void parseShort( INI *ini, void *instance, void *store, const void* userData );
-	static void parseUnsignedShort( INI *ini, void *instance, void *store, const void* userData );
-	static void parseInt( INI *ini, void *instance, void *store, const void* userData );
-	static void parseUnsignedInt( INI *ini, void *instance, void *store, const void* userData );
-	static void parseReal( INI *ini, void *instance, void *store, const void* userData );
-	static void parsePositiveNonZeroReal( INI *ini, void *instance, void *store, const void* userData );
-	static void parseBool( INI *ini, void *instance, void *store, const void* userData );
-	static void parseBitInInt32( INI *ini, void *instance, void *store, const void* userData );
-	static void parseAsciiString( INI *ini, void *instance, void *store, const void* userData );
-	static void parseQuotedAsciiString( INI *ini, void *instance, void *store, const void* userData );
-	static void parseAsciiStringVector( INI *ini, void *instance, void *store, const void* userData );
-	static void parseAsciiStringVectorAppend( INI *ini, void *instance, void *store, const void* userData );
-	static void parseAndTranslateLabel( INI *ini, void *instance, void *store, const void* userData );
-	static void parseMappedImage( INI *ini, void *instance, void *store, const void *userData );
-	static void parseAnim2DTemplate( INI *ini, void *instance, void *store, const void *userData );
-	static void parsePercentToReal( INI *ini, void *instance, void *store, const void* userData );
-	static void parseRGBColor( INI *ini, void *instance, void *store, const void* userData );
-	static void parseRGBAColorInt( INI *ini, void *instance, void *store, const void* userData );
-	static void parseColorInt( INI *ini, void *instance, void *store, const void* userData );
-	static void parseCoord3D( INI *ini, void *instance, void *store, const void* userData );
-	static void parseCoord2D( INI *ini, void *instance, void *store, const void *userData );
-	static void parseICoord2D( INI *ini, void *instance, void *store, const void *userData );
-	static void parseDynamicAudioEventRTS( INI *ini, void *instance, void *store, const void* userData );
-	static void parseAudioEventRTS( INI *ini, void *instance, void *store, const void* userData );
-	static void parseFXList( INI *ini, void *instance, void *store, const void* userData );
-	static void parseParticleSystemTemplate( INI *ini, void *instance, void *store, const void *userData );
-	static void parseObjectCreationList( INI *ini, void *instance, void *store, const void* userData );
-	static void parseSpecialPowerTemplate( INI *ini, void *instance, void *store, const void *userData );
-	static void parseUpgradeTemplate( INI *ini, void *instance, void *store, const void *userData );
-	static void parseScience( INI *ini, void *instance, void *store, const void *userData );
-	static void parseScienceVector( INI *ini, void *instance, void *store, const void *userData );
-	static void parseGameClientRandomVariable( INI* ini, void *instance, void *store, const void* userData );
-	static void parseBitString8( INI *ini, void *instance, void *store, const void* userData );
-	static void parseBitString32( INI *ini, void *instance, void *store, const void* userData );
-	static void parseByteSizedIndexList( INI *ini, void *instance, void *store, const void* userData );
-	static void parseIndexList( INI *ini, void *instance, void *store, const void* userData );
-	static void parseLookupList( INI *ini, void *instance, void *store, const void* userData );
-	static void parseThingTemplate( INI *ini, void *instance, void *store, const void* userData );
-	static void parseArmorTemplate( INI *ini, void *instance, void *store, const void* userData );
-	static void parseDamageFX( INI *ini, void *instance, void *store, const void* userData );
-	static void parseWeaponTemplate( INI *ini, void *instance, void *store, const void* userData );
+	static void parseUnsignedByte(INI* ini, void* instance, void* store, const void* userData);
+	static void parseShort(INI* ini, void* instance, void* store, const void* userData);
+	static void parseUnsignedShort(INI* ini, void* instance, void* store, const void* userData);
+	static void parseInt(INI* ini, void* instance, void* store, const void* userData);
+	static void parseUnsignedInt(INI* ini, void* instance, void* store, const void* userData);
+	static void parseReal(INI* ini, void* instance, void* store, const void* userData);
+	static void parsePositiveNonZeroReal(INI* ini, void* instance, void* store, const void* userData);
+	static void parseBool(INI* ini, void* instance, void* store, const void* userData);
+	static void parseBitInInt32(INI* ini, void* instance, void* store, const void* userData);
+	static void parseAsciiString(INI* ini, void* instance, void* store, const void* userData);
+	static void parseQuotedAsciiString(INI* ini, void* instance, void* store, const void* userData);
+	static void parseAsciiStringVector(INI* ini, void* instance, void* store, const void* userData);
+	static void parseAsciiStringVectorAppend(INI* ini, void* instance, void* store, const void* userData);
+	static void parseAndTranslateLabel(INI* ini, void* instance, void* store, const void* userData);
+	static void parseMappedImage(INI* ini, void* instance, void* store, const void* userData);
+	static void parseAnim2DTemplate(INI* ini, void* instance, void* store, const void* userData);
+	static void parsePercentToReal(INI* ini, void* instance, void* store, const void* userData);
+	static void parseRGBColor(INI* ini, void* instance, void* store, const void* userData);
+	static void parseRGBAColorInt(INI* ini, void* instance, void* store, const void* userData);
+	static void parseColorInt(INI* ini, void* instance, void* store, const void* userData);
+	static void parseCoord3D(INI* ini, void* instance, void* store, const void* userData);
+	static void parseCoord2D(INI* ini, void* instance, void* store, const void* userData);
+	static void parseICoord2D(INI* ini, void* instance, void* store, const void* userData);
+	static void parseDynamicAudioEventRTS(INI* ini, void* instance, void* store, const void* userData);
+	static void parseAudioEventRTS(INI* ini, void* instance, void* store, const void* userData);
+	static void parseFXList(INI* ini, void* instance, void* store, const void* userData);
+	static void parseParticleSystemTemplate(INI* ini, void* instance, void* store, const void* userData);
+	static void parseObjectCreationList(INI* ini, void* instance, void* store, const void* userData);
+	static void parseSpecialPowerTemplate(INI* ini, void* instance, void* store, const void* userData);
+	static void parseUpgradeTemplate(INI* ini, void* instance, void* store, const void* userData);
+	static void parseScience(INI* ini, void* instance, void* store, const void* userData);
+	static void parseScienceVector(INI* ini, void* instance, void* store, const void* userData);
+	static void parseGameClientRandomVariable(INI* ini, void* instance, void* store, const void* userData);
+	static void parseBitString8(INI* ini, void* instance, void* store, const void* userData);
+	static void parseBitString32(INI* ini, void* instance, void* store, const void* userData);
+	static void parseByteSizedIndexList(INI* ini, void* instance, void* store, const void* userData);
+	static void parseIndexList(INI* ini, void* instance, void* store, const void* userData);
+	static void parseLookupList(INI* ini, void* instance, void* store, const void* userData);
+	static void parseThingTemplate(INI* ini, void* instance, void* store, const void* userData);
+	static void parseArmorTemplate(INI* ini, void* instance, void* store, const void* userData);
+	static void parseDamageFX(INI* ini, void* instance, void* store, const void* userData);
+	static void parseWeaponTemplate(INI* ini, void* instance, void* store, const void* userData);
 	// parse a duration in msec and convert to duration in frames
-	static void parseDurationReal( INI *ini, void *instance, void *store, const void* userData );
+	static void parseDurationReal(INI* ini, void* instance, void* store, const void* userData);
 	// parse a duration in msec and convert to duration in integral number of frames, (unsignedint) rounding UP
-	static void parseDurationUnsignedInt( INI *ini, void *instance, void *store, const void* userData );
-	static void parseDurationUnsignedShort( INI *ini, void *instance, void *store, const void *userData );
+	static void parseDurationUnsignedInt(INI* ini, void* instance, void* store, const void* userData);
+	static void parseDurationUnsignedShort(INI* ini, void* instance, void* store, const void* userData);
 	// parse acceleration in (dist/sec) and convert to (dist/frame)
-	static void parseVelocityReal( INI *ini, void *instance, void *store, const void* userData );
+	static void parseVelocityReal(INI* ini, void* instance, void* store, const void* userData);
 	// parse acceleration in (dist/sec^2) and convert to (dist/frame^2)
-	static void parseAccelerationReal( INI *ini, void *instance, void *store, const void* userData );
+	static void parseAccelerationReal(INI* ini, void* instance, void* store, const void* userData);
 	// parse angle in degrees and convert to radians
-	static void parseAngleReal( INI *ini, void *instance, void *store, const void *userData );
+	static void parseAngleReal(INI* ini, void* instance, void* store, const void* userData);
 	// note that this parses in degrees/sec, and converts to rads/frame!
-	static void parseAngularVelocityReal( INI *ini, void *instance, void *store, const void *userData );
+	static void parseAngularVelocityReal(INI* ini, void* instance, void* store, const void* userData);
 	static void parseDamageTypeFlags(INI* ini, void* instance, void* store, const void* userData);
 	static void parseDeathTypeFlags(INI* ini, void* instance, void* store, const void* userData);
 	static void parseVeterancyLevelFlags(INI* ini, void* instance, void* store, const void* userData);
-	static void parseSoundsList( INI* ini, void *instance, void *store, const void* /*userData*/ );
+	static void parseSoundsList(INI* ini, void* instance, void* store, const void* /*userData*/);
 
 
 	/**
@@ -384,35 +395,35 @@ public:
 
 protected:
 
-	static Bool isValidINIFilename( const char *filename ); ///< is this a valid .ini filename
+	static Bool isValidINIFilename(const char* filename); ///< is this a valid .ini filename
 
-	void prepFile( AsciiString filename, INILoadType loadType );
+	void prepFile(AsciiString filename, INILoadType loadType);
 	void unPrepFile();
 
-	void readLine( void );
+	void readLine(void);
 
-	File *m_file;															///< file pointer of file currently loading
+	File* m_file;															///< file pointer of file currently loading
 
-  enum
-  {
-    INI_READ_BUFFER = 8192                  ///< size of internal read buffer
-  };
-  char m_readBuffer[INI_READ_BUFFER];       ///< internal read buffer
-  unsigned m_readBufferNext;                ///< next char in read buffer
-  unsigned m_readBufferUsed;                ///< number of bytes in read buffer
+	enum
+	{
+		INI_READ_BUFFER = 8192                  ///< size of internal read buffer
+	};
+	char m_readBuffer[INI_READ_BUFFER];       ///< internal read buffer
+	unsigned m_readBufferNext;                ///< next char in read buffer
+	unsigned m_readBufferUsed;                ///< number of bytes in read buffer
 
 	AsciiString m_filename;										///< filename of file currently loading
 	INILoadType m_loadType;										///< load time for current file
 	UnsignedInt m_lineNum;										///< current line number that's been read
-	char m_buffer[ INI_MAX_CHARS_PER_LINE+1 ];///< buffer to read file contents into
-	const char *m_seps;												///< for strtok parsing
-	const char *m_sepsPercent;								///< m_seps with percent delimiter as well
-	const char *m_sepsColon;									///< m_seps with colon delimiter as well
-	const char *m_sepsQuote;									///< token to represent a quoted ascii string
-	const char *m_blockEndToken;							///< token to represent end of data block
+	char m_buffer[INI_MAX_CHARS_PER_LINE + 1];///< buffer to read file contents into
+	const char* m_seps;												///< for strtok parsing
+	const char* m_sepsPercent;								///< m_seps with percent delimiter as well
+	const char* m_sepsColon;									///< m_seps with colon delimiter as well
+	const char* m_sepsQuote;									///< token to represent a quoted ascii string
+	const char* m_blockEndToken;							///< token to represent end of data block
 	Bool m_endOfFile;													///< TRUE when we've hit EOF
 #ifdef DEBUG_CRASHING
-	char m_curBlockStart[ INI_MAX_CHARS_PER_LINE ];	///< first line of cur block
+	char m_curBlockStart[INI_MAX_CHARS_PER_LINE];	///< first line of cur block
 #endif
 };
 

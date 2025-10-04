@@ -473,19 +473,16 @@ void WbView3d::shutdownWW3D(void)
 		WWMath::Shutdown();
 	}
 	m_ww3dInited = false;
-	if (m_intersector) {
-		delete m_intersector;
-		m_intersector = NULL;
-	}
 
-	if (m_layer) {
-		delete m_layer;
-		m_layer = NULL;
-	}
-	if (m_buildLayer) {
-		delete m_buildLayer;
-		m_buildLayer = NULL;
-	}
+	delete m_intersector;
+	m_intersector = NULL;
+
+	delete m_layer;
+	m_layer = NULL;
+
+	delete m_buildLayer;
+	m_buildLayer = NULL;
+
 	if (m3DFont) {
 		m3DFont->Release();
 		m3DFont = NULL;
@@ -1011,7 +1008,7 @@ void WbView3d::updateFenceListObjects(MapObject *pObject)
 
 				renderObj = m_assetManager->Create_Render_Obj( modelName.str(), scale, 0);
 
-			}  // end if
+			}
 		}
 
 		if (renderObj) {
@@ -1151,7 +1148,7 @@ void WbView3d::invalBuildListItemInView(BuildListInfo *pBuildToInval)
 						shadowInfo.m_offsetY=tTemplate->getShadowOffsetY();
 						shadowObj=TheW3DShadowManager->addShadow(renderObj, &shadowInfo);
 					}
-				}  // end if
+				}
 			}
 			if (renderObj) {
 				pBuild->setRenderObj(renderObj);
@@ -1420,7 +1417,7 @@ void WbView3d::invalObjectInView(MapObject *pMapObjIn)
 						shadowObj=TheW3DShadowManager->addShadow(renderObj, &shadowInfo);
 					}
 				}
-			}  // end if
+			}
 		}
 
 		if (renderObj && !(pMapObj->getFlags() & FLAG_DONT_RENDER)) {
@@ -1684,7 +1681,7 @@ Bool WbView3d::viewToDocCoords(CPoint curPt, Coord3D *newPt, Bool constrain)
 			intersection = castResult.ContactPoint;
 			m_curTrackingZ = intersection.Z;
 			result = true;
-		}  // end if
+		}
 	}
 	if (!result) {
 		intersection.X = Vector3::Find_X_At_Z(m_curTrackingZ, rayLocation, rayDirectionPt);
@@ -2471,7 +2468,7 @@ void WbView3d::drawLabels(HDC hdc)
 				DeleteObject(pen);	//delete new pen
 			}
 #endif	//DRAW_LIGHT_DIRECTION_RAYS
-		}//end for
+		}
 	}
 	else
 	{	if (!m_doLightFeedback)
