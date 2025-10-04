@@ -271,52 +271,6 @@ static void updateNumPlayersOnline(void)
 		}
 		GadgetListBoxAddEntryText(listboxInfo, UnicodeString(L" "), GameSpyColor[GSCOLOR_MOTD_HEADING], -1, -1);
 
-		// NETWORK CAPS
-#if defined(USE_PORT_MAPPER)
-		bool bHasPortMapped = NGMP_OnlineServicesManager::GetInstance()->GetPortMapper().HasPortOpen();
-		PortMapper::EMappingTech mappingTechUsed = NGMP_OnlineServicesManager::GetInstance()->GetPortMapper().GetPortMappingTechnologyUsed();
-
-
-		std::string strPortState;
-		if (!bHasPortMapped)
-		{
-			if (!NGMP_OnlineServicesManager::GetInstance()->GetPortMapper().IsFullyDone())
-			{
-				strPortState = "Port Mapping In progress...";
-			}
-			else
-			{
-				strPortState = "No Port Mapped";
-			}
-		}
-		else
-		{
-#if !defined(GENERALS_ONLINE_PORT_MAP_FIREWALL_OVERRIDE_PORT)
-			if (mappingTechUsed == PortMapper::EMappingTech::MANUAL)
-			{
-				strPortState = "Manual";
-			}
-			else
-#endif
-				if (mappingTechUsed == PortMapper::EMappingTech::PCP)
-				{
-					strPortState = "PCP";
-				}
-				else if (mappingTechUsed == PortMapper::EMappingTech::NATPMP)
-				{
-					strPortState = "NAT-PMP";
-				}
-				else if (mappingTechUsed == PortMapper::EMappingTech::UPNP)
-				{
-					strPortState = "UPnP";
-				}
-				else
-				{
-					strPortState = "No Port Mapped";
-				}
-		}
-#endif
-
 		// END NETWORK CAPS
 		while (aMotd.nextToken(&aLine, "\n"))
 		{
@@ -351,24 +305,6 @@ static void updateNumPlayersOnline(void)
 
 			GadgetListBoxAddEntryText(listboxInfo, line, c, -1, -1);
 		}
-
-#if defined(USE_PORT_MAPPER)
-		int preferredPort = NGMP_OnlineServicesManager::GetInstance()->GetPortMapper().GetOpenPort();
-		{
-			Color c = GameMakeColor(255, 194, 15, 255);
-			GadgetListBoxAddEntryText(listboxInfo, UnicodeString(L" "), c, -1, -1);
-
-			UnicodeString line;
-
-			// network status
-			GadgetListBoxAddEntryText(listboxInfo, UnicodeString(L"Your Network Status:"), c, -1, -1);
-
-			// network port
-			line.format(L"Network Port: %d (%hs)", preferredPort, strPortState.c_str());
-			GadgetListBoxAddEntryText(listboxInfo, line, c, -1, -1);
-		}
-#endif
-		
 	}
 }
 
@@ -554,7 +490,7 @@ static Bool raiseMessageBoxes = FALSE;
 //-------------------------------------------------------------------------------------------------
 void WOLWelcomeMenuInit( WindowLayout *layout, void *userData )
 {
-	NGMP_OnlineServicesManager::GetInstance()->RegisterForPortMapperChanges(updateNumPlayersOnline);
+	updateNumPlayersOnline();
 
 	nextScreen = NULL;
 	buttonPushed = FALSE;
@@ -735,8 +671,6 @@ void WOLWelcomeMenuInit( WindowLayout *layout, void *userData )
 //-------------------------------------------------------------------------------------------------
 void WOLWelcomeMenuShutdown( WindowLayout *layout, void *userData )
 {
-	NGMP_OnlineServicesManager::GetInstance()->DeregisterForPortMapperChanges();
-
 	listboxInfo = NULL;
 
 	delete TheFirewallHelper;
