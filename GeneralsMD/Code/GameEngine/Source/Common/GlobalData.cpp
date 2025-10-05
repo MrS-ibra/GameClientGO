@@ -993,9 +993,9 @@ GlobalData::GlobalData()
 #endif
 
 #if defined(GENERALS_ONLINE)
-	m_playSizzle = TRUE;
-#else
 	m_playSizzle = FALSE;
+#else
+	m_playSizzle = TRUE;
 #endif
 	m_afterIntro = FALSE;
 	m_allowExitOutOfMovies = FALSE;
