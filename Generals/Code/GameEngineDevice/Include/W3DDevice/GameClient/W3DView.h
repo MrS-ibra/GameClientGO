@@ -276,7 +276,7 @@ private:
 	void getAxisAlignedViewRegion(Region3D &axisAlignedRegion);	///< Find 3D Region enclosing all possible drawables.
 	void calcDeltaScroll(Coord2D &screenDelta);
 
-};  // end class W3DView
+};
 
 // EXTERNALS //////////////////////////////////////////////////////////////////////////////////////
 extern Int TheW3DFrameLengthInMsec;	// default is 33msec/frame == 30fps. but we may change it depending on sys config.

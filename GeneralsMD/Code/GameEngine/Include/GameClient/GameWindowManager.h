@@ -355,7 +355,7 @@ protected:
 	const Image *m_cursorBitmap;
 	UnsignedInt m_captureFlags;
 
-};  // end GameWindowManager
+};
 
 // INLINE /////////////////////////////////////////////////////////////////////////////////////////
 inline GameWinDrawFunc GameWindowManager::getDefaultDraw( void ) { return GameWinDefaultDraw; }

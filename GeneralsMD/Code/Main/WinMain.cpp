@@ -422,7 +422,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 #endif
 				break;
 
-			}  // end set focus
+			}
 
 			//-------------------------------------------------------------------------
 			case WM_SIZE:
@@ -510,7 +510,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 				}  // end else
 				break;
 
-			}  // end case activate
+			}
 
 			//-------------------------------------------------------------------------
 			case WM_KEYDOWN:
@@ -527,14 +527,14 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 						PostQuitMessage( 0 );
 						break;
 
-					}  // end VK_ESCAPE
+					}
 
 
-				}  // end switch
+				}
 
 				return 0;
 
-			}  // end WM_KEYDOWN
+			}
 
 			//-------------------------------------------------------------------------
 			case WM_LBUTTONDOWN:
@@ -555,7 +555,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 
 				return 0;
 
-			}  // end WM_LBUTTONDOWN
+			}
 
 			//-------------------------------------------------------------------------
 			case 0x020A: // WM_MOUSEWHEEL
@@ -574,7 +574,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 
 				return 0;
 
-			}  // end WM_MOUSEWHEEL
+			}
 
 
 			//-------------------------------------------------------------------------
@@ -595,7 +595,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 
 				return 0;
 
-			}  // end WM_MOUSEMOVE
+			}
 
 			//-------------------------------------------------------------------------
 			case WM_SETCURSOR:
@@ -679,7 +679,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 				break;
 			}
 #endif
-		}  // end switch
+		}
 
 	}
 	catch (...)
@@ -705,7 +705,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message,
 
 	return DefWindowProc( hWnd, message, wParam, lParam );
 
-}  // end WndProc
+}
 
 // initializeAppWindows =======================================================
 /** Register windows class and create application windows. */
@@ -790,7 +790,7 @@ static Bool initializeAppWindows( HINSTANCE hInstance, Int nCmdShow, Bool runWin
 
 	return true;  // success
 
-}  // end initializeAppWindow
+}
 
 // Necessary to allow memory managers and such to have useful critical sections
 static CriticalSection critSec1, critSec2, critSec3, critSec4, critSec5;
@@ -977,7 +977,7 @@ Int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 	return exitcode;
 
-}  // end WinMain
+}
 
 // CreateGameEngine ===========================================================
 /** Create the Win32 game engine we're going to use */
@@ -993,4 +993,4 @@ GameEngine *CreateGameEngine( void )
 
 	return engine;
 
-}  // end CreateGameEngine
+}

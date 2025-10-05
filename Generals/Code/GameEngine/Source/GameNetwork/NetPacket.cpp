@@ -315,29 +315,45 @@ UnsignedInt NetPacket::GetGameCommandSize(NetCommandMsg *msg) {
 	while (arg != NULL) {
 		msglen += 2 * sizeof(UnsignedByte); // for the type and number of args of that type declaration.
 		GameMessageArgumentDataType type = arg->getType();
-		if (type == ARGUMENTDATATYPE_INTEGER) {
+
+		switch (type) {
+
+		case ARGUMENTDATATYPE_INTEGER:
 			msglen += arg->getArgCount() * sizeof(Int);
-		} else if (type == ARGUMENTDATATYPE_REAL) {
+			break;
+		case ARGUMENTDATATYPE_REAL:
 			msglen += arg->getArgCount() * sizeof(Real);
-		} else if (type == ARGUMENTDATATYPE_BOOLEAN) {
+			break;
+		case ARGUMENTDATATYPE_BOOLEAN:
 			msglen += arg->getArgCount() * sizeof(Bool);
-		} else if (type == ARGUMENTDATATYPE_OBJECTID) {
+			break;
+		case ARGUMENTDATATYPE_OBJECTID:
 			msglen += arg->getArgCount() * sizeof(ObjectID);
-		} else if (type == ARGUMENTDATATYPE_DRAWABLEID) {
+			break;
+		case ARGUMENTDATATYPE_DRAWABLEID:
 			msglen += arg->getArgCount() * sizeof(DrawableID);
-		} else if (type == ARGUMENTDATATYPE_TEAMID) {
+			break;
+		case ARGUMENTDATATYPE_TEAMID:
 			msglen += arg->getArgCount() * sizeof(UnsignedInt);
-		} else if (type == ARGUMENTDATATYPE_LOCATION) {
+			break;
+		case ARGUMENTDATATYPE_LOCATION:
 			msglen += arg->getArgCount() * sizeof(Coord3D);
-		} else if (type == ARGUMENTDATATYPE_PIXEL) {
+			break;
+		case ARGUMENTDATATYPE_PIXEL:
 			msglen += arg->getArgCount() * sizeof(ICoord2D);
-		} else if (type == ARGUMENTDATATYPE_PIXELREGION) {
+			break;
+		case ARGUMENTDATATYPE_PIXELREGION:
 			msglen += arg->getArgCount() * sizeof(IRegion2D);
-		} else if (type == ARGUMENTDATATYPE_TIMESTAMP) {
+			break;
+		case ARGUMENTDATATYPE_TIMESTAMP:
 			msglen += arg->getArgCount() * sizeof(UnsignedInt);
-		} else if (type == ARGUMENTDATATYPE_WIDECHAR) {
+			break;
+		case ARGUMENTDATATYPE_WIDECHAR:
 			msglen += arg->getArgCount() * sizeof(WideChar);
+			break;
+
 		}
+
 		arg = arg->getNext();
 	}
 

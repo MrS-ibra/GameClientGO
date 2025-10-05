@@ -80,7 +80,7 @@
 #define VERY_TRANSPARENT_HEATVISION (0.001f)
 #define HEATVISION_FADE_SCALAR (0.8f)
 
-static const char *TheDrawableIconNames[] =
+static const char *const TheDrawableIconNames[] =
 {
 	"DefaultHeal",
 	"StructureHeal",
@@ -102,6 +102,7 @@ static const char *TheDrawableIconNames[] =
 	"CarBomb",
 	NULL
 };
+static_assert(ARRAY_SIZE(TheDrawableIconNames) == MAX_ICONS + 1, "Incorrect array size");
 
 
 
@@ -191,7 +192,7 @@ static const char *drawableIconIndexToName( DrawableIconType iconIndex )
 
 	return TheDrawableIconNames[ iconIndex ];
 
-}  // end drawableIconIndexToName
+}
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -206,7 +207,7 @@ static DrawableIconType drawableIconNameToIndex( const char *iconName )
 
 	return ICON_INVALID;
 
-}  // end drawableIconNameToIndex
+}
 
 // ------------------------------------------------------------------------------------------------
 // constants
@@ -274,11 +275,8 @@ const Int MAX_ENABLED_MODULES								= 16;
 //-------------------------------------------------------------------------------------------------
 /*static*/ void Drawable::killStaticImages()
 {
-	if( s_animationTemplates )
-	{
-		delete[] s_animationTemplates;
-		s_animationTemplates = NULL;
-	}
+	delete[] s_animationTemplates;
+	s_animationTemplates = NULL;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -309,7 +307,7 @@ void Drawable::saturateRGB(RGBColor& color, Real factor)
  * graphical side of a logical object, whereas GameLogic objects encapsulate
  * behaviors and physics.  */
 //-------------------------------------------------------------------------------------------------
-Drawable::Drawable( const ThingTemplate *thingTemplate, DrawableStatus statusBits )
+Drawable::Drawable( const ThingTemplate *thingTemplate, DrawableStatusBits statusBits )
 				: Thing( thingTemplate )
 {
 
@@ -380,7 +378,7 @@ Drawable::Drawable( const ThingTemplate *thingTemplate, DrawableStatus statusBit
 		assert( 0 );
 		return;
 
-	}  // end if
+	}
 
 	m_instance.Make_Identity();
 	m_instanceIsIdentity = true;
@@ -459,6 +457,14 @@ Drawable::Drawable( const ThingTemplate *thingTemplate, DrawableStatus statusBit
 			(*m)->onObjectCreated();
 	}
 
+	const Bool shadowsEnabled = getShadowsEnabled();
+
+	// TheSuperHackers @fix xezon 14/09/2025 Match the shadow states of all draw modules with this drawable.
+	for (DrawModule** dm = (DrawModule**)getModuleList(MODULETYPE_DRAW); *dm; ++dm)
+	{
+		(*dm)->setShadowsEnabled(shadowsEnabled);
+	}
+
 	m_groupNumber = NULL;
 	m_captionDisplayString = NULL;
 	m_drawableInfo.m_drawable = this;
@@ -472,7 +478,7 @@ Drawable::Drawable( const ThingTemplate *thingTemplate, DrawableStatus statusBit
 
 	startAmbientSound();
 
-}  // end Drawable
+}
 
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
@@ -550,9 +556,9 @@ void Drawable::onDestroy( void )
 		for( Module** m = m_modules[ i ]; m && *m; ++m )
 			(*m)->onDelete();
 
-	}  // end for i
+	}
 
-}  // end onDestroy
+}
 
 //-------------------------------------------------------------------------------------------------
 Bool Drawable::isVisible()
@@ -917,9 +923,6 @@ void Drawable::colorFlash( const RGBColor* color, UnsignedInt decayFrames, Unsig
 		white.setFromInt(0xffffffff);
 		m_colorTintEnvelope->play( &white );
 	}
-
-	// make sure the tint color is unlocked so we "fade back down" to normal
-	clearDrawableStatus( DRAWABLE_STATUS_TINT_COLOR_LOCKED );
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -930,11 +933,7 @@ void Drawable::colorTint( const RGBColor* color )
 	if( color )
 	{
 		// set the color via color flash
-		colorFlash( color, 0, 0, TRUE );
-
-		// lock the tint color so the flash never "fades back down"
-		setDrawableStatus( DRAWABLE_STATUS_TINT_COLOR_LOCKED );
-
+		colorFlash( color, 0, 0, ~0u );
 	}
 	else
 	{
@@ -943,10 +942,6 @@ void Drawable::colorTint( const RGBColor* color )
 
 		// remove the tint applied to the object
 		m_colorTintEnvelope->rest();
-
-		// set the tint as unlocked so we can flash and stuff again
-		clearDrawableStatus( DRAWABLE_STATUS_TINT_COLOR_LOCKED );
-
 	}
 
 }
@@ -969,7 +964,7 @@ void Drawable::onSelected()
 		}
 	}
 
-}  // end onSelected
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Gathering point for all things besides actual selection that must happen on deselection */
@@ -1080,7 +1075,7 @@ void Drawable::setEffectiveOpacity( Real pulseFactor, Real explicitOpacity /* = 
 	Real pulseAmount = pulseMargin * pf;
 
 	m_effectiveStealthOpacity = m_stealthOpacity + pulseAmount;
-}		///< get alpha/opacity value used to override defaults when drawing.
+}
 
 //-------------------------------------------------------------------------------------------------
 /** update is called once per frame */
@@ -1143,7 +1138,7 @@ void Drawable::updateDrawable( void )
 				(*dm)->setTerrainDecalOpacity(m_decalOpacity);
 			}
 
-		}//end if (*dm)
+		}
 	}
 	else
 		m_decalOpacity = 0;
@@ -1255,24 +1250,19 @@ void Drawable::flashAsSelected( const RGBColor *color ) ///< drawable takes care
 //-------------------------------------------------------------------------------------------------
 void Drawable::applyPhysicsXform(Matrix3D* mtx)
 {
-	const Object *obj = getObject();
-
-	if( !obj ||	obj->isDisabledByType( DISABLED_HELD ) || !TheGlobalData->m_showClientPhysics )
+	if (m_physicsXform != NULL)
 	{
-		return;
-	}
+		// TheSuperHackers @tweak Update the physics transform on every WW Sync only.
+		// All calculations are originally catered to a 30 fps logic step.
+		if (WW3D::Get_Sync_Frame_Time() != 0)
+		{
+			calcPhysicsXform(*m_physicsXform);
+		}
 
- 	Bool frozen = TheTacticalView->isTimeFrozen() && !TheTacticalView->isCameraMovementFinished();
- 	frozen = frozen || TheScriptEngine->isTimeFrozenDebug() || TheScriptEngine->isTimeFrozenScript();
-	if (frozen)
-		return;
-	PhysicsXformInfo info;
-	if (calcPhysicsXform(info))
-	{
-		mtx->Translate(0.0f, 0.0f, info.m_totalZ);
-		mtx->Rotate_Y( info.m_totalPitch );
-		mtx->Rotate_X( -info.m_totalRoll );
-		mtx->Rotate_Z( info.m_totalYaw );
+		mtx->Translate(0.0f, 0.0f, m_physicsXform->m_totalZ);
+		mtx->Rotate_Y( m_physicsXform->m_totalPitch );
+		mtx->Rotate_X( -m_physicsXform->m_totalRoll );
+		mtx->Rotate_Z( m_physicsXform->m_totalYaw );
 	}
 }
 
@@ -1357,19 +1347,19 @@ void Drawable::calcPhysicsXformThrust( const Locomotor *locomotor, PhysicsXformI
 				m_locoInfo->m_pitch += WOBBLE_RATE;
 				m_locoInfo->m_yaw += WOBBLE_RATE;
 
-			}  // end if
+			}
 			else
 			{
 
 				m_locoInfo->m_pitch += (WOBBLE_RATE / 2.0f);
 				m_locoInfo->m_yaw += (WOBBLE_RATE / 2.0f);
 
-			}  // end else
+			}
 
 			if( m_locoInfo->m_pitch >= MAX_WOBBLE )
 				m_locoInfo->m_wobble = -1.0f;
 
-		}  // end if
+		}
 		else
 		{
 
@@ -1379,23 +1369,23 @@ void Drawable::calcPhysicsXformThrust( const Locomotor *locomotor, PhysicsXformI
 				m_locoInfo->m_pitch -= WOBBLE_RATE;
 				m_locoInfo->m_yaw -= WOBBLE_RATE;
 
-			}  // end if
+			}
 			else
 			{
 
 				m_locoInfo->m_pitch -= (WOBBLE_RATE / 2.0f);
 				m_locoInfo->m_yaw -= (WOBBLE_RATE / 2.0f);
 
-			}  // end else
+			}
 			if( m_locoInfo->m_pitch <= MIN_WOBBLE )
 				m_locoInfo->m_wobble = 1.0f;
 
-		}  // end else
+		}
 
 		info.m_totalPitch = m_locoInfo->m_pitch;
 		info.m_totalYaw = m_locoInfo->m_yaw;
 
-	}  // end if, wobble exists
+	}
 
 	if( THRUST_ROLL )
 	{
@@ -1403,7 +1393,7 @@ void Drawable::calcPhysicsXformThrust( const Locomotor *locomotor, PhysicsXformI
 		m_locoInfo->m_roll += THRUST_ROLL;
 		info.m_totalRoll = m_locoInfo->m_roll;
 
-	}  // end if
+	}
 
 }
 
@@ -2274,7 +2264,7 @@ static Bool computeHealthRegion( const Drawable *draw, IRegion2D& region )
 
 	return TRUE;
 
-}  // end computeHealthRegion
+}
 
 
 // ------------------------------------------------------------------------------------------------
@@ -3178,14 +3168,14 @@ void Drawable::drawDisabled(const IRegion2D* healthBarRegion)
 			screen.y = healthBarRegion->hi.y - (frameHeight + barHeight);
 			getIconInfo()->m_icon[ ICON_DISABLED ]->draw( screen.x, screen.y, frameWidth, frameHeight );
 
-		}  // end if
-	}  // end if
+		}
+	}
 	else
 	{
 		// delete icon if necessary
 		killIcon(ICON_DISABLED);
 
-	}  // end if
+	}
 
 }
 
@@ -3233,7 +3223,7 @@ void Drawable::drawConstructPercent( const IRegion2D *healthBarRegion )
 		// record this percent as our last displayed so we don't un-necessarily rebuild the string
 		m_lastConstructDisplayed = obj->getConstructionPercent();
 
-	}  // end if
+	}
 
 	// get center position in drawable
 	ICoord2D screen;
@@ -3249,7 +3239,7 @@ void Drawable::drawConstructPercent( const IRegion2D *healthBarRegion )
 	screen.x -= (m_constructDisplayString->getWidth() / 2);
 	m_constructDisplayString->draw( screen.x, screen.y, color, dropColor );
 
-}  // end drawConstructPercent
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Draw caption */
@@ -3285,7 +3275,7 @@ void Drawable::drawCaption( const IRegion2D *healthBarRegion )
 	Color dropColor = GameMakeColor( 0, 0, 0, 255 );
 	m_captionDisplayString->draw( screen.x, screen.y, color, dropColor );
 
-}  // end drawCaption
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Draw any veterency markers that should be displayed */
@@ -3337,7 +3327,7 @@ void Drawable::drawVeterancy( const IRegion2D *healthBarRegion )
 	// draw the image
 	TheDisplay->drawImage(image, screenCenter.x + 1, screenCenter.y + 1, screenCenter.x + 1 + vetBoxWidth, screenCenter.y + 1 + vetBoxHeight);
 
-}  // end drawVeterancy
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Draw health bar information for drawable */
@@ -3389,7 +3379,10 @@ void Drawable::drawHealthBar(const IRegion2D* healthBarRegion)
 		//
 
 		Color color, outlineColor;
-		if( obj->getStatusBits().test( OBJECT_STATUS_UNDER_CONSTRUCTION ) || (obj->isDisabled() && !obj->isDisabledByType(DISABLED_HELD)) )
+		DisabledMaskType mask = obj->getDisabledFlags();
+		mask.clear(MAKE_DISABLED_MASK(DISABLED_HELD));
+
+		if (obj->getStatusBits().test(OBJECT_STATUS_UNDER_CONSTRUCTION) || DISABLEDMASK_ANY_SET(mask))
 		{
 			color = GameMakeColor( 0, healthRatio * 255.0f, 255, 255 );//blue to cyan
 			outlineColor = GameMakeColor( 0, healthRatio * 128.0f, 128, 255 );//dark blue to dark cyan
@@ -3454,9 +3447,9 @@ void Drawable::drawHealthBar(const IRegion2D* healthBarRegion)
 		TheDisplay->drawFillRect( healthBarRegion->lo.x + 1, healthBarRegion->lo.y + 1,
 															(healthBoxWidth - 2) * healthRatio, healthBoxHeight - 2,
 															color );
-	}  // end if
+	}
 
-}  // end drawHealthBar
+}
 
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
@@ -3474,6 +3467,7 @@ void Drawable::clearAndSetModelConditionState( ModelConditionFlagType clr, Model
 DrawModule** Drawable::getDrawModules()
 {
 	DrawModule** dm = (DrawModule**)getModuleList(MODULETYPE_DRAW);
+
 #ifdef DIRTY_CONDITION_FLAGS
 	if (m_isModelDirty)
 	{
@@ -3496,6 +3490,8 @@ DrawModule** Drawable::getDrawModules()
 		}
 	}
 #endif
+
+	DEBUG_ASSERTCRASH(dm != NULL, ("Draw Module List is not expected NULL"));
 	return dm;
 }
 
@@ -3503,6 +3499,7 @@ DrawModule** Drawable::getDrawModules()
 DrawModule const** Drawable::getDrawModules() const
 {
 	DrawModule const** dm = (DrawModule const**)getModuleList(MODULETYPE_DRAW);
+
 #ifdef DIRTY_CONDITION_FLAGS
 	if (m_isModelDirty)
 	{
@@ -3526,6 +3523,8 @@ DrawModule const** Drawable::getDrawModules() const
 		}
 	}
 #endif
+
+	DEBUG_ASSERTCRASH(dm != NULL, ("Draw Module List is not expected NULL"));
 	return dm;
 }
 
@@ -3632,7 +3631,7 @@ void Drawable::setID( DrawableID id )
 			m_ambientSound->m_event.setDrawableID(m_id);
 	}
 
-}  // end setID
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Return drawable ID, this ID is only good on the client */
@@ -3645,7 +3644,7 @@ DrawableID Drawable::getID( void ) const
 
 	return m_id;
 
-}  // end get ID
+}
 
 //-------------------------------------------------------------------------------------------------
 void Drawable::friend_bindToObject( Object *obj ) ///< bind this drawable to an object ID
@@ -4093,7 +4092,7 @@ void Drawable::preloadAssets( TimeOfDay timeOfDay )
 		for( Module** m = m_modules[i]; m && *m; ++m )
 			(*m)->preloadAssets( timeOfDay );
 
-}  // end preloadAssets
+}
 
 //-------------------------------------------------------------------------------------------------
 // Simply searches for the first occurrence of a specified client update module.
@@ -4120,7 +4119,7 @@ ClientUpdateModule* Drawable::findClientUpdateModule( NameKeyType key )
 void Drawable::crc( Xfer *xfer )
 {
 
-}  // end crc
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Xfer the drawable modules
@@ -4183,9 +4182,9 @@ void Drawable::xferDrawableModules( Xfer *xfer )
 				// end data block
 				xfer->endBlock();
 
-			}  // end for, m
+			}
 
-		}  // end if, save
+		}
 		else
 		{
 			// read each module
@@ -4206,9 +4205,9 @@ void Drawable::xferDrawableModules( Xfer *xfer )
 						module = *m;
 						break;  // exit for m
 
-					}  // end if
+					}
 
-				}  // end for, m
+				}
 
 				// new block of data
 				Int dataSize = xfer->beginBlock();
@@ -4228,25 +4227,25 @@ void Drawable::xferDrawableModules( Xfer *xfer )
 					// skip this data in the file
 					xfer->skip( dataSize );
 
-				}  // end if
+				}
 				else
 				{
 
 					// xfer the data into this module
 					xfer->xferSnapshot( module );
 
-				}  // end else
+				}
 
 				// end of data block
 				xfer->endBlock();
 
-			}  // end for j
+			}
 
-		}  // end else, load
+		}
 
-	}  // end for curModuleType
+	}
 
-}  // end xferDrawableModules
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Xfer method
@@ -4289,7 +4288,7 @@ void Drawable::xfer( Xfer *xfer )
 		if( xfer->getXferMode() == XFER_LOAD	)
 			replaceModelConditionFlags( m_conditionState, TRUE );
 
-	}  // end if
+	}
 
 	if( version >= 3 )
 	{
@@ -4326,7 +4325,7 @@ void Drawable::xfer( Xfer *xfer )
 		// xfer
 		xfer->xferSnapshot( m_selectionFlashEnvelope );
 
-	}  // end if
+	}
 
 	// color tint envelope
 	Bool colFlash = (m_colorTintEnvelope != NULL);
@@ -4341,7 +4340,7 @@ void Drawable::xfer( Xfer *xfer )
 		// xfer
 		xfer->xferSnapshot( m_colorTintEnvelope );
 
-	}  // end if
+	}
 
 	// terrain decal type
 	TerrainDecalType decal = getTerrainDecalType();
@@ -4384,10 +4383,10 @@ void Drawable::xfer( Xfer *xfer )
 											getTemplate()->getName().str(), m_object->getTemplate()->getName().str() ));
 				throw SC_INVALID_DATA;
 
-			}  // end if
+			}
 
 
-		}  // end if
+		}
 		else
 		{
 
@@ -4403,11 +4402,11 @@ void Drawable::xfer( Xfer *xfer )
 #endif
 				throw SC_INVALID_DATA;
 
-			}  // end if
+			}
 
-		}  // end else
+		}
 
-	}  // end if
+	}
 
 
 	// particle
@@ -4537,7 +4536,7 @@ void Drawable::xfer( Xfer *xfer )
 		if( xfer->getXferMode() == XFER_LOAD	)
 			replaceModelConditionFlags( m_conditionState, TRUE );
 
-	}  // end if
+	}
 
 	// expiration date
 	xfer->xferUnsignedInt( &m_expirationDate );
@@ -4581,9 +4580,9 @@ void Drawable::xfer( Xfer *xfer )
 			// icon data
 			xfer->xferSnapshot( getIconInfo()->m_icon[ i ] );
 
-		}  // end for, i
+		}
 
-	}  // end if, save
+	}
 	else
 	{
 		Int i;
@@ -4615,7 +4614,7 @@ void Drawable::xfer( Xfer *xfer )
 				DEBUG_CRASH(( "Drawable::xfer - Unknown icon template '%s'", iconTemplateName.str() ));
 				throw SC_INVALID_DATA;
 
-			}  // end if
+			}
 
 			// create icon
 			getIconInfo()->m_icon[ iconIndex ] = newInstance(Anim2D)( animTemplate, TheAnim2DCollection );
@@ -4623,9 +4622,9 @@ void Drawable::xfer( Xfer *xfer )
 			// icon data
 			xfer->xferSnapshot( getIconInfo()->m_icon[ iconIndex ] );
 
-		}  // end for, i
+		}
 
-	}  // end else, load
+	}
 
 	if( xfer->getXferMode() == XFER_LOAD )
 	{
@@ -4656,7 +4655,7 @@ void Drawable::xfer( Xfer *xfer )
 		xfer->xferBool( &m_ambientSoundEnabled );
 	}
 
-}  // end xfer
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Load post process */
@@ -4679,7 +4678,7 @@ void Drawable::loadPostProcess( void )
 		stopAmbientSound();
 	}
 
-}  // end loadPostProcess
+}
 
 //=================================================================================================
 //=================================================================================================
@@ -4728,11 +4727,11 @@ TintEnvelope::TintEnvelope(void)
 const Real FADE_RATE_EPSILON = (0.001f);
 
 //-------------------------------------------------------------------------------------------------
-void TintEnvelope::play(const RGBColor *peak, UnsignedInt atackFrames, UnsignedInt decayFrames, UnsignedInt sustainAtPeak )
+void TintEnvelope::play(const RGBColor *peak, UnsignedInt attackFrames, UnsignedInt decayFrames, UnsignedInt sustainAtPeak )
 {
 	setPeakColor( peak );
 
-	setAttackFrames( atackFrames );
+	setAttackFrames( attackFrames );
 	setDecayFrames( decayFrames );
 
 	m_envState = ENVELOPE_STATE_ATTACK;
@@ -4839,7 +4838,7 @@ void TintEnvelope::update(void)
 void TintEnvelope::crc( Xfer *xfer )
 {
 
-}  // end crc
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Xfer Method
@@ -4875,7 +4874,7 @@ void TintEnvelope::xfer( Xfer *xfer )
 	// state
 	xfer->xferByte( &m_envState );
 
-}  // end xfer
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Load Post Process */
@@ -4883,5 +4882,5 @@ void TintEnvelope::xfer( Xfer *xfer )
 void TintEnvelope::loadPostProcess( void )
 {
 
-}  // end loadPostProcess
+}
 

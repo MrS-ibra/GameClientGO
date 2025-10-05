@@ -122,11 +122,8 @@ GameClient::~GameClient()
 	TheGraphDraw = NULL;
 #endif
 
-	if (TheDrawGroupInfo)
-	{
-		delete TheDrawGroupInfo;
-		TheDrawGroupInfo = NULL;
-	}
+	delete TheDrawGroupInfo;
+	TheDrawGroupInfo = NULL;
 
 	// clear any drawable TOC we might have
 	m_drawableTOC.clear();
@@ -142,8 +139,8 @@ GameClient::~GameClient()
 	//	DEBUG_LOG(("%s", preloadTextureNamesGlobalHack[oog]));
 	//}
 	//DEBUG_LOG(("End Texture files ------------------------------------------------"));
-	if(TheCampaignManager)
-		delete TheCampaignManager;
+
+	delete TheCampaignManager;
 	TheCampaignManager = NULL;
 
 	// destroy all Drawables
@@ -228,7 +225,7 @@ GameClient::~GameClient()
 	delete TheEva;
 	TheEva = NULL;
 
-}  // end ~GameClient
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Initialize resources for the game client */
@@ -338,7 +335,7 @@ void GameClient::init( void )
  		TheWindowManager->setName("TheWindowManager");
 //		TheWindowManager->initTestGUI();
 
-	}  // end if
+	}
 
 	// create the IME manager
 	TheIMEManager = CreateIMEManagerInterface();
@@ -390,7 +387,7 @@ void GameClient::init( void )
 		TheMouse->setPosition( 0, 0 );
 		TheMouse->setMouseLimits();
  		TheMouse->setName("TheMouse");
-	}  // end if
+	}
 
 	// create the video player
 	TheVideoPlayer = createVideoPlayer();
@@ -421,7 +418,7 @@ void GameClient::init( void )
 	TheGraphDraw = new GraphDraw;
 #endif
 
-}  // end init
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Reset the game client for a new game */
@@ -458,7 +455,7 @@ void GameClient::reset( void )
 	// TheSuperHackers @fix Mauller 13/04/2025 Reset the drawable id so it does not keep growing over the lifetime of the game.
 	m_nextDrawableID = (DrawableID)1;
 
-}  // end reset
+}
 
 /** -----------------------------------------------------------------------------------------------
  * Return a new unique object id.
@@ -483,7 +480,7 @@ void GameClient::registerDrawable( Drawable *draw )
 	// add the drawable to the master list
 	draw->prependToList( &m_drawableList );
 
-}  // end registerDrawable
+}
 
 /** -----------------------------------------------------------------------------------------------
  * Redraw all views, update the GUI, play sound effects, etc.
@@ -570,7 +567,7 @@ void GameClient::update( void )
 		TheKeyboard->UPDATE();
 		TheKeyboard->createStreamMessages();
 
-	}  // end if
+	}
 
 	// Update the Eva stuff
 	TheEva->UPDATE();
@@ -581,7 +578,7 @@ void GameClient::update( void )
 		TheMouse->UPDATE();
 		TheMouse->createStreamMessages();
 
-	}  // end if
+	}
 
 	if(TheGlobalData->m_playIntro || TheGlobalData->m_afterIntro)
 	{
@@ -697,7 +694,7 @@ void GameClient::update( void )
 		TheParticleSystemManager->setLocalPlayerIndex(localPlayerIndex);
 		TheParticleSystemManager->update();
 
-	}  // end if
+	}
 
 	// update the terrain visuals
 	{
@@ -732,7 +729,7 @@ void GameClient::update( void )
 		// update the in game UI
 		TheInGameUI->UPDATE();
 	}
-}  // end update
+}
 
 void GameClient::updateHeadless()
 {
@@ -812,7 +809,7 @@ void GameClient::destroyDrawable( Drawable *draw )
 		DEBUG_ASSERTCRASH( obj->getDrawable() == draw, ("Object/Drawable pointer mismatch!") );
 		obj->friend_bindToDrawable( NULL );
 
-	}  // end if
+	}
 
 	// remove the drawable from our hash of drawables
 	removeDrawableFromLookupTable( draw );
@@ -835,7 +832,7 @@ void GameClient::addDrawableToLookupTable(Drawable *draw )
 	// add to lookup
 	m_drawableHash[ draw->getID() ] = draw;
 
-}  // end addDrawableToLookupTable
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Remove drawable from lookup table of fast id searching */
@@ -850,7 +847,7 @@ void GameClient::removeDrawableFromLookupTable( Drawable *draw )
 	// remove from table
 	m_drawableHash.erase( draw->getID() );
 
-}  // end removeDrawableFromLookupTable
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Load a map into the game interface */
@@ -865,7 +862,7 @@ Bool GameClient::loadMap( AsciiString mapName )
 
 	return TRUE;
 
-}  // end loadMap
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Unload a map from the game interface */
@@ -874,7 +871,7 @@ void GameClient::unloadMap( AsciiString mapName )
 
 	assert( 0 );  // who calls this?
 
-}  // end unloadMap
+}
 
 //-------------------------------------------------------------------------------------------------
 void GameClient::setTimeOfDay( TimeOfDay tod )
@@ -981,7 +978,7 @@ GameMessage::Type GameClient::evaluateContextCommand( Drawable *draw,
 	else
 		return GameMessage::MSG_INVALID;
 
-}  // end evaluateContextCommand
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Get the ray effect data for a drawable */
@@ -990,7 +987,7 @@ void GameClient::getRayEffectData( Drawable *draw, RayEffectData *effectData )
 
 	TheRayEffects->getRayEffectData( draw, effectData );
 
-}  // end getRayEffectData
+}
 
 //-------------------------------------------------------------------------------------------------
 /** remove the drawble from the ray effects sytem if present */
@@ -999,7 +996,7 @@ void GameClient::removeFromRayEffects( Drawable *draw )
 
 	TheRayEffects->deleteRayEffect( draw );
 
-}  // end removeFromRayEffects
+}
 
 /** frees all shadow resources used by this module - used by Options screen.*/
 void GameClient::releaseShadows(void)
@@ -1059,9 +1056,9 @@ void GameClient::preloadAssets( TimeOfDay timeOfDay )
 			// destroy the drawable
 			TheGameClient->destroyDrawable( draw );
 
-		}  // end if
+		}
 
-	}  // end for
+	}
 	GlobalMemoryStatus(&after);
 
 	DEBUG_LOG(("Preloading memory dwAvailPageFile %d --> %d : %d",
@@ -1113,7 +1110,7 @@ void GameClient::preloadAssets( TimeOfDay timeOfDay )
 	DEBUG_LOG(("Preloading memory dwAvailVirtual  %d --> %d : %d",
 		before.dwAvailVirtual, after.dwAvailVirtual, before.dwAvailVirtual - after.dwAvailVirtual));
 
-	const char *textureNames[] = {
+	const char *const textureNames[] = {
 		"ptspruce01.tga",
 		"exrktflame.tga",
 		"cvlimo3_d2.tga",
@@ -1170,7 +1167,7 @@ void GameClient::preloadAssets( TimeOfDay timeOfDay )
 //	preloadTextureNamesGlobalHack2 = preloadTextureNamesGlobalHack;
 //	preloadTextureNamesGlobalHack.clear();
 
-}  // end preloadAssets
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Given a string name, find the drawable TOC entry (if any) associated with it */
@@ -1184,7 +1181,7 @@ GameClient::DrawableTOCEntry *GameClient::findTOCEntryByName( AsciiString name )
 
 	return NULL;
 
-}  // end findTOCEntryByname
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Given a drawable TOC identifier, find the drawable TOC if any */
@@ -1198,7 +1195,7 @@ GameClient::DrawableTOCEntry *GameClient::findTOCEntryById( UnsignedShort id )
 
 	return NULL;
 
-}  // end findTOCEntryById
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Add an drawable TOC entry */
@@ -1211,7 +1208,7 @@ void GameClient::addTOCEntry( AsciiString name, UnsignedShort id )
 	tocEntry.id = id;
 	m_drawableTOC.push_back( tocEntry );
 
-}  // end addTOCEntry
+}
 
 // ------------------------------------------------------------------------------------------------
 static Bool shouldSaveDrawable(const Drawable* draw)
@@ -1266,7 +1263,7 @@ void GameClient::xferDrawableTOC( Xfer *xfer )
 			// add this entry to the TOC
 			addTOCEntry( draw->getTemplate()->getName(), ++tocCount );
 
-		}  // end for obj
+		}
 
 		// xfer entries in the TOC
 		xfer->xferUnsignedInt( &tocCount );
@@ -1286,9 +1283,9 @@ void GameClient::xferDrawableTOC( Xfer *xfer )
 			// xfer the paired id
 			xfer->xferUnsignedShort( &tocEntry->id );
 
-		}  // end for
+		}
 
-	}  // end if
+	}
 	else
 	{
 		AsciiString templateName;
@@ -1310,11 +1307,11 @@ void GameClient::xferDrawableTOC( Xfer *xfer )
 			// add this to the TOC
 			addTOCEntry( templateName, id );
 
-		}  // end for i
+		}
 
-	}  // end else
+	}
 
-}  // end xferDrawableTOC
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Xfer method for Game Client
@@ -1380,7 +1377,7 @@ void GameClient::xfer( Xfer *xfer )
 				DEBUG_CRASH(( "GameClient::xfer - Drawable TOC entry not found for '%s'", draw->getTemplate()->getName().str() ));
 				throw SC_INVALID_DATA;
 
-			}  // end if
+			}
 
 			// xfer toc id entry
 			xfer->xferUnsignedShort( &tocEntry->id );
@@ -1398,9 +1395,9 @@ void GameClient::xfer( Xfer *xfer )
 			// end data block
 			xfer->endBlock();
 
-		}  // end for, draw
+		}
 
-	}  // end if, save
+	}
 	else
 	{
 		UnsignedShort tocID;
@@ -1422,7 +1419,7 @@ void GameClient::xfer( Xfer *xfer )
 				DEBUG_CRASH(( "GameClient::xfer - No TOC entry match for id '%d'", tocID ));
 				throw SC_INVALID_DATA;
 
-			}  // end if
+			}
 
 			// read data block size
 			dataSize = xfer->beginBlock();
@@ -1437,7 +1434,7 @@ void GameClient::xfer( Xfer *xfer )
 				xfer->skip( dataSize );
 				continue;
 
-			}  // end if
+			}
 
 			// read the object ID this drawable is attached to (if any)
 			xfer->xferObjectID( &objectID );
@@ -1458,7 +1455,7 @@ void GameClient::xfer( Xfer *xfer )
 												objectID, thingTemplate->getName().str() ));
 					throw SC_INVALID_DATA;
 
-				}  // end if
+				}
 
 				// get the drawable from the object
 				draw = object->getDrawable();
@@ -1469,7 +1466,7 @@ void GameClient::xfer( Xfer *xfer )
 												object->getTemplate()->getName().str(), object->getID() ));
 					throw SC_INVALID_DATA;
 
-				}  // end if
+				}
 
 				// srj sez: some objects (eg, diguised bombtrucks) may have an "abnormal" drawable. so check.
 				//
@@ -1486,7 +1483,7 @@ void GameClient::xfer( Xfer *xfer )
 					TheGameLogic->bindObjectAndDrawable(object, draw);
 				}
 
-			}  // end if
+			}
 			else
 			{
 
@@ -1504,9 +1501,9 @@ void GameClient::xfer( Xfer *xfer )
 												thingTemplate->getName().str() ));
 					throw SC_INVALID_DATA;
 
-				}  // end if
+				}
 
-			}  // end else
+			}
 
 			// xfer the drawable data
 			xfer->xferSnapshot( draw );
@@ -1514,9 +1511,9 @@ void GameClient::xfer( Xfer *xfer )
 			// end block (not necessary since this is a no-op but symettrically nice)
 			xfer->endBlock();
 
-		}  // end for, i
+		}
 
-	}  // end else, load
+	}
 
 	// xfer the in-game mission briefing history list
 	if (version >= 2)
@@ -1550,7 +1547,7 @@ void GameClient::xfer( Xfer *xfer )
 		}
 	}
 
-}  // end xfer
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Load post process */
@@ -1568,7 +1565,7 @@ void GameClient::loadPostProcess( void )
 		if( draw->getID() >= m_nextDrawableID )
 			m_nextDrawableID = (DrawableID)((UnsignedInt)draw->getID() + 1);
 
-}  // end loadPostProcess
+}
 
 // ------------------------------------------------------------------------------------------------
 /** CRC */
@@ -1576,4 +1573,4 @@ void GameClient::loadPostProcess( void )
 void GameClient::crc( Xfer *xfer )
 {
 
-}  // end crc
+}

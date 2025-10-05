@@ -121,6 +121,7 @@ public:
 	inline UnsignedInt getFrameRate(void) { return m_frameRate; }
 	UnsignedInt getPacketArrivalCushion(void);								///< Returns the smallest packet arrival cushion since this was last called.
 	Bool isFrameDataReady( void );
+	virtual Bool isStalling();
 	void parseUserList( const GameInfo *game );
 	void startGame(void);																			///< Sets the network game frame counter to -1
 
@@ -219,6 +220,7 @@ protected:
 	__int64 m_nextFrameTime;														///< When did we execute the last frame?  For slugging the GameLogic...
 
 	Bool m_frameDataReady;																		///< Is the frame data for the next frame ready to be executed by TheGameLogic?
+	Bool m_isStalling;
 
 	// CRC info
 	Bool m_checkCRCsThisFrame;
@@ -281,6 +283,7 @@ Network::Network()
 	m_checkCRCsThisFrame = FALSE;
 	m_didSelfSlug = FALSE;
 	m_frameDataReady = FALSE;
+	m_isStalling = FALSE;
 	m_sawCRCMismatch = FALSE;
 	//
 
@@ -346,6 +349,7 @@ void Network::init()
 	m_lastExecutionFrame = m_runAhead - 1; // subtract 1 since we're starting on frame 0
 	m_lastFrameCompleted = m_runAhead - 1; // subtract 1 since we're starting on frame 0
 	m_frameDataReady = FALSE;
+	m_isStalling = FALSE;
 	m_didSelfSlug = FALSE;
 
 	m_localStatus = NETLOCALSTATUS_PREGAME;
@@ -714,7 +718,12 @@ void Network::processDestroyPlayerCommand(NetDestroyPlayerCommandMsg *msg)
 	if (pPlayer)
 	{
 		GameMessage *msg = newInstance(GameMessage)(GameMessage::MSG_SELF_DESTRUCT);
-		msg->appendBooleanArgument(FALSE);
+#if RETAIL_COMPATIBLE_CRC
+		const Bool transferAssets = FALSE;
+#else
+		const Bool transferAssets = TRUE;
+#endif
+		msg->appendBooleanArgument(transferAssets);
 		msg->friend_setPlayerIndex(pPlayer->getPlayerIndex());
 		TheCommandList->appendMessage(msg);
 	}
@@ -735,6 +744,7 @@ void Network::update( void )
 // 4. If all commands are there, put that frame's commands on TheCommandList.
 //
 	m_frameDataReady = FALSE;
+	m_isStalling = FALSE;
 
 #if defined(RTS_DEBUG)
 	if (m_networkOn == FALSE) {
@@ -772,6 +782,11 @@ void Network::update( void )
 			RelayCommandsToCommandList(TheGameLogic->getFrame());	// Put the commands for the next frame on TheCommandList.
 			m_frameDataReady = TRUE; // Tell the GameEngine to run the commands for the new frame.
 		}
+	}
+	else {
+		__int64 curTime;
+		QueryPerformanceCounter((LARGE_INTEGER *)&curTime);
+		m_isStalling = curTime >= m_nextFrameTime;
 	}
 }
 
@@ -858,6 +873,11 @@ Bool Network::timeForNewFrame() {
  */
 Bool Network::isFrameDataReady() {
 	return (m_frameDataReady || (m_localStatus == NETLOCALSTATUS_LEFT));
+}
+
+Bool Network::isStalling()
+{
+	return m_isStalling;
 }
 
 /**

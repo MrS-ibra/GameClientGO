@@ -216,7 +216,7 @@ class PathfindCellInfo
 	friend class PathfindCell;
 public:
 #if RETAIL_COMPATIBLE_PATHFINDING
-	static void forceCleanPathFindInfoCells(void);
+	static void forceCleanPathFindCellInfos(void);
 #endif
 	static void allocateCellInfos(void);
 	static void releaseCellInfos(void);
@@ -839,6 +839,8 @@ protected:
 	static LocomotorSurfaceTypeMask validLocomotorSurfacesForCellType(PathfindCell::CellType t);
 
 	void checkChangeLayers(PathfindCell *parentCell);
+
+	bool checkCellOutsideExtents(ICoord2D& cell);
 
 #if defined(RTS_DEBUG)
 	void doDebugIcons(void) ;

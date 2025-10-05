@@ -1185,7 +1185,7 @@ static void StartPressed(void)
 		}
 	}
 
-}//void StartPressed(void)
+}
 
 
 //-------------------------------------------------------------------------------------------------
@@ -1866,17 +1866,15 @@ void WOLGameSetupMenuInit( WindowLayout *layout, void *userData )
 			TheShell->push("Menus/WOLCustomLobby.wnd", TRUE);
 		}
 
-		
 		return;
 	}
 
-	// TODO_NGMP
-	//TheGameSpyInfo->setCurrentGroupRoom(0);
+#if !defined(GENERALS_ONLINE)
+	TheGameSpyInfo->setCurrentGroupRoom(0);
+#endif
 
-	if (TheNAT != NULL) {
-		delete TheNAT;
-		TheNAT = NULL;
-	}
+	delete TheNAT;
+	TheNAT = NULL;
 
 	nextScreen = NULL;
 	buttonPushed = false;
@@ -2058,7 +2056,8 @@ void WOLGameSetupMenuInit( WindowLayout *layout, void *userData )
 	raiseMessageBoxes = true;
 	TheTransitionHandler->setGroup("GameSpyGameOptionsMenuFade");
 
-	// NGMP: Did we just enter a lobby with modified camera height?
+#if defined(GENERALS_ONLINE)
+// NGMP: Did we just enter a lobby with modified camera height?
 	// if (pLobbyInterface->IsInLobby())
 	{
 		LobbyEntry& theLobby = pLobbyInterface->GetCurrentLobby();
@@ -2086,7 +2085,8 @@ void WOLGameSetupMenuInit( WindowLayout *layout, void *userData )
 
 		}
 	}
-}// void WOLGameSetupMenuInit( WindowLayout *layout, void *userData )
+#endif
+}
 
 //-------------------------------------------------------------------------------------------------
 /** This is called when a shutdown is complete for this menu */
@@ -2126,7 +2126,7 @@ static void shutdownComplete( WindowLayout *layout )
 
 	nextScreen = NULL;
 
-}  // end if
+}
 
 //-------------------------------------------------------------------------------------------------
 /** GameSpy Game Options menu shutdown method */
@@ -2177,13 +2177,13 @@ void WOLGameSetupMenuShutdown( WindowLayout *layout, void *userData )
 		shutdownComplete( layout );
 		return;
 
-	}  //end if
+	}
 
 	TheShell->reverseAnimatewindow();
 
 	RaiseGSMessageBox();
 	TheTransitionHandler->reverse("GameSpyGameOptionsMenuFade");
-}  // void WOLGameSetupMenuShutdown( WindowLayout *layout, void *userData )
+}
 
 static void fillPlayerInfo(const PeerResponse *resp, PlayerInfo *info)
 {
@@ -3225,7 +3225,7 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 
 
 	}
-}// void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Lan Game Options menu input callback */
@@ -3270,16 +3270,16 @@ WindowMsgHandledType WOLGameSetupMenuInput( GameWindow *window, UnsignedInt msg,
 					{
 						TheWindowManager->winSendSystemMsg( window, GBM_SELECTED,
 																							(WindowMsgData)buttonBack, buttonBackID );
-					}  // end if
+					}
 					// don't let key fall through anywhere else
 					return MSG_HANDLED;
-				}  // end escape
-			}  // end switch( key )
-		}  // end char
-	}  // end switch( msg )
+				}
+			}
+		}
+	}
 	*/
 	return MSG_IGNORED;
-}//WindowMsgHandledType WOLGameSetupMenuInput( GameWindow *window, UnsignedInt msg,
+}
 
 
 // Slash commands -------------------------------------------------------------------------
@@ -3586,7 +3586,7 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 			{
 				buttonCommunicatorID = NAMEKEY("GameSpyGameOptionsMenu.wnd:ButtonCommunicator");
 				break;
-			} // case GWM_DESTROY:
+			}
 		//-------------------------------------------------------------------------------------------------
 		case GWM_DESTROY:
 			{
@@ -3594,7 +3594,7 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 					windowMap->winSetUserData(NULL);
 
 				break;
-			} // case GWM_DESTROY:
+			}
 		//-------------------------------------------------------------------------------------------------
 		case GWM_INPUT_FOCUS:
 			{
@@ -3603,7 +3603,7 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 					*(Bool *)mData2 = TRUE;
 
 				return MSG_HANDLED;
-			}//case GWM_INPUT_FOCUS:
+			}
 		//-------------------------------------------------------------------------------------------------
 		case GCM_SELECTED:
 		{
@@ -3715,7 +3715,7 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 					}
 				}
 			}
-			}// case GCM_SELECTED:
+			}
 		//-------------------------------------------------------------------------------------------------
 		case GBM_SELECTED:
 			{
@@ -3739,7 +3739,7 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 					
 					PopBackToLobby();
 
-				} //if ( controlID == buttonBack )
+				}
 				else if ( controlID == buttonCommunicatorID )
 				{
 					GameSpyToggleOverlay( GSOVERLAY_BUDDY );
@@ -3762,7 +3762,7 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 							pLobbyInterface->SendChatMessageToCurrentLobby(txtInput, false);
 						}
 					}
-				} //if ( controlID == buttonEmote )
+				}
 				else if ( controlID == buttonSelectMapID )
 				{
 					WOLMapSelectLayout = TheWindowManager->winCreateLayout( "Menus/WOLMapSelectMenu.wnd" );
@@ -3869,7 +3869,7 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 
 
 				break;
-			}// case GBM_SELECTED:
+			}
 		//-------------------------------------------------------------------------------------------------
 		case GBM_SELECTED_RIGHT:
    		{
@@ -3943,15 +3943,15 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 						}
 					}
 
-				}// if ( controlID == textEntryChatID )
+				}
 				break;
 			}
 		//-------------------------------------------------------------------------------------------------
 		default:
 			return MSG_IGNORED;
-	}//Switch
+	}
 	return MSG_HANDLED;
-}//WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg,
+}
 
 
 void OnKickedFromLobby()

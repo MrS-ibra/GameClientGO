@@ -36,13 +36,13 @@
 // can be non-XOR'd.
 
 // This assumes the buf is a multiple of 4 bytes.  Extra is not encrypted.
-static inline void encryptBuf( unsigned char *buf, Int len )
+static inline void encryptBuf(unsigned char* buf, Int len)
 {
 	UnsignedInt mask = 0x0000Fade;
 
-	UnsignedInt *uintPtr = (UnsignedInt *) (buf);
+	UnsignedInt* uintPtr = (UnsignedInt*)(buf);
 
-	for (int i=0 ; i<len/4 ; i++) {
+	for (int i = 0; i < len / 4; i++) {
 		*uintPtr = (*uintPtr) ^ mask;
 		*uintPtr = htonl(*uintPtr);
 		uintPtr++;
@@ -51,13 +51,13 @@ static inline void encryptBuf( unsigned char *buf, Int len )
 }
 
 // This assumes the buf is a multiple of 4 bytes.  Extra is not encrypted.
-static inline void decryptBuf( unsigned char *buf, Int len )
+static inline void decryptBuf(unsigned char* buf, Int len)
 {
 	UnsignedInt mask = 0x0000Fade;
 
-	UnsignedInt *uintPtr = (UnsignedInt *) (buf);
+	UnsignedInt* uintPtr = (UnsignedInt*)(buf);
 
-	for (int i=0 ; i<len/4 ; i++) {
+	for (int i = 0; i < len / 4; i++) {
 		*uintPtr = htonl(*uintPtr);
 		*uintPtr = (*uintPtr) ^ mask;
 		uintPtr++;
@@ -77,7 +77,7 @@ Transport::~Transport(void)
 
 }
 
-Bool Transport::isGeneralsPacket( TransportMessage *msg )
+Bool Transport::isGeneralsPacket(TransportMessage* msg)
 {
 	if (!msg)
 		return false;
@@ -86,8 +86,8 @@ Bool Transport::isGeneralsPacket( TransportMessage *msg )
 		return false;
 
 	CRC crc;
-//	crc.computeCRC( (unsigned char *)msg->data, msg->length );
-	crc.computeCRC( (unsigned char *)(&(msg->header.magic)), msg->length + sizeof(TransportMessageHeader) - sizeof(UnsignedInt) );
+	//	crc.computeCRC( (unsigned char *)msg->data, msg->length );
+	crc.computeCRC((unsigned char*)(&(msg->header.magic)), msg->length + sizeof(TransportMessageHeader) - sizeof(UnsignedInt));
 
 	if (crc.get() != msg->header.crc)
 		return false;
@@ -99,71 +99,68 @@ Bool Transport::isGeneralsPacket( TransportMessage *msg )
 }
 
 // Statistics ---------------------------------------------------
-Real Transport::getIncomingBytesPerSecond( void )
+Real Transport::getIncomingBytesPerSecond(void)
 {
 	Real val = 0.0;
-	for (int i=0; i<MAX_TRANSPORT_STATISTICS_SECONDS; ++i)
+	for (int i = 0; i < MAX_TRANSPORT_STATISTICS_SECONDS; ++i)
 	{
 		if (i != m_statisticsSlot)
 			val += m_incomingBytes[i];
 	}
-	return val / (MAX_TRANSPORT_STATISTICS_SECONDS-1);
+	return val / (MAX_TRANSPORT_STATISTICS_SECONDS - 1);
 }
 
-Real Transport::getIncomingPacketsPerSecond( void )
+Real Transport::getIncomingPacketsPerSecond(void)
 {
 	Real val = 0.0;
-	for (int i=0; i<MAX_TRANSPORT_STATISTICS_SECONDS; ++i)
+	for (int i = 0; i < MAX_TRANSPORT_STATISTICS_SECONDS; ++i)
 	{
 		if (i != m_statisticsSlot)
 			val += m_incomingPackets[i];
 	}
-	return val / (MAX_TRANSPORT_STATISTICS_SECONDS-1);
+	return val / (MAX_TRANSPORT_STATISTICS_SECONDS - 1);
 }
 
-Real Transport::getOutgoingBytesPerSecond( void )
+Real Transport::getOutgoingBytesPerSecond(void)
 {
 	Real val = 0.0;
-	for (int i=0; i<MAX_TRANSPORT_STATISTICS_SECONDS; ++i)
+	for (int i = 0; i < MAX_TRANSPORT_STATISTICS_SECONDS; ++i)
 	{
 		if (i != m_statisticsSlot)
 			val += m_outgoingBytes[i];
 	}
-	return val / (MAX_TRANSPORT_STATISTICS_SECONDS-1);
+	return val / (MAX_TRANSPORT_STATISTICS_SECONDS - 1);
 }
 
-Real Transport::getOutgoingPacketsPerSecond( void )
+Real Transport::getOutgoingPacketsPerSecond(void)
 {
 	Real val = 0.0;
-	for (int i=0; i<MAX_TRANSPORT_STATISTICS_SECONDS; ++i)
+	for (int i = 0; i < MAX_TRANSPORT_STATISTICS_SECONDS; ++i)
 	{
 		if (i != m_statisticsSlot)
 			val += m_outgoingPackets[i];
 	}
-	return val / (MAX_TRANSPORT_STATISTICS_SECONDS-1);
+	return val / (MAX_TRANSPORT_STATISTICS_SECONDS - 1);
 }
 
-Real Transport::getUnknownBytesPerSecond( void )
+Real Transport::getUnknownBytesPerSecond(void)
 {
 	Real val = 0.0;
-	for (int i=0; i<MAX_TRANSPORT_STATISTICS_SECONDS; ++i)
+	for (int i = 0; i < MAX_TRANSPORT_STATISTICS_SECONDS; ++i)
 	{
 		if (i != m_statisticsSlot)
 			val += m_unknownBytes[i];
 	}
-	return val / (MAX_TRANSPORT_STATISTICS_SECONDS-1);
+	return val / (MAX_TRANSPORT_STATISTICS_SECONDS - 1);
 }
 
-Real Transport::getUnknownPacketsPerSecond( void )
+Real Transport::getUnknownPacketsPerSecond(void)
 {
 	Real val = 0.0;
-	for (int i=0; i<MAX_TRANSPORT_STATISTICS_SECONDS; ++i)
+	for (int i = 0; i < MAX_TRANSPORT_STATISTICS_SECONDS; ++i)
 	{
 		if (i != m_statisticsSlot)
 			val += m_unknownPackets[i];
 	}
-	return val / (MAX_TRANSPORT_STATISTICS_SECONDS-1);
+	return val / (MAX_TRANSPORT_STATISTICS_SECONDS - 1);
 }
-
-
-

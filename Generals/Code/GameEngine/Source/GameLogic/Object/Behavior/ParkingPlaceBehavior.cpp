@@ -351,9 +351,13 @@ Bool ParkingPlaceBehavior::reserveSpace(ObjectID id, Real parkingOffset, Parking
 
 		for (std::vector<RunwayInfo>::iterator it = m_runways.begin(); it != m_runways.end(); ++it)
 		{
-			if (it->m_inUseBy == id && it->m_wasInLine)
+			if (it->m_inUseBy == id)
 			{
-				info->runwayStart = info->runwayPrep;
+				if (it->m_wasInLine)
+				{
+					info->runwayStart = info->runwayPrep;
+				}
+				break;
 			}
 		}
 
@@ -381,6 +385,7 @@ void ParkingPlaceBehavior::releaseSpace(ObjectID id)
 			it->m_reservedForExit = false;
 			if (pu)
 				pu->setHoldDoorOpen(it->m_door, false);
+			break;
 		}
 	}
 }
@@ -400,11 +405,15 @@ void ParkingPlaceBehavior::transferRunwayReservationToNextInLineForTakeoff(Objec
 	purgeDead();
 	for (std::vector<RunwayInfo>::iterator it = m_runways.begin(); it != m_runways.end(); ++it)
 	{
-		if (it->m_inUseBy == id && it->m_nextInLineForTakeoff != INVALID_ID)
+		if (it->m_inUseBy == id)
 		{
-			it->m_inUseBy = it->m_nextInLineForTakeoff;
-			it->m_wasInLine = true;
-			it->m_nextInLineForTakeoff = INVALID_ID;
+			if (it->m_nextInLineForTakeoff != INVALID_ID)
+			{
+				it->m_inUseBy = it->m_nextInLineForTakeoff;
+				it->m_wasInLine = true;
+				it->m_nextInLineForTakeoff = INVALID_ID;
+			}
+			break;
 		}
 	}
 }
@@ -825,7 +834,7 @@ void ParkingPlaceBehavior::crc( Xfer *xfer )
 	// extend base class
 	UpdateModule::crc( xfer );
 
-}  // end crc
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Xfer method
@@ -867,9 +876,9 @@ void ParkingPlaceBehavior::xfer( Xfer *xfer )
 			// reserved for exit
 			xfer->xferBool( &((*it).m_reservedForExit) );
 
-		}  // end for, it
+		}
 
-	}  // end if, save
+	}
 	else if( xfer->getXferMode() == XFER_LOAD )
 	{
 		ObjectID objectID;
@@ -895,11 +904,11 @@ void ParkingPlaceBehavior::xfer( Xfer *xfer )
 				(*it).m_reservedForExit = reservedForExit;
 				++it;
 
-			}  // end if
+			}
 
-		}  // end for, i
+		}
 
-	}  // end else, load
+	}
 
 	// runways cound and info
 	UnsignedByte runwaysCount = m_runways.size();
@@ -917,9 +926,9 @@ void ParkingPlaceBehavior::xfer( Xfer *xfer )
 			xfer->xferObjectID( &((*it).m_nextInLineForTakeoff) );
 			xfer->xferBool( &((*it).m_wasInLine) );
 
-		}  // end for, it
+		}
 
-	}  // end if, save
+	}
 	else if( xfer->getXferMode() == XFER_LOAD )
 	{
 		// read all elements
@@ -946,11 +955,11 @@ void ParkingPlaceBehavior::xfer( Xfer *xfer )
 				(*it).m_wasInLine = wasInLine;
 				++it;
 
-			}  // end if
+			}
 
-		}  // end for, i
+		}
 
-	}  // end else, load
+	}
 
 	// healees
 	UnsignedByte healCount = m_healing.size();
@@ -967,9 +976,9 @@ void ParkingPlaceBehavior::xfer( Xfer *xfer )
 			xfer->xferObjectID( &((*it).m_gettingHealedID) );
 			xfer->xferUnsignedInt( &((*it).m_healStartFrame) );
 
-		}  // end for, it
+		}
 
-	}  // end if, save
+	}
 	else if( xfer->getXferMode() == XFER_LOAD )
 	{
 		// read all elements
@@ -983,9 +992,9 @@ void ParkingPlaceBehavior::xfer( Xfer *xfer )
 			xfer->xferUnsignedInt( &info.m_healStartFrame );
 			m_healing.push_back(info);
 
-		}  // end for, i
+		}
 
-	}  // end else, load
+	}
 
 	if (version >= 2)
 	{
@@ -1006,7 +1015,7 @@ void ParkingPlaceBehavior::xfer( Xfer *xfer )
 		}
 	}
 
-}  // end xfer
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Load post process */
@@ -1021,4 +1030,4 @@ void ParkingPlaceBehavior::loadPostProcess( void )
 	// make sure we are awake... old save games let us sleep
 	//setWakeFrame(getObject(), UPDATE_SLEEP_NONE);
 
-}  // end loadPostProcess
+}

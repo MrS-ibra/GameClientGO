@@ -254,7 +254,7 @@ BOOL ObjectOptions::OnInitDialog()
 		Color cc = tTemplate->getDisplayColor();
 		pMap->setColor(cc);
 
-	}  // end for tTemplate
+	}
 
 #if 0		// Lights are not working right now.
 	{
@@ -440,7 +440,7 @@ HTREEITEM ObjectOptions::_FindOrDont(const char* pLabel, HTREEITEM startPoint)
 		} else {
 			// add the first child, the others will be caught by the adding of the siblings
 			itemsToEx.push_back(m_objectTreeView.GetChildItem(hItem));
-		} // Always add the first sibling, if it exists
+		}
 
 		if (m_objectTreeView.GetNextSiblingItem(hItem)) {
 			itemsToEx.push_back(m_objectTreeView.GetNextSiblingItem(hItem));
@@ -498,9 +498,9 @@ void ObjectOptions::addObject( MapObject *mapObject, const char *pPath,
 				parent = findOrAdd( parent, EditorSortingNames[ i ] );
 				break;  // exit for
 
-			}  // end if
+			}
 
-		}  // end for i
+		}
 
 		if( i == ES_NUM_SORTING_TYPES )
 			parent = findOrAdd( parent, "UNSORTED" );
@@ -508,7 +508,7 @@ void ObjectOptions::addObject( MapObject *mapObject, const char *pPath,
 		// the leaf name is the name of the template
 		leafName = thingTemplate->getName().str();
 
-	}  // end if
+	}
 	else
 	{
 
@@ -534,9 +534,9 @@ void ObjectOptions::addObject( MapObject *mapObject, const char *pPath,
 			buffer[ i ] = 0;
 			leafName = buffer;
 
-		}  // end if
+		}
 
-	}  // end else if
+	}
 
 	// add to the tree view
 	if( leafName )

@@ -493,10 +493,8 @@ void DX8Wrapper::Do_Onetime_Device_Dependent_Shutdowns(void)
 	TheDX8MeshRenderer.Shutdown();
 	MissingTexture::_Deinit();
 
-	if (CurrentCaps) {
-		delete CurrentCaps;
-		CurrentCaps=NULL;
-	}
+	delete CurrentCaps;
+	CurrentCaps=NULL;
 
 }
 
@@ -2373,7 +2371,14 @@ IDirect3DSurface8 * DX8Wrapper::_Create_DX8_Surface(unsigned int width, unsigned
 	// Paletted surfaces not supported!
 	WWASSERT(format!=D3DFMT_P8);
 
-	DX8CALL(CreateImageSurface(width, height, WW3DFormat_To_D3DFormat(format), &surface));
+	HRESULT hr = DX8Wrapper::_Get_D3D_Device8()->CreateImageSurface(width, height, WW3DFormat_To_D3DFormat(format), &surface);
+	number_of_DX8_calls++;
+	
+	if (FAILED(hr)) {
+		// Log the error and return NULL to indicate failure
+		Non_Fatal_Log_DX8_ErrorCode(hr, __FILE__, __LINE__);
+		return NULL;
+	}
 
 	return surface;
 }

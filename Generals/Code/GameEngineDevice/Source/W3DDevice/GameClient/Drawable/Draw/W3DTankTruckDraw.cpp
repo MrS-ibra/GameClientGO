@@ -515,9 +515,9 @@ void W3DTankTruckDraw::doDrawModule(const Matrix3D* transformMtx)
 	if (!TheGlobalData->m_showClientPhysics)
 		return;
 
- 	Bool frozen = TheTacticalView->isTimeFrozen() && !TheTacticalView->isCameraMovementFinished();
- 	frozen = frozen || TheScriptEngine->isTimeFrozenDebug() || TheScriptEngine->isTimeFrozenScript();
-	if (frozen)
+	// TheSuperHackers @tweak Update the draw on every WW Sync only.
+	// All calculations are originally catered to a 30 fps logic step.
+	if (WW3D::Get_Sync_Frame_Time() == 0)
 		return;
 
 	const Real ACCEL_THRESHOLD = 0.01f;
@@ -755,7 +755,7 @@ void W3DTankTruckDraw::crc( Xfer *xfer )
 	// extend base class
 	W3DModelDraw::crc( xfer );
 
-}  // end crc
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Xfer method
@@ -775,7 +775,7 @@ void W3DTankTruckDraw::xfer( Xfer *xfer )
 
 	// John A and Mark W say there is no data to save here
 
-}  // end xfer
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Load post process */
@@ -789,4 +789,4 @@ void W3DTankTruckDraw::loadPostProcess( void )
 	// toss any existing ones (no need to re-create; we'll do that on demand)
 	tossEmitters();
 
-}  // end loadPostProcess
+}
