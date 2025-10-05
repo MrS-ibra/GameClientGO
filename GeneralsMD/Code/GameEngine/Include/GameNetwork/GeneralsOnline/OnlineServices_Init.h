@@ -3,6 +3,7 @@
 #include "NGMP_include.h"
 
 #include <thread>
+#include <memory>
 
 class HTTPManager;
 
@@ -326,7 +327,7 @@ public:
 		return m_pOnlineServicesManager;
 	}
 
-	static WebSocket* GetWebSocket()
+	static std::shared_ptr<WebSocket> GetWebSocket()
 	{
 		if (m_pOnlineServicesManager != nullptr)
 		{
@@ -407,16 +408,13 @@ public:
 			m_pHTTPManager = nullptr;
 		}
 
-		if (m_pWebSocket != nullptr)
-		{
-			delete m_pWebSocket;
-			m_pWebSocket = nullptr;
-		}
+		// Reset shared_ptr, which will delete WebSocket only when all references are released
+		m_pWebSocket.reset();
 	}
 
 	void StartVersionCheck(std::function<void(bool bSuccess, bool bNeedsUpdate)> fnCallback);
 
-	WebSocket* Internal_GetWebSocket() const { return m_pWebSocket; }
+	std::shared_ptr<WebSocket> Internal_GetWebSocket() const { return m_pWebSocket; }
 	HTTPManager* GetHTTPManager() const { return m_pHTTPManager; }
 
 	void CancelUpdate();
@@ -482,7 +480,7 @@ private:
 
 	HTTPManager* m_pHTTPManager = nullptr;
 
-	WebSocket* m_pWebSocket = nullptr;
+	std::shared_ptr<WebSocket> m_pWebSocket;
 
 	std::string m_strMOTD;
 

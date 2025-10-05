@@ -85,8 +85,8 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 				if (bShouldRetry)
 				{
 					NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][DISCONNECT HANDLER] Retrying...");
-					WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();
-					if (pWS != nullptr)
+					std::shared_ptr<WebSocket> pWS = NGMP_OnlineServicesManager::GetWebSocket();
+					if (pWS)
 					{
 						NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
 						NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
@@ -369,8 +369,8 @@ public:
 	// Send the signal.
 	void Send(int64_t target_user_id, std::vector<uint8_t>& vecPayload)
 	{
-		WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();
-		if (pWS != nullptr)
+		std::shared_ptr<WebSocket> pWS = NGMP_OnlineServicesManager::GetWebSocket();
+		if (pWS)
 		{
 			if (!pWS->AcquireLock())
 			{
@@ -425,8 +425,8 @@ public:
 
 	virtual void Poll() override
 	{
-		WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();
-		if (pWS != nullptr)
+		std::shared_ptr<WebSocket> pWS = NGMP_OnlineServicesManager::GetWebSocket();
+		if (pWS)
 		{
 			if (!pWS->AcquireLock())
 			{

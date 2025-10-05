@@ -245,9 +245,11 @@ void NGMP_OnlineServicesManager::Shutdown()
 		m_pHTTPManager->Shutdown();
 	}
 
-	if (m_pWebSocket != nullptr)
+	if (m_pWebSocket)
 	{
 		m_pWebSocket->Shutdown();
+		// Reset shared_ptr, which will delete WebSocket only when all references are released
+		m_pWebSocket.reset();
 	}
 
 	ShutdownSentry();
@@ -607,7 +609,7 @@ void NGMP_OnlineServicesManager::OnLogin(bool bSuccess, const char* szWSAddr)
 	{
 		// connect to WS
 		// TODO_NGMP: Handle WS conn failure
-		m_pWebSocket = new WebSocket();
+		m_pWebSocket = std::make_shared<WebSocket>();
 
 		m_pWebSocket->Connect(szWSAddr);
 
