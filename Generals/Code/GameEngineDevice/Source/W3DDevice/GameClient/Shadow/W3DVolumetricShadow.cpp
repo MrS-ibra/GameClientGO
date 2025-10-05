@@ -1662,6 +1662,9 @@ void W3DVolumetricShadow::Update()
 	if( m_geometry == NULL)
 		return;
 
+	if( m_robj == NULL)
+		return;
+
 	//
 	// for now we will just rebuild a shadow volume every so often, this
 	// should be changed to be built only when the light angle sufficiently
@@ -1732,6 +1735,9 @@ void W3DVolumetricShadow::Update()
 void W3DVolumetricShadow::updateVolumes(Real zoffset)
 {
 	Int i,j;
+
+	if( m_robj == NULL)
+		return;
 
 	HLodClass *hlod=(HLodClass *)m_robj;
 	MeshClass *mesh;
