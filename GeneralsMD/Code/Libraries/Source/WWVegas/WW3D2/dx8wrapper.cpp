@@ -708,6 +708,7 @@ void DX8Wrapper::Release_Device(void)
 			DX8CALL(SetTexture(a,NULL));
 		}
 
+		DX8CALL(SetVertexShader(0));	//unbind vertex shader before unbinding vertex buffer
 		DX8CALL(SetStreamSource(0, NULL, 0));	//release reference count on last rendered vertex buffer
 		DX8CALL(SetIndices(NULL,0));	//release reference count on last rendered index buffer
 
