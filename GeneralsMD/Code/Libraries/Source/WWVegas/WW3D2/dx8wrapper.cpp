@@ -673,9 +673,43 @@ bool DX8Wrapper::Reset_Device(bool reload_assets)
 		memset(Vertex_Shader_Constants,0,sizeof(Vector4)*MAX_VERTEX_SHADER_CONSTANTS);
 		memset(Pixel_Shader_Constants,0,sizeof(Vector4)*MAX_PIXEL_SHADER_CONSTANTS);
 
+		// TheSuperHackers @bugfix 01/2025
+		// Add delay after releasing resources to allow GPU to complete pending operations.
+		// This mitigates race conditions in the D3D9-to-D3D12 translation layer on Windows 10+
+		// where command lists may be reset before GPU execution completes.
+		ThreadClass::Sleep_Ms(50);
+
 		HRESULT hr=_Get_D3D_Device8()->TestCooperativeLevel();
 		if (hr != D3DERR_DEVICELOST )
-		{	DX8CALL_HRES(Reset(&_PresentParameters),hr)
+		{
+			// TheSuperHackers @bugfix 01/2025
+			// Retry device reset with increasing delays to handle transient synchronization failures
+			// in the D3D translation layer when converting D3D8 calls to D3D12.
+			const int MAX_RESET_ATTEMPTS = 3;
+			for (int attempt = 0; attempt < MAX_RESET_ATTEMPTS; ++attempt)
+			{
+				// Add delay before reset attempt to allow translation layer synchronization
+				if (attempt > 0)
+				{
+					int delay = 50 * (attempt + 1); // 100ms, 150ms
+					WWDEBUG_SAY(("Device reset attempt %d failed, waiting %dms before retry", attempt, delay));
+					ThreadClass::Sleep_Ms(delay);
+				}
+
+				DX8CALL_HRES(Reset(&_PresentParameters),hr)
+				if (hr == D3D_OK)
+				{
+					break; // Reset succeeded
+				}
+
+				// If this was the last attempt, fail
+				if (attempt == MAX_RESET_ATTEMPTS - 1)
+				{
+					WWDEBUG_SAY(("Device reset failed after %d attempts", MAX_RESET_ATTEMPTS));
+					return false;
+				}
+			}
+
 			if (hr != D3D_OK)
 				return false;	//reset failed.
 		}
