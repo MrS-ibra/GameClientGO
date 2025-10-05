@@ -625,6 +625,8 @@ void TerrainTracksRenderObjClassSystem::ReleaseResources(void)
 {
 	REF_PTR_RELEASE(m_indexBuffer);
 	REF_PTR_RELEASE(m_vertexBuffer);
+	// Reset edge count to prevent flush() from attempting to use released resources
+	m_edgesToFlush = 0;
 	// Note - it is ok to not release the material, as it is a w3d object that
 	// has no dx8 resources. jba.
 }
@@ -823,8 +825,23 @@ Try improving the fit to vertical surfaces like cliffs.
 	//check if there is anything to draw and fill vertex buffer
 	if (m_edgesToFlush >= 2)
 	{
+		// Validate that vertex buffer exists before attempting to lock it
+		if (!m_vertexBuffer)
+		{
+			m_edgesToFlush = 0;
+			return;
+		}
+		
 		DX8VertexBufferClass::WriteLockClass lockVtxBuffer(m_vertexBuffer);
 		VertexFormatXYZDUV1 *verts = (VertexFormatXYZDUV1*)lockVtxBuffer.Get_Vertex_Array();
+		
+		// Validate that vertex array lock succeeded before writing to it
+		if (!verts)
+		{
+			m_edgesToFlush = 0;
+			return;
+		}
+		
 		trackStartIndex=0;
 
 		mod=m_usedModules;
