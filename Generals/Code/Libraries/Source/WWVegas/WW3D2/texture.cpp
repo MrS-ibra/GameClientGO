@@ -542,12 +542,10 @@ void TextureClass::Apply_Null(unsigned int stage)
 
 void TextureClass::Apply_New_Surface(bool initialized)
 {
-	if (D3DTexture) D3DTexture->Release();
-	D3DTexture=TextureLoadTask->Peek_D3D_Texture();
-	D3DTexture->AddRef();
+	Set_D3D_Base_Texture(TextureLoadTask->Peek_D3D_Texture());
 	if (initialized) Initialized=true;
 
-	WWASSERT(D3DTexture);
+	WWASSERT(Peek_D3D_Base_Texture());
 	IDirect3DSurface8* surface;
 	DX8_ErrorCode(Peek_D3D_Texture()->GetSurfaceLevel(0,&surface));
 	D3DSURFACE_DESC d3d_desc;
