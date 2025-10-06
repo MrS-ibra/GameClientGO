@@ -102,7 +102,7 @@ static const char *gadgetsToHide[] =
 	"ButtonStart",
 	"StaticTextMapPreview",
 
-	NULL // keep this last
+	NULL
 };
 static const char *perPlayerGadgetsToHide[] =
 {
@@ -110,7 +110,7 @@ static const char *perPlayerGadgetsToHide[] =
 	"ComboBoxColor",
 	"ComboBoxPlayerTemplate",
 	//"ButtonStartPosition",
-	NULL // keep this last
+	NULL
 };
 void positionStartSpots( AsciiString mapName, GameWindow *buttonMapStartPositions[], GameWindow *mapWindow);
 
@@ -209,7 +209,7 @@ void WOLMapSelectMenuInit( WindowLayout *layout, void *userData )
 		populateMapListbox( mapList, usesSystemMapDir, TRUE, TheNGMPGame->getMap() );
 	}
 
-}  // end WOLMapSelectMenuInit
+}
 
 //-------------------------------------------------------------------------------------------------
 /** MapSelect menu shutdown method */
@@ -224,7 +224,7 @@ void WOLMapSelectMenuShutdown( WindowLayout *layout, void *userData )
 	// our shutdown is complete
 	TheShell->shutdownComplete( layout );
 
-}  // end WOLMapSelectMenuShutdown
+}
 
 //-------------------------------------------------------------------------------------------------
 /** MapSelect menu update method */
@@ -240,7 +240,7 @@ void WOLMapSelectMenuUpdate( WindowLayout *layout, void *userData )
 
 	// No update because the game setup screen is up at the same
 	// time and it does the update for us...
-}  // end WOLMapSelectMenuUpdate
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Map select menu input callback */
@@ -278,22 +278,22 @@ WindowMsgHandledType WOLMapSelectMenuInput( GameWindow *window, UnsignedInt msg,
 						TheWindowManager->winSendSystemMsg( window, GBM_SELECTED,
 																								(WindowMsgData)button, buttonID );
 
-					}  // end if
+					}
 
 					// don't let key fall through anywhere else
 					return MSG_HANDLED;
 
-				}  // end escape
+				}
 
-			}  // end switch( key )
+			}
 
-		}  // end char
+		}
 
-	}  // end switch( msg )
+	}
 
 	return MSG_IGNORED;
 
-}  // end WOLMapSelectMenuInput
+}
 void WOLPositionStartSpots( void );
 
 //-------------------------------------------------------------------------------------------------
@@ -311,7 +311,7 @@ WindowMsgHandledType WOLMapSelectMenuSystem( GameWindow *window, UnsignedInt msg
 		{
 			break;
 
-		}  // end create
+		}
 
 		//---------------------------------------------------------------------------------------------
 		case GWM_DESTROY:
@@ -319,7 +319,7 @@ WindowMsgHandledType WOLMapSelectMenuSystem( GameWindow *window, UnsignedInt msg
 			NullifyControls();
 			break;
 
-		}  // end case
+		}
 
 		// --------------------------------------------------------------------------------------------
 		case GWM_INPUT_FOCUS:
@@ -331,7 +331,7 @@ WindowMsgHandledType WOLMapSelectMenuSystem( GameWindow *window, UnsignedInt msg
 
 			return MSG_HANDLED;
 
-		}  // end input
+		}
 
 		//---------------------------------------------------------------------------------------------
 		case GLM_DOUBLE_CLICKED:
@@ -417,7 +417,7 @@ WindowMsgHandledType WOLMapSelectMenuSystem( GameWindow *window, UnsignedInt msg
 				}
 
 				WOLPositionStartSpots();
-			}  // end if
+			}
 			else if ( controlID == radioButtonSystemMapsID )
 			{
 				if (TheMapCache)
@@ -509,19 +509,19 @@ WindowMsgHandledType WOLMapSelectMenuSystem( GameWindow *window, UnsignedInt msg
 
 					WOLPositionStartSpots();
 
-				}  // end if
+				}
 
-			}  // end else if
+			}
 
 			break;
 
-		}  // end selected
+		}
 
 		default:
 			return MSG_IGNORED;
 
-	}  // end switch
+	}
 
 	return MSG_HANDLED;
 
-}  // end WOLMapSelectMenuSystem
+}

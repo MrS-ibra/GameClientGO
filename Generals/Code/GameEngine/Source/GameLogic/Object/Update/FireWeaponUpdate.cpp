@@ -111,7 +111,7 @@ void FireWeaponUpdate::crc( Xfer *xfer )
 	// extend base class
 	UpdateModule::crc( xfer );
 
-}  // end crc
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Xfer method
@@ -132,7 +132,7 @@ void FireWeaponUpdate::xfer( Xfer *xfer )
 	// weapon
 	xfer->xferSnapshot( m_weapon );
 
-}  // end xfer
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Load post process */
@@ -143,4 +143,4 @@ void FireWeaponUpdate::loadPostProcess( void )
 	// extend base class
 	UpdateModule::loadPostProcess();
 
-}  // end loadPostProcess
+}

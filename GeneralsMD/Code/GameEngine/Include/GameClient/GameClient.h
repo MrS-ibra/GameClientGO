@@ -99,6 +99,7 @@ public:
 	virtual void setFrame( UnsignedInt frame ) { m_frame = frame; }			///< Set the GameClient's internal frame number
 	virtual void registerDrawable( Drawable *draw );										///< Given a drawable, register it with the GameClient and give it a unique ID
 
+	void step();
 	void updateHeadless();
 
 	void addDrawableToLookupTable( Drawable *draw );			///< add drawable ID to hash lookup table
@@ -129,7 +130,7 @@ public:
 
 	virtual void iterateDrawablesInRegion( Region3D *region, GameClientFuncPtr userFunc, void *userData );		///< Calls userFunc for each drawable contained within the region
 
-	virtual Drawable *friend_createDrawable( const ThingTemplate *thing, DrawableStatus statusBits = DRAWABLE_STATUS_NONE ) = 0;
+	virtual Drawable *friend_createDrawable( const ThingTemplate *thing, DrawableStatusBits statusBits = DRAWABLE_STATUS_DEFAULT ) = 0;
 	virtual void destroyDrawable( Drawable *draw );											///< Destroy the given drawable
 
 	virtual void setTimeOfDay( TimeOfDay tod );													///< Tell all the drawables what time of day it is now

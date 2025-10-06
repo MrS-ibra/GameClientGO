@@ -49,6 +49,7 @@
 #include "GameLogic/GameLogic.h"
 
 #include "Common/GlobalData.h"			// for camera pitch angle only
+#include "Common/GameEngine.h"
 
 LookAtTranslator *TheLookAtTranslator = NULL;
 
@@ -71,25 +72,25 @@ static Bool scrollDir[4] = { false, false, false, false };
 // The multiplier of 2 was logically chosen because originally the Scroll Factor did practically not affect the RMB scroll speed
 // and because the default Scroll Factor is/was 0.5, it needs to be doubled to get to a neutral 1x multiplier.
 
-CONSTEXPR const Real SCROLL_MULTIPLIER = 2.0f;
-CONSTEXPR const Real SCROLL_AMT = 100.0f * SCROLL_MULTIPLIER;
+constexpr const Real SCROLL_MULTIPLIER = 2.0f;
+constexpr const Real SCROLL_AMT = 100.0f * SCROLL_MULTIPLIER;
 
 static const Int edgeScrollSize = 3;
 
 static Mouse::MouseCursor prevCursor = Mouse::ARROW;
 
 //-----------------------------------------------------------------------------
-void LookAtTranslator::setScrolling(Int x)
+void LookAtTranslator::setScrolling(ScrollType scrollType)
 {
 	if (!TheInGameUI->getInputEnabled())
 		return;
 
 	prevCursor = TheMouse->getMouseCursor();
 	m_isScrolling = true;
-	TheInGameUI->setScrolling( TRUE );
-	TheTacticalView->setMouseLock( TRUE );
-	m_scrollType = x;
-	if(TheStatsCollector)
+	TheInGameUI->setScrolling(TRUE);
+	TheTacticalView->setMouseLock(TRUE);
+	m_scrollType = scrollType;
+	if (TheStatsCollector)
 		TheStatsCollector->startScrollTime();
 }
 
@@ -160,6 +161,11 @@ Bool LookAtTranslator::hasMouseMovedRecently( void )
 void LookAtTranslator::setCurrentPos( const ICoord2D& pos )
 {
 	m_currentPos = pos;
+}
+
+void LookAtTranslator::setScreenEdgeScrollMode(ScreenEdgeScrollMode mode)
+{
+	m_screenEdgeScrollMode = mode;
 }
 
 //-----------------------------------------------------------------------------
@@ -369,13 +375,15 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 			if (spin > 0)
 			{
 				for ( ; spin > 0; spin--)
-					TheTacticalView->zoomIn();
+					TheTacticalView->zoom( -View::ZoomHeightPerSecond );
 			}
 			else
 			{
 				for ( ;spin < 0; spin++ )
-					TheTacticalView->zoomOut();
+					TheTacticalView->zoom( +View::ZoomHeightPerSecond );
 			}
+
+			break;
 		}
 
 		//-----------------------------------------------------------------------------
@@ -401,27 +409,20 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 			}
 			else
 			// scroll the view
-			if (m_isScrolling)
-			{
-
-				// TheSuperHackers @bugfix Mauller 07/06/2025 Adjust the viewport scrolling so it is independent of GameClient FPS
-				// The scaling is based on the current logic rate, this provides a consistent scroll speed at all GameClient FPS
-				// This also fixes scrolling within replays when fast forwarding due to the uncapped FPS
-				// When the FPS is in excess of the expected frame rate, the ratio will reduce the offset of the cameras movement
-#if defined(GENERALS_ONLINE)
-				const Real logicToFpsRatio = 30.0f / TheDisplay->getCurrentFPS();
-#else
-				const Real logicToFpsRatio = TheGlobalData->m_framesPerSecondLimit / TheDisplay->getCurrentFPS();
-#endif
-
-				switch (m_scrollType)
+				if (m_isScrolling)
 				{
-				case SCROLL_RMB:
+
+					// TheSuperHackers @bugfix Mauller 07/06/2025 The camera scrolling is now decoupled from the render update.
+					const Real fpsRatio = (Real)BaseFps / TheGameEngine->getUpdateFps();
+
+					switch (m_scrollType)
+					{
+					case SCROLL_RMB:
 					{
 						if (TheInGameUI->shouldMoveRMBScrollAnchor())
 						{
-							Int maxX = TheDisplay->getWidth()/2;
-							Int maxY = TheDisplay->getHeight()/2;
+							Int maxX = TheDisplay->getWidth() / 2;
+							Int maxY = TheDisplay->getHeight() / 2;
 
 							if (m_currentPos.x + maxX < m_anchor.x)
 								m_anchor.x = m_currentPos.x + maxX;
@@ -441,57 +442,57 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 						// TheSuperHackers @info calculate the length of the vector to obtain the movement speed before the vector is normalized
 						float vecLength = vec.length();
 						vec.normalize();
-						offset.x = TheGlobalData->m_horizontalScrollSpeedFactor * logicToFpsRatio * vecLength * vec.x * SCROLL_MULTIPLIER * TheGlobalData->m_keyboardScrollFactor;
-						offset.y = TheGlobalData->m_verticalScrollSpeedFactor * logicToFpsRatio * vecLength * vec.y * SCROLL_MULTIPLIER * TheGlobalData->m_keyboardScrollFactor;
+						offset.x = TheGlobalData->m_horizontalScrollSpeedFactor * fpsRatio * vecLength * vec.x * SCROLL_MULTIPLIER * TheGlobalData->m_keyboardScrollFactor;
+						offset.y = TheGlobalData->m_verticalScrollSpeedFactor * fpsRatio * vecLength * vec.y * SCROLL_MULTIPLIER * TheGlobalData->m_keyboardScrollFactor;
 					}
 					break;
-				case SCROLL_KEY:
+					case SCROLL_KEY:
 					{
 						if (scrollDir[DIR_UP])
 						{
-							offset.y -= TheGlobalData->m_verticalScrollSpeedFactor * logicToFpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
+							offset.y -= TheGlobalData->m_verticalScrollSpeedFactor * fpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
 						}
 						if (scrollDir[DIR_DOWN])
 						{
-							offset.y += TheGlobalData->m_verticalScrollSpeedFactor * logicToFpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
+							offset.y += TheGlobalData->m_verticalScrollSpeedFactor * fpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
 						}
 						if (scrollDir[DIR_LEFT])
 						{
-							offset.x -= TheGlobalData->m_horizontalScrollSpeedFactor * logicToFpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
+							offset.x -= TheGlobalData->m_horizontalScrollSpeedFactor * fpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
 						}
 						if (scrollDir[DIR_RIGHT])
 						{
-							offset.x += TheGlobalData->m_horizontalScrollSpeedFactor * logicToFpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
+							offset.x += TheGlobalData->m_horizontalScrollSpeedFactor * fpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
 						}
 					}
 					break;
-				case SCROLL_SCREENEDGE:
+					case SCROLL_SCREENEDGE:
 					{
 						UnsignedInt height = TheDisplay->getHeight();
-						UnsignedInt width  = TheDisplay->getWidth();
+						UnsignedInt width = TheDisplay->getWidth();
 						if (m_currentPos.y < edgeScrollSize)
 						{
-							offset.y -= TheGlobalData->m_verticalScrollSpeedFactor * logicToFpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
+							offset.y -= TheGlobalData->m_verticalScrollSpeedFactor * fpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
 						}
-						if (m_currentPos.y >= height-edgeScrollSize)
+						if (m_currentPos.y >= height - edgeScrollSize)
 						{
-							offset.y += TheGlobalData->m_verticalScrollSpeedFactor * logicToFpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
+							offset.y += TheGlobalData->m_verticalScrollSpeedFactor * fpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
 						}
 						if (m_currentPos.x < edgeScrollSize)
 						{
-							offset.x -= TheGlobalData->m_horizontalScrollSpeedFactor * logicToFpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
+							offset.x -= TheGlobalData->m_horizontalScrollSpeedFactor * fpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
 						}
-						if (m_currentPos.x >= width-edgeScrollSize)
+						if (m_currentPos.x >= width - edgeScrollSize)
 						{
-							offset.x += TheGlobalData->m_horizontalScrollSpeedFactor * logicToFpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
+							offset.x += TheGlobalData->m_horizontalScrollSpeedFactor * fpsRatio * SCROLL_AMT * TheGlobalData->m_keyboardScrollFactor;
 						}
 					}
 					break;
-				}
+					}
 
-				TheInGameUI->setScrollAmount(offset);
-				TheTacticalView->scrollBy( &offset );
-			}
+					TheInGameUI->setScrollAmount(offset);
+					TheTacticalView->scrollBy(&offset);
+				}
 			else	//not scrolling so reset amount
 				TheInGameUI->setScrollAmount(offset);
 
@@ -679,24 +680,24 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 							done = true;
 							break;
 						}
-					} // if airborne found
+					}
 
 					// if we're back to the first, quit
 					if (d == first)
 						break;
-				} // while
-			}	// end plane lock
+				}
+			}
 
 			disp = DESTROY_MESSAGE;
 			break;
 		}
 #endif // #if defined(RTS_DEBUG)
 
-	}  // end switch
+	}
 
 	return disp;
 
-}  // end LookAtTranslator
+}
 
 void LookAtTranslator::resetModes()
 {

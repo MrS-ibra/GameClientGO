@@ -434,7 +434,7 @@ protected:
 	// vector of window transitions that have a relation to the current GameWindow
 	std::vector<TransitionWindow*> m_transitionWindows;
 
-};  // end class GameWindow
+};
 
 // TheSuperHackers @feature helmutbuhler 24/04/2025
 // GameWindow that does nothing. Used for Headless Mode.
@@ -503,8 +503,8 @@ extern void GameWinDefaultTooltip( GameWindow *window,
 																	 WinInstanceData *instData,
 																	 UnsignedInt mouse );
 
-extern const char *WindowStatusNames[];
-extern const char *WindowStyleNames[];
+extern const char *const WindowStatusNames[];
+extern const char *const WindowStyleNames[];
 
 #endif // __GAMEWINDOW_H_
 

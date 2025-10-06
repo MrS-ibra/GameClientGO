@@ -71,8 +71,8 @@ static Bool scrollDir[4] = { false, false, false, false };
 // The multiplier of 2 was logically chosen because originally the Scroll Factor did practically not affect the RMB scroll speed
 // and because the default Scroll Factor is/was 0.5, it needs to be doubled to get to a neutral 1x multiplier.
 
-CONSTEXPR const Real SCROLL_MULTIPLIER = 2.0f;
-CONSTEXPR const Real SCROLL_AMT = 100.0f * SCROLL_MULTIPLIER;
+constexpr const Real SCROLL_MULTIPLIER = 2.0f;
+constexpr const Real SCROLL_AMT = 100.0f * SCROLL_MULTIPLIER;
 
 static const Int edgeScrollSize = 3;
 
@@ -370,13 +370,15 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 			if (spin > 0)
 			{
 				for ( ; spin > 0; spin--)
-					TheTacticalView->zoomIn();
+					TheTacticalView->zoom( -View::ZoomHeightPerSecond );
 			}
 			else
 			{
 				for ( ;spin < 0; spin++ )
-					TheTacticalView->zoomOut();
+					TheTacticalView->zoom( +View::ZoomHeightPerSecond );
 			}
+
+			break;
 		}
 
 		//-----------------------------------------------------------------------------
@@ -405,6 +407,8 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 			if (m_isScrolling)
 			{
 
+				// TheSuperHackers @bugfix Mauller 07/06/2025 The camera scrolling is now decoupled from the render update.
+				const Real fpsRatio = (Real)BaseFps / TheGameEngine->getUpdateFps();
 				// TheSuperHackers @bugfix Mauller 07/06/2025 Adjust the viewport scrolling so it is independent of GameClient FPS
 				// The scaling is based on the current logic rate, this provides a consistent scroll speed at all GameClient FPS
 				// This also fixes scrolling within replays when fast forwarding due to the uncapped FPS
@@ -664,24 +668,24 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 							done = true;
 							break;
 						}
-					} // if airborne found
+					}
 
 					// if we're back to the first, quit
 					if (d == first)
 						break;
-				} // while
-			}	// end plane lock
+				}
+			}
 
 			disp = DESTROY_MESSAGE;
 			break;
 		}
 #endif // #if defined(RTS_DEBUG)
 
-	}  // end switch
+	}
 
 	return disp;
 
-}  // end LookAtTranslator
+}
 
 void LookAtTranslator::resetModes()
 {

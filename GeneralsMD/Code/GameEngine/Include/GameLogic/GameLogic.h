@@ -74,15 +74,15 @@ enum BuildableStatus CPP_11(: Int);
 typedef const CommandButton* ConstCommandButtonPtr;
 
 // What kind of game we're in.
-enum
+enum GameMode CPP_11(: Int)
 {
 	GAME_SINGLE_PLAYER,
-	GAME_LAN,
-	GAME_SKIRMISH,
-	GAME_REPLAY,
-	GAME_SHELL,
-	GAME_INTERNET,
-	GAME_NONE
+		GAME_LAN,
+		GAME_SKIRMISH,
+		GAME_REPLAY,
+		GAME_SHELL,
+		GAME_INTERNET,
+		GAME_NONE
 };
 
 enum
@@ -93,7 +93,7 @@ enum
 
 
 /// Function pointers for use by GameLogic callback functions.
-typedef void (*GameLogicFuncPtr)( Object *obj, void *userData );
+typedef void (*GameLogicFuncPtr)(Object* obj, void* userData);
 //typedef std::hash_map<ObjectID, Object *, rts::hash<ObjectID>, rts::equal_to<ObjectID> > ObjectPtrHash;
 //typedef ObjectPtrHash::const_iterator ObjectPtrIter;
 
@@ -108,55 +108,49 @@ class GameLogic : public SubsystemInterface, public Snapshot
 
 public:
 
-	GameLogic( void );
+	GameLogic(void);
 	virtual ~GameLogic();
 
 	// subsytem methods
-	virtual void init( void );															///< Initialize or re-initialize the instance
-	virtual void reset( void );															///< Reset the logic system
-	virtual void update( void );														///< update the world
+	virtual void init(void);															///< Initialize or re-initialize the instance
+	virtual void reset(void);															///< Reset the logic system
+	virtual void update(void);														///< update the world
 
-	bool IsStartNewgame() const { return m_startNewGame; }
 	void preUpdate();
 
 #if defined(RTS_DEBUG)
-	Int getNumberSleepyUpdates() const {return m_sleepyUpdates.size();} //For profiling, so not in Release.
+	Int getNumberSleepyUpdates() const { return m_sleepyUpdates.size(); } //For profiling, so not in Release.
 #endif
-	void processCommandList( CommandList *list );		///< process the command list
+	void processCommandList(CommandList* list);		///< process the command list
 
-	void prepareNewGame( Int gameMode, GameDifficulty diff, Int rankPoints );						///< prepare for new game
+	void prepareNewGame(GameMode gameMode, GameDifficulty diff, Int rankPoints);						///< prepare for new game
 
-	void logicMessageDispatcher( GameMessage *msg,
-																			 void *userData );	///< Logic command list processing
+	void logicMessageDispatcher(GameMessage* msg,
+		void* userData);	///< Logic command list processing
 
-	void registerObject( Object *obj );							///< Given an object, register it with the GameLogic and give it a unique ID
+	void registerObject(Object* obj);							///< Given an object, register it with the GameLogic and give it a unique ID
 
-	void addObjectToLookupTable( Object *obj );			///< add object ID to hash lookup table
-	void removeObjectFromLookupTable( Object *obj );///< remove object ID from hash lookup table
+	void addObjectToLookupTable(Object* obj);			///< add object ID to hash lookup table
+	void removeObjectFromLookupTable(Object* obj);///< remove object ID from hash lookup table
 
 	/// @todo Change this to refer to a Region3D as an extent of the world
-	void setWidth( Real width );										///< Sets the width of the world
-	Real getWidth( void );													///< Returns the width of the world
-	void setHeight( Real height );									///< Sets the height of the world
-	Real getHeight( void );													///< Returns the height of the world
+	void setWidth(Real width);										///< Sets the width of the world
+	Real getWidth(void);													///< Returns the width of the world
+	void setHeight(Real height);									///< Sets the height of the world
+	Real getHeight(void);													///< Returns the height of the world
 
-	Bool isInGameLogicUpdate( void ) const { return m_isInUpdate; }
-	UnsignedInt getFrame( void );										///< Returns the current simulation frame number
+	Bool isInGameLogicUpdate(void) const { return m_isInUpdate; }
+	Bool hasUpdated() const { return m_hasUpdated; } ///< Returns true if the logic frame has advanced in the current client/render update
+	UnsignedInt getFrame(void);										///< Returns the current simulation frame number
+	UnsignedInt getCRC(Int mode = CRC_CACHED, AsciiString deepCRCFileName = AsciiString::TheEmptyString);		///< Returns the CRC
 
+	void setObjectIDCounter(ObjectID nextObjID) { m_nextObjID = nextObjID; }
+	ObjectID getObjectIDCounter(void) { return m_nextObjID; }
 #if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
 	UnsignedInt getFrameLegacy(void);
 	UnsignedInt getFrameLegacyLast(void);
 	bool HasLegacyFrameAdvanced(void);
 #endif
-
-#if defined(GENERALS_ONLINE_RUN_FAST)
-	void setFrame(UnsignedInt frame);
-#endif
-
-	UnsignedInt getCRC( Int mode = CRC_CACHED, AsciiString deepCRCFileName = AsciiString::TheEmptyString );		///< Returns the CRC
-
-	void setObjectIDCounter( ObjectID nextObjID ) { m_nextObjID = nextObjID; }
-	ObjectID getObjectIDCounter( void ) { return m_nextObjID; }
 
 	//-----------------------------------------------------------------------------------------------
 	void setBuildableStatusOverride(const ThingTemplate* tt, BuildableStatus bs);
@@ -167,42 +161,39 @@ public:
 
 	//-----------------------------------------------------------------------------------------------
 	/// create an object given the thing template. (Only for use by ThingFactory.)
-	Object *friend_createObject( const ThingTemplate *thing, const ObjectStatusMaskType &objectStatusMask, Team *team );
-	void destroyObject( Object *obj );							///< Mark object as destroyed for later deletion
-	Object *findObjectByID( ObjectID id );								///< Given an ObjectID, return a pointer to the object.
- 	Object *getFirstObject( void );									///< Returns the "first" object in the world. When used with the object method "getNextObject()", all objects in the world can be iterated.
-	ObjectID allocateObjectID( void );							///< Returns a new unique object id
+	Object* friend_createObject(const ThingTemplate* thing, const ObjectStatusMaskType& objectStatusMask, Team* team);
+	void destroyObject(Object* obj);							///< Mark object as destroyed for later deletion
+	Object* findObjectByID(ObjectID id);								///< Given an ObjectID, return a pointer to the object.
+	Object* getFirstObject(void);									///< Returns the "first" object in the world. When used with the object method "getNextObject()", all objects in the world can be iterated.
+	ObjectID allocateObjectID(void);							///< Returns a new unique object id
 
 	// super hack
-	void startNewGame( Bool loadSaveGame );
-	void loadMapINI( AsciiString mapName );
+	void startNewGame(Bool loadSaveGame);
+	void loadMapINI(AsciiString mapName);
 
-	void updateLoadProgress( Int progress );
-	void deleteLoadScreen( void );
+	void updateLoadProgress(Int progress);
+	void deleteLoadScreen(void);
 
 	//Kris: Cut setGameLoading() and replaced with setLoadingMap() and setLoadingSave() -- reason: nomenclature
 	//void setGameLoading( Bool loading ) { m_loadingScene = loading; }
-	void setLoadingMap( Bool loading ) { m_loadingMap = loading; }
-	void setLoadingSave( Bool loading ) { m_loadingSave = loading; }
-	void setClearingGameData( Bool clearing ) { m_clearingGameData = clearing; }
+	void setLoadingMap(Bool loading) { m_loadingMap = loading; }
+	void setLoadingSave(Bool loading) { m_loadingSave = loading; }
+	void setClearingGameData(Bool clearing) { m_clearingGameData = clearing; }
 
-	void setGameMode( Int mode );
-	Int getGameMode( void );
-	Bool isInGame( void );
-	Bool isInLanGame( void );
-	Bool isInSinglePlayerGame( void );
-	Bool isInSkirmishGame( void );
-	Bool isInReplayGame( void );
-	Bool isInInternetGame( void );
-	Bool isInShellGame( void );
-	Bool isInMultiplayerGame( void );
+	void setGameMode(GameMode mode);
+	GameMode getGameMode(void);
 
-//#if defined(GENERALS_ONLINE_USE_NEW_RNG_LOGIC)
-	uint32_t m_numRNGs = 0;
-	void ResetNumRNGs();
-	void IncrementNumRNGS();
-	uint32_t GetNumRNGS();
-//#endif
+	Bool isInGame(void); // Includes Shell Game
+	Bool isInLanGame(void);
+	Bool isInSinglePlayerGame(void);
+	Bool isInSkirmishGame(void);
+	Bool isInReplayGame(void);
+	Bool isInInternetGame(void);
+	Bool isInShellGame(void);
+	Bool isInMultiplayerGame(void);
+	Bool isInInteractiveGame() const;
+
+	static Bool isInInteractiveGame(GameMode mode) { return mode != GAME_NONE && mode != GAME_SHELL; }
 
 	//Kris: Cut isLoadingGame() and replaced with isLoadingMap() and isLoadingSave() -- reason: nomenclature
 	//Bool isLoadingGame() const { return m_loadingScene; }		// This is the old function that isn't very clear on it's definition.
@@ -227,34 +218,34 @@ public:
 
 	Bool isIntroMoviePlaying();
 
-	void updateObjectsChangedTriggerAreas(void) {m_frameObjectsChangedTriggerAreas = m_frame;}
-	UnsignedInt getFrameObjectsChangedTriggerAreas(void) {return m_frameObjectsChangedTriggerAreas;}
+	void updateObjectsChangedTriggerAreas(void) { m_frameObjectsChangedTriggerAreas = m_frame; }
+	UnsignedInt getFrameObjectsChangedTriggerAreas(void) { return m_frameObjectsChangedTriggerAreas; }
 
+	void exitGame();
 	void clearGameData(Bool showScoreScreen = TRUE);														///< Clear the game data
-	void closeWindows( void );
+	void closeWindows(void);
 
-	void sendObjectCreated( Object *obj );
-	void sendObjectDestroyed( Object *obj );
+	void sendObjectCreated(Object* obj);
+	void sendObjectDestroyed(Object* obj);
 
 	void bindObjectAndDrawable(Object* obj, Drawable* draw);
 
-	void setGamePausedInFrame( UnsignedInt frame );
+	void setGamePausedInFrame(UnsignedInt frame, Bool disableLogicTimeScale);
 	UnsignedInt getGamePauseFrame() const { return m_pauseFrame; }
-	void setGamePaused( Bool paused, Bool pauseMusic = TRUE, Bool pauseInput = TRUE );
-	Bool isGamePaused( void );
-	Bool getInputEnabledMemory( void ) const { return m_inputEnabledMemory; }
+	void setGamePaused(Bool paused, Bool pauseMusic = TRUE, Bool pauseInput = TRUE);
+	Bool isGamePaused(void);
+	Bool getInputEnabledMemory(void) const { return m_inputEnabledMemory; }
 
 	void processProgress(Int playerId, Int percentage);
 	void processProgressComplete(Int playerId);
-	Bool isProgressComplete( void );
-	void timeOutGameStart( void );
-	void initTimeOutValues( void );
-	UnsignedInt getObjectCount( void );
+	Bool isProgressComplete(void);
+	void timeOutGameStart(void);
+	void initTimeOutValues(void);
+	UnsignedInt getObjectCount(void);
 
 #if defined(GENERALS_ONLINE)
 	bool IsLoadScreenActive() const { return m_loadScreen != nullptr; }
 #endif
-
 	Int getRankLevelLimit() const { return m_rankLevelLimit; }
 	void setRankLevelLimit(Int limit)
 	{
@@ -265,11 +256,11 @@ public:
 	// We need to allow access to this, because on a restartGame, we need to restart with the settings we started with
 	Int getRankPointsToAddAtGameStart() const { return m_rankPointsToAddAtGameStart; }
 
-  UnsignedShort getSuperweaponRestriction( void ) const; ///< Get any optional limits on superweapons
-  void setSuperweaponRestriction( void );
+	UnsignedShort getSuperweaponRestriction(void) const; ///< Get any optional limits on superweapons
+	void setSuperweaponRestriction(void);
 
 #ifdef DUMP_PERF_STATS
-	void getAIMetricsStatistics( UnsignedInt *numAI, UnsignedInt *numMoving, UnsignedInt *numAttacking, UnsignedInt *numWaitingForPath, UnsignedInt *overallFailedPathfinds );
+	void getAIMetricsStatistics(UnsignedInt* numAI, UnsignedInt* numMoving, UnsignedInt* numAttacking, UnsignedInt* numWaitingForPath, UnsignedInt* overallFailedPathfinds);
 	void resetOverallFailedPathfinds() { m_overallFailedPathfinds = 0; }
 	void incrementOverallFailedPathfinds() { m_overallFailedPathfinds++; }
 	UnsignedInt getOverallFailedPathfinds() const { return m_overallFailedPathfinds; }
@@ -278,8 +269,8 @@ public:
 	// NOTE: selectObject and deselectObject should be called *only* by logical things, NEVER by the
 	// client. These will cause the client to select or deselect the object, if affectClient is true.
 	// If createToSelection is TRUE, this object causes a new group to be selected.
-	void selectObject(Object *obj, Bool createNewSelection, PlayerMaskType playerMask, Bool affectClient = FALSE);
-	void deselectObject(Object *obj, PlayerMaskType playerMask, Bool affectClient = FALSE);
+	void selectObject(Object* obj, Bool createNewSelection, PlayerMaskType playerMask, Bool affectClient = FALSE);
+	void deselectObject(Object* obj, PlayerMaskType playerMask, Bool affectClient = FALSE);
 
 	// this should be called only by UpdateModule, thanks.
 	void friend_awakenUpdateModule(Object* obj, UpdateModulePtr update, UnsignedInt whenToWakeUp);
@@ -287,11 +278,13 @@ public:
 protected:
 
 	// snapshot methods
-	virtual void crc( Xfer *xfer );
-	virtual void xfer( Xfer *xfer );
-	virtual void loadPostProcess( void );
+	virtual void crc(Xfer* xfer);
+	virtual void xfer(Xfer* xfer);
+	virtual void loadPostProcess(void);
 
 private:
+
+	void updateDisplayBusyState();
 
 	void pauseGameLogic(Bool paused);
 	void pauseGameSound(Bool paused);
@@ -307,6 +300,8 @@ private:
 	Int rebalanceChildSleepyUpdate(Int i);
 	void remakeSleepyUpdate();
 	void validateSleepyUpdate() const;
+
+	static void createOptimizedTree(const ThingTemplate* thingTemplate, Coord3D* pos, Real angle);
 
 private:
 
@@ -344,6 +339,7 @@ private:
 	Bool m_clearingGameData;
 
 	Bool m_isInUpdate;
+	Bool m_hasUpdated;
 
 	Int m_rankPointsToAddAtGameStart;
 
@@ -355,10 +351,10 @@ private:
 
 	/// @todo remove this hack
 	Bool m_startNewGame;
-	WindowLayout *m_background;
+	WindowLayout* m_background;
 
 	Object* m_objList;																			///< All of the objects in the world.
-//	ObjectPtrHash m_objHash;																///< Used for ObjectID lookups
+	//	ObjectPtrHash m_objHash;																///< Used for ObjectID lookups
 	ObjectPtrVector m_objVector;
 
 	// this is a vector, but is maintained as a priority queue.
@@ -378,21 +374,21 @@ private:
 
 	ObjectID m_nextObjID;																		///< For allocating object id's
 
-	void setDefaults( Bool loadSaveGame );									///< Set default values of class object
-	void processDestroyList( void );												///< Destroy all pending objects on the destroy list
+	void setDefaults(Bool loadSaveGame);									///< Set default values of class object
+	void processDestroyList(void);												///< Destroy all pending objects on the destroy list
 
 	void destroyAllObjectsImmediate();											///< destroy, and process destroy list immediately
 
 	/// factory for TheTerrainLogic, called from init()
-	virtual TerrainLogic *createTerrainLogic( void );
-	virtual GhostObjectManager *createGhostObjectManager(void);
+	virtual TerrainLogic* createTerrainLogic(void);
+	virtual GhostObjectManager* createGhostObjectManager(void);
 
-	Int m_gameMode;
+	GameMode m_gameMode;
 	Int m_rankLevelLimit;
-  UnsignedShort m_superweaponRestriction;
+	UnsignedShort m_superweaponRestriction;
 
-	LoadScreen *getLoadScreen( Bool loadSaveGame );
-	LoadScreen *m_loadScreen;
+	LoadScreen* getLoadScreen(Bool loadSaveGame);
+	LoadScreen* m_loadScreen;
 
 	UnsignedInt m_pauseFrame;
 	Bool m_gamePaused;
@@ -401,6 +397,7 @@ private:
 	Bool m_pauseInput;
 	Bool m_inputEnabledMemory;// Latches used to remember what to restore to after we unpause
 	Bool m_mouseVisibleMemory;
+	Bool m_logicTimeScaleEnabledMemory;
 
 	Bool m_progressComplete[MAX_SLOTS];
 #if defined(GENERALS_ONLINE)
@@ -414,8 +411,8 @@ private:
 	enum { PROGRESS_COMPLETE_TIMEOUT = 60000 };							///< Timeout we wait for when we've completed our Load
 #endif
 	Int m_progressCompleteTimeout[MAX_SLOTS];
-	void testTimeOut( void );
-	void lastHeardFrom( Int playerId );
+	void testTimeOut(void);
+	void lastHeardFrom(Int playerId);
 	Bool m_forceGameStartByTimeOut;													///< If we timeout someone we're waiting to load, set this flag to start the game
 
 #ifdef DUMP_PERF_STATS
@@ -433,20 +430,20 @@ private:
 	typedef std::list< ObjectTOCEntry > ObjectTOCList;
 	typedef ObjectTOCList::iterator ObjectTOCListIterator;
 	ObjectTOCList m_objectTOC;															///< the object TOC
-	void addTOCEntry( AsciiString name, UnsignedShort id ); ///< add a new name/id TOC pair
-	ObjectTOCEntry *findTOCEntryByName( AsciiString name );	///< find ObjectTOC by name
-	ObjectTOCEntry *findTOCEntryById( UnsignedShort id );		///< find ObjectTOC by id
-	void xferObjectTOC( Xfer *xfer );												///< save/load object TOC for current state of map
-	void prepareLogicForObjectLoad( void );									///< prepare engine for object data from game file
+	void addTOCEntry(AsciiString name, UnsignedShort id); ///< add a new name/id TOC pair
+	ObjectTOCEntry* findTOCEntryByName(AsciiString name);	///< find ObjectTOC by name
+	ObjectTOCEntry* findTOCEntryById(UnsignedShort id);		///< find ObjectTOC by id
+	void xferObjectTOC(Xfer* xfer);												///< save/load object TOC for current state of map
+	void prepareLogicForObjectLoad(void);									///< prepare engine for object data from game file
 
 };
 
 // INLINE /////////////////////////////////////////////////////////////////////////////////////////
-inline void GameLogic::setWidth( Real width ) { m_width = width; }
-inline Real GameLogic::getWidth( void ) { return m_width; }
-inline void GameLogic::setHeight( Real height ) { m_height = height; }
-inline Real GameLogic::getHeight( void ) { return m_height; }
-inline UnsignedInt GameLogic::getFrame( void ) { return m_frame; }
+inline void GameLogic::setWidth(Real width) { m_width = width; }
+inline Real GameLogic::getWidth(void) { return m_width; }
+inline void GameLogic::setHeight(Real height) { m_height = height; }
+inline Real GameLogic::getHeight(void) { return m_height; }
+inline UnsignedInt GameLogic::getFrame(void) { return m_frame; }
 
 #if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
 inline UnsignedInt GameLogic::getFrameLegacy(void) { return m_frameLegacy; }
@@ -454,38 +451,28 @@ inline UnsignedInt GameLogic::getFrameLegacyLast(void) { return m_frameLegacyLas
 inline bool GameLogic::HasLegacyFrameAdvanced(void) { return m_frameLegacy != m_frameLegacyLast; }
 #endif
 
-//#if defined(GENERALS_ONLINE_USE_NEW_RNG_LOGIC)
-inline void GameLogic::ResetNumRNGs() { m_numRNGs = 0; }
-inline void GameLogic::IncrementNumRNGS() { ++m_numRNGs; }
-inline uint32_t GameLogic::GetNumRNGS() { return m_numRNGs; }
-//#endif
-
-#if defined(GENERALS_ONLINE_RUN_FAST)
-inline void GameLogic::setFrame(UnsignedInt frame) { m_frame = frame; }
-#endif
-
-inline Bool GameLogic::isInGame( void ) { return !(m_gameMode == GAME_NONE); }
-inline void GameLogic::setGameMode( Int mode ) { m_gameMode = mode; }
-inline Int  GameLogic::getGameMode( void ) { return m_gameMode; }
-inline Bool GameLogic::isInLanGame( void ) { return (m_gameMode == GAME_LAN); }
-inline Bool GameLogic::isInSkirmishGame( void ) { return (m_gameMode == GAME_SKIRMISH); }
-inline Bool GameLogic::isInMultiplayerGame( void ) { return ((m_gameMode == GAME_LAN) || (m_gameMode == GAME_INTERNET)) ; }
-inline Bool GameLogic::isInReplayGame( void ) { return (m_gameMode == GAME_REPLAY); }
-inline Bool GameLogic::isInInternetGame( void ) { return (m_gameMode == GAME_INTERNET); }
-inline Bool GameLogic::isInShellGame( void ) { return (m_gameMode == GAME_SHELL); }
+inline Bool GameLogic::isInGame(void) { return m_gameMode != GAME_NONE; }
+inline GameMode GameLogic::getGameMode(void) { return m_gameMode; }
+inline Bool GameLogic::isInLanGame(void) { return (m_gameMode == GAME_LAN); }
+inline Bool GameLogic::isInSkirmishGame(void) { return (m_gameMode == GAME_SKIRMISH); }
+inline Bool GameLogic::isInMultiplayerGame(void) { return (m_gameMode == GAME_LAN) || (m_gameMode == GAME_INTERNET); }
+inline Bool GameLogic::isInInteractiveGame() const { return isInInteractiveGame(m_gameMode); }
+inline Bool GameLogic::isInReplayGame(void) { return (m_gameMode == GAME_REPLAY); }
+inline Bool GameLogic::isInInternetGame(void) { return (m_gameMode == GAME_INTERNET); }
+inline Bool GameLogic::isInShellGame(void) { return (m_gameMode == GAME_SHELL); }
 inline UnsignedShort GameLogic::getSuperweaponRestriction() const { return m_superweaponRestriction; }
 
-inline Object* GameLogic::findObjectByID( ObjectID id )
+inline Object* GameLogic::findObjectByID(ObjectID id)
 {
-	if( id == INVALID_ID )
+	if (id == INVALID_ID)
 		return NULL;
 
-//	ObjectPtrHash::iterator it = m_objHash.find(id);
-//	if (it == m_objHash.end())
-//		return NULL;
-//
-//	return (*it).second;
-	if( (size_t)id < m_objVector.size() )
+	//	ObjectPtrHash::iterator it = m_objHash.find(id);
+	//	if (it == m_objHash.end())
+	//		return NULL;
+	//
+	//	return (*it).second;
+	if ((size_t)id < m_objVector.size())
 		return m_objVector[(size_t)id];
 
 	return NULL;
@@ -494,7 +481,7 @@ inline Object* GameLogic::findObjectByID( ObjectID id )
 
 
 // the singleton
-extern GameLogic *TheGameLogic;
+extern GameLogic* TheGameLogic;
 
 #endif // _GAME_LOGIC_H_
 

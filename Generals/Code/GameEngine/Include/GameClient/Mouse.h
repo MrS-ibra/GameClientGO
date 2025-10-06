@@ -139,6 +139,20 @@ public:
 	Int						numDirections;	//number of directions for cursors like scrolling/panning.
 };
 
+typedef UnsignedInt CursorCaptureMode;
+enum CursorCaptureMode_ CPP_11(: CursorCaptureMode)
+{
+	CursorCaptureMode_EnabledInWindowedGame = 1<<0, // Captures the cursor when in game while the app is windowed
+	CursorCaptureMode_EnabledInWindowedMenu = 1<<1, // Captures the cursor when in menu while the app is windowed
+	CursorCaptureMode_EnabledInFullscreenGame = 1<<2, // Captures the cursor when in game while the app is fullscreen
+	CursorCaptureMode_EnabledInFullscreenMenu = 1<<3, // Captures the cursor when in menu while the app is fullscreen
+
+	CursorCaptureMode_Default =
+		CursorCaptureMode_EnabledInWindowedGame |
+		CursorCaptureMode_EnabledInFullscreenGame |
+		CursorCaptureMode_EnabledInFullscreenMenu,
+};
+
 // Mouse ----------------------------------------------------------------------
 /** Class interface for working with a mouse pointing device */
 //-----------------------------------------------------------------------------
@@ -146,6 +160,19 @@ class Mouse : public SubsystemInterface
 {
 
 public:  // enumerations and types
+
+	typedef UnsignedInt CursorCaptureBlockReasonInt;
+
+	enum CursorCaptureBlockReason
+	{
+		CursorCaptureBlockReason_NoInit,
+		CursorCaptureBlockReason_Paused,
+		CursorCaptureBlockReason_Unfocused,
+
+		CursorCaptureBlockReason_Count
+	};
+
+public:
 
 	// ----------------------------------------------------------------------------------------------
 	/** If you update this enum make sure you update CursorININames[] */
@@ -217,7 +244,7 @@ public:  // enumerations and types
 
 
 		// ***** dont forget to update CursorININames[] *****
-		NUM_MOUSE_CURSORS  // keep this last
+		NUM_MOUSE_CURSORS
 
 	};
 
@@ -228,7 +255,7 @@ public:  // enumerations and types
 		RM_W3D,				//W3D model tied to frame rate.
 		RM_POLYGON,		//alpha blended polygon tied to frame rate.
 		RM_DX8,			//hardware cursor independent of frame rate.
-		RM_MAX	// keep this last.
+		RM_MAX
 	};
 
 	static const char *RedrawModeName[RM_MAX];
@@ -368,7 +395,7 @@ protected:
 
 	Int m_eventsThisFrame;
 
-};  // end class Mouse
+};
 
 // TheSuperHackers @feature helmutbuhler 17/05/2025
 // Mouse that does nothing. Used for Headless Mode.

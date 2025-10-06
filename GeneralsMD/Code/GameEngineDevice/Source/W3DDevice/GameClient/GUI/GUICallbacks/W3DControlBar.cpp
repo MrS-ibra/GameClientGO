@@ -53,7 +53,7 @@ void W3DCameoMovieDraw( GameWindow *window, WinInstanceData *instData )
 
 		TheDisplay->drawVideoBuffer( video, pos.x, pos.y, pos.x + size.x, pos.y + size.y );
 	}
-}  // end W3DLeftHUDDraw
+}
 
 
 //-------------------------------------------------------------------------------------------------
@@ -83,10 +83,10 @@ void W3DLeftHUDDraw( GameWindow *window, WinInstanceData *instData )
 		// draw the radar on the screen now
 		TheRadar->draw( pos.x + 1, pos.y + 1, size.x - 2, size.y - 2 );
 
-	}  // end else if
+	}
 
 
-}  // end W3DLeftHUDDraw
+}
 
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
@@ -97,7 +97,7 @@ void W3DRightHUDDraw( GameWindow *window, WinInstanceData *instData )
 	if( BitIsSet(window->winGetStatus(), WIN_STATUS_IMAGE ))
 		W3DGameWinDefaultDraw( window, instData );
 
-}  // end W3DRightHUDDraw
+}
 
 Real logN(Real value, Real logBase)
 {
@@ -222,7 +222,7 @@ void W3DPowerDraw( GameWindow *window, WinInstanceData *instData )
 																			end.x, end.y );
 			start.x += centerBar->getImageWidth();
 
-		}  // end for i
+		}
 
 		// we will draw the image but clip the parts we don't want to show
 		IRegion2D reg;
@@ -405,7 +405,7 @@ void W3DPowerDrawA( GameWindow *window, WinInstanceData *instData )
 																			end.x, end.y );
 			start.x += centerBar->getImageWidth();
 
-		}  // end for i
+		}
 
 		// we will draw the image but clip the parts we don't want to show
 		IRegion2D reg;
@@ -578,7 +578,7 @@ void W3DCommandBarGenExpDraw( GameWindow *window, WinInstanceData *instData )
 																			end.x, end.y );
 			start.y += centerBar->getImageHeight();
 
-		}  // end for i
+		}
 
 		// we will draw the image but clip the parts we don't want to show
 		IRegion2D reg;
@@ -689,7 +689,7 @@ void W3DNoDraw( GameWindow *window, WinInstanceData *instData )
 	// draw the default stuff
 //	W3DGameWinDefaultDraw( window, instData );
 
-}  // end W3DRightHUDDraw
+}
 
 void drawSkinnyBorder( Int x, Int y, Int width, Int height);
 void W3DDrawMapPreview( GameWindow *window, WinInstanceData *instData)
@@ -733,7 +733,7 @@ void W3DDrawMapPreview( GameWindow *window, WinInstanceData *instData)
 		TheDisplay->drawLine(pixelX, ul.y, pixelX + width, ul.y, 1, lineColor);
 		TheDisplay->drawLine(pixelX, lr.y + 1, pixelX + width, lr.y + 1, 1, lineColor);
 
-	}  // end if
+	}
 	else
 	{
 
@@ -743,7 +743,7 @@ void W3DDrawMapPreview( GameWindow *window, WinInstanceData *instData)
 		TheDisplay->drawLine(ul.x, pixelY, ul.x, pixelY + height, 1, lineColor);
 		TheDisplay->drawLine(lr.x + 1, pixelY, lr.x + 1, pixelY + height, 1, lineColor);
 
-	}  // end else
+	}
 
 	if(!BitIsSet(window->winGetStatus(), WIN_STATUS_IMAGE) || !window->winGetEnabledImage(0))
 		TheDisplay->drawFillRect(ul.x, ul.y, lr.x -ul.x, lr.y-ul.y, lineColor);
@@ -991,7 +991,7 @@ void W3DCommandBarHelpPopupDraw( GameWindow *window, WinInstanceData *instData )
 																			end.x, end.y );
 			start.y += centerBar->getImageHeight();
 
-		}  // end for i
+		}
 
 		// we will draw the image but clip the parts we don't want to show
 		IRegion2D reg;

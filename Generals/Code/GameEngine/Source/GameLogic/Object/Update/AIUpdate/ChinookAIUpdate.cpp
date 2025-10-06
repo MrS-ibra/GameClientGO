@@ -1215,7 +1215,7 @@ void ChinookAIUpdate::aiDoCommand(const AICommandParms* parms)
 void ChinookAIUpdate::crc( Xfer *xfer )
 {
 	SupplyTruckAIUpdate::crc(xfer);
-}  // end crc
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Xfer method
@@ -1238,7 +1238,7 @@ void ChinookAIUpdate::xfer( Xfer *xfer )
 	xfer->xferUser(&m_flightStatus, sizeof(m_flightStatus));
 	xfer->xferObjectID(&m_airfieldForHealing);
  // extend base class
-}  // end xfer
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Load post process */
@@ -1246,4 +1246,4 @@ void ChinookAIUpdate::xfer( Xfer *xfer )
 void ChinookAIUpdate::loadPostProcess( void )
 {
 	SupplyTruckAIUpdate::loadPostProcess();
-}  // end loadPostProcess
+}

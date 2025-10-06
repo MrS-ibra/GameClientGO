@@ -123,7 +123,6 @@ enum CallbackType
 	CALLBACK_RECVMESSAGE,
 	CALLBACK_RECVREQUEST,
 	CALLBACK_RECVSTATUS,
-	CALLBACK_MAX
 };
 
 void callbackWrapper( GPConnection *con, void *arg, void *param )
@@ -183,8 +182,7 @@ void GameSpyBuddyMessageQueue::startThread( void )
 
 void GameSpyBuddyMessageQueue::endThread( void )
 {
-	if (m_thread)
-		delete m_thread;
+	delete m_thread;
 	m_thread = NULL;
 }
 

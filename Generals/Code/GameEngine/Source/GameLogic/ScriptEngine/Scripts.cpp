@@ -75,7 +75,7 @@ static ScriptGroup *s_mtGroup = NULL;
 // These strings must be in the same order as they are in their definitions
 // (See SHELL_SCRIPT_HOOK_* )
 //
-const char *TheShellHookNames[]=
+static const char *const TheShellHookNames[]=
 {
 	"ShellMainMenuCampaignPushed", //SHELL_SCRIPT_HOOK_MAIN_MENU_CAMPAIGN_SELECTED,
 	"ShellMainMenuCampaignHighlighted", //SHELL_SCRIPT_HOOK_MAIN_MENU_CAMPAIGN_HIGHLIGHTED,
@@ -116,6 +116,8 @@ const char *TheShellHookNames[]=
 	"ShellLANClosed", //SHELL_SCRIPT_HOOK_LAN_CLOSED,
 	"ShellLANEnteredFromGame", //SHELL_SCRIPT_HOOK_LAN_ENTERED_FROM_GAME,
 };
+static_assert(ARRAY_SIZE(TheShellHookNames) == SHELL_SCRIPT_HOOK_TOTAL, "Incorrect array size");
+
 void SignalUIInteraction(Int interaction)
 {
 	if (TheScriptEngine)
@@ -260,7 +262,7 @@ void ScriptList::xfer( Xfer *xfer )
 		DEBUG_CRASH(( "ScriptList::xfer - Script list count has changed, attempting to recover."));
 		// throw SC_INVALID_DATA; try to recover. jba.
 
-	}  // end if
+	}
 
 	// all script data here
 	for( script = getScript(); script; script = script->getNext() )	{
@@ -289,7 +291,7 @@ void ScriptList::xfer( Xfer *xfer )
 
 		DEBUG_CRASH(( "ScriptList::xfer - Script group count has changed, attempting to recover."));
 
-	}  // end if
+	}
 
 	// all script group data
 	for( scriptGroup = getScriptGroup(); scriptGroup; scriptGroup = scriptGroup->getNext() ) {
@@ -673,7 +675,7 @@ ScriptGroup::~ScriptGroup(void)
 void ScriptGroup::crc( Xfer *xfer )
 {
 
-}  // end crc
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Xfer method
@@ -701,7 +703,7 @@ void ScriptGroup::xfer( Xfer *xfer )
 		DEBUG_CRASH(( "ScriptGroup::xfer - Script list count has changed, attempting to recover."));
 		// throw SC_INVALID_DATA; try to recover. jba.
 
-	}  // end if
+	}
 
 	// xfer script data
 	for( script = getScript(); script; script = script->getNext() )	{
@@ -718,7 +720,7 @@ void ScriptGroup::xfer( Xfer *xfer )
 		}
 	}
 
-}  // end xfer
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Load post process */
@@ -726,7 +728,7 @@ void ScriptGroup::xfer( Xfer *xfer )
 void ScriptGroup::loadPostProcess( void )
 {
 
-}  // end loadPostProcess
+}
 
 /**
   ScriptGroup::duplicate - Creates a full, "deep" copy of ScriptGroup.
@@ -952,7 +954,7 @@ Script::~Script(void)
 void Script::crc( Xfer *xfer )
 {
 
-}  // end crc
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Xfer method
@@ -972,7 +974,7 @@ void Script::xfer( Xfer *xfer )
 	xfer->xferBool( &active );
 	setActive( active );
 
-}  // end xfer
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Load post process */
@@ -980,7 +982,7 @@ void Script::xfer( Xfer *xfer )
 void Script::loadPostProcess( void )
 {
 
-}  // end loadPostProcess
+}
 
 /**
   Script::duplicate - Creates a full, "deep" copy of script. Condition list and action
@@ -2119,7 +2121,7 @@ Parameter *Parameter::ReadParameter(DataChunkInput &file)
 	if (pParm->getParameterType() == KIND_OF_PARAM)
   {
 		// Need to change the string to an integer
-		const char** kindofNames = KindOfMaskType::getBitNames();
+		const char* const* kindofNames = KindOfMaskType::getBitNames();
 		if (!pParm->m_string.isEmpty())
     {
 			Bool found = false;
@@ -2520,10 +2522,10 @@ Bool ScriptAction::ParseActionFalseDataChunk(DataChunkInput &file, DataChunkInfo
 	return true;
 }
 
-// NOTE: Changing these or adding ot TheOBjectFlagNames requires changes to
+// NOTE: Changing these or adding to TheObjectFlagsNames requires changes to
 // ScriptActions::changeObjectPanelFlagForSingleObject
 // THEY SHOULD STAY IN SYNC.
-const char* TheObjectFlagsNames[] =
+const char* const TheObjectFlagsNames[] =
 {
 	"Enabled",
 	"Powered",
@@ -2532,5 +2534,4 @@ const char* TheObjectFlagsNames[] =
 	"Selectable",
 	"AI Recruitable",
 	"Player Targetable",
-	NULL,
 };

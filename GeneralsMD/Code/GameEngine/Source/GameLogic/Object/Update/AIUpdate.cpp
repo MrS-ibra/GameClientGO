@@ -2090,7 +2090,7 @@ Bool AIUpdateInterface::isPathAvailable( const Coord3D *destination ) const
 
 	return TheAI->pathfinder()->clientSafeQuickDoesPathExist( m_locomotorSet, myPos, destination );
 
-}  // end isPathAvailable
+}
 
 //-------------------------------------------------------------------------------------------------
 /** Is there a path (computed using the less accurate but quick method )
@@ -2107,7 +2107,7 @@ Bool AIUpdateInterface::isQuickPathAvailable( const Coord3D *destination ) const
 
 	return TheAI->pathfinder()->clientSafeQuickDoesPathExistForUI( m_locomotorSet, myPos, destination );
 
-}  // end isQuickPathAvailable
+}
 
 
 
@@ -2585,7 +2585,7 @@ void AIUpdateInterface::joinTeam( void )
 		getStateMachine()->setState( state );
 	}
 
-}  // end joinTeam
+}
 
 //-------------------------------------------------------------------------------------------------
 Bool AIUpdateInterface::isAllowedToRespondToAiCommands(const AICommandParms* parms) const
@@ -4724,7 +4724,7 @@ void AIUpdateInterface::evaluateMoraleBonus( void )
 			}
 		}
 
-	}  // end for
+	}
 
 #ifdef ALLOW_DEMORALIZE
 	// if we are are not demoralized we can have horde and nationalism effects
@@ -4747,7 +4747,7 @@ void AIUpdateInterface::evaluateMoraleBonus( void )
 		{
 			us->setWeaponBonusCondition( WEAPONBONUSCONDITION_HORDE );
 
-		}  // end if
+		}
 		else
 			us->clearWeaponBonusCondition( WEAPONBONUSCONDITION_HORDE );
 
@@ -4766,7 +4766,7 @@ void AIUpdateInterface::evaluateMoraleBonus( void )
 
 
 
-	}  // end if
+	}
 #ifdef ALLOW_DEMORALIZE
 	else
 	{
@@ -4786,7 +4786,7 @@ void AIUpdateInterface::evaluateMoraleBonus( void )
 		us->clearWeaponBonusCondition( WEAPONBONUSCONDITION_NATIONALISM );
     us->clearWeaponBonusCondition( WEAPONBONUSCONDITION_FANATICISM );
 
-	}  // end else
+	}
 #endif
 
 /*
@@ -4796,7 +4796,7 @@ void AIUpdateInterface::evaluateMoraleBonus( void )
 	TheInGameUI->message( msg );
 */
 
-}  // end evaluateMoraleBonus
+}
 
 #ifdef ALLOW_DEMORALIZE
 // ------------------------------------------------------------------------------------------------
@@ -4816,7 +4816,7 @@ void AIUpdateInterface::setDemoralized( UnsignedInt durationInFrames )
 		// evaluate demoralization, nationalism, and horde effect as they are all intertwined
 		evaluateMoraleBonus();
 
-	}  // end if
+	}
 
 }
 #endif
@@ -5014,7 +5014,7 @@ void AIUpdateInterface::crc( Xfer *x )
 
 	CRCGEN_LOG(("AIUpdateInterface::crc() end - %8.8X", ((XferCRC *)x)->getCRC()));
 
-}  // end crc
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Xfer method
@@ -5238,7 +5238,7 @@ void AIUpdateInterface::xfer( Xfer *xfer )
 	}
 
 
-}  // end xfer
+}
 
 // ------------------------------------------------------------------------------------------------
 /** Load post process */
@@ -5275,7 +5275,7 @@ void AIUpdateInterface::loadPostProcess( void )
 		}
 	}
 
-}  // end loadPostProcess
+}
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
