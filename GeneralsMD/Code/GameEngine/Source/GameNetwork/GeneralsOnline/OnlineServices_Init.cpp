@@ -719,7 +719,9 @@ void NGMP_OnlineServicesManager::InitSentry()
 	}
 
 	sentry_options_t* options = sentry_options_new();
-	sentry_options_set_dsn(options, "{REPLACE_SENTRY_DSN}");
+#if !_DEBUG
+	sentry_options_set_dsn(options, { REPLACE_SENTRY_DSN });
+#endif
 	sentry_options_set_database_path(options, strDumpPath.c_str());
 	sentry_options_set_release(options, "generalsonline-client@0.1");
 
