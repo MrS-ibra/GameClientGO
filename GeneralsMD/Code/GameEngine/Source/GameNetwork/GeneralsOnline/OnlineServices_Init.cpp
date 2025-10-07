@@ -712,6 +712,7 @@ void NGMP_OnlineServicesManager::Tick()
 
 void NGMP_OnlineServicesManager::InitSentry()
 {
+#if !_DEBUG
 	std::string strDumpPath = std::format("{}/GeneralsOnlineCrashData/", TheGlobalData->getPath_UserData().str());
 	if (!std::filesystem::exists(strDumpPath))
 	{
@@ -719,11 +720,11 @@ void NGMP_OnlineServicesManager::InitSentry()
 	}
 
 	sentry_options_t* options = sentry_options_new();
-#if !_DEBUG
-	sentry_options_set_dsn(options, {REPLACE_SENTRY_DSN});
-#endif
+
+	sentry_options_set_dsn(options, "https://61750bebd112d279bcc286d617819269@o4509316925554688.ingest.us.sentry.io/4509316927586304");
 	sentry_options_set_database_path(options, strDumpPath.c_str());
-	sentry_options_set_release(options, "generalsonline-client@0.1");
+	sentry_options_set_release(options, "generalsonline-client@092625_QFE5");
+
 
 #if _DEBUG
 	sentry_options_set_debug(options, 1);
@@ -743,6 +744,7 @@ void NGMP_OnlineServicesManager::InitSentry()
 
 	int i = sentry_init(options);
 	NetworkLog(ELogVerbosity::LOG_RELEASE, "Sentry init: %d", i);
+#endif
 }
 
 void NGMP_OnlineServicesManager::ShutdownSentry()
