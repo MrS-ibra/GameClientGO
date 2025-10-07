@@ -126,8 +126,8 @@ jobs:
         uses: richardrigutins/replace-in-files@v2
         with:
           files: 'GeneralsMD/Code/GameEngine/Source/GameNetwork/GeneralsOnline/OnlineServices_Init.cpp'
-          search-text: '"{REPLACE_SENTRY_DSN}"'
-          replacement-text: '"${{ secrets.SENTRY_DSN_PROD }}"'
+          search-text: '\"{REPLACE_SENTRY_DSN}\"'
+          replacement-text: '\"${{ secrets.SENTRY_DSN_PROD }}\"'
 
       # Replace challenge encryption key
       - name: Replace Challenge Encryption Key
