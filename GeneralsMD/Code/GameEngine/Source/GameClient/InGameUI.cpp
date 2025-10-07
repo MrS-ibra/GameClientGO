@@ -6044,6 +6044,27 @@ void InGameUI::updateRenderFpsString()
 
 void InGameUI::drawNetworkLatency(Int &x, Int &y)
 {
+#if defined(GENERALS_ONLINE)
+	const UnsignedInt actualLatencyInMS = 5 * (1000 / GENERALS_ONLINE_HIGH_FPS_LIMIT);
+	const UnsignedInt actualFrames = ConvertMSLatencyToFrames(actualLatencyInMS);
+	const UnsignedInt gentoolFrames = ConvertMSLatencyToGenToolFrames(actualLatencyInMS);
+
+	if (gentoolFrames != m_lastNetworkLatencyFrames)
+	{
+		UnicodeString latencyStr;
+
+		if (actualFrames != gentoolFrames)
+		{
+			latencyStr.format(L"%u [%ums|%u][L: %u]", gentoolFrames, actualLatencyInMS, actualFrames, TheNetwork->getFrameRate());
+		}
+		else
+		{
+			latencyStr.format(L"%u [%ums][L: %u]", gentoolFrames, actualLatencyInMS, TheNetwork->getFrameRate());
+		}
+		m_networkLatencyString->setText(latencyStr);
+		m_lastNetworkLatencyFrames = gentoolFrames;
+	}
+#else
 	const UnsignedInt networkLatencyFrames = TheNetwork->getRunAhead();
 
 	if (networkLatencyFrames != m_lastNetworkLatencyFrames)
@@ -6053,6 +6074,9 @@ void InGameUI::drawNetworkLatency(Int &x, Int &y)
 		m_networkLatencyString->setText(latencyStr);
 		m_lastNetworkLatencyFrames = networkLatencyFrames;
 	}
+#endif
+
+	
 
 	// TheSuperHackers @info at the HUD anchor this draws inline and advances x otherwise uses configured position
 	if (isAtHudAnchorPos(m_networkLatencyPosition))
@@ -6137,27 +6161,7 @@ void InGameUI::drawSystemTime(Int &x, Int &y)
 		}
 		++m_currentFPS;
 
-		// TODO_NGMP: Cache this in a stats interface
-		/*
-		int highestLatency = 0;
-		if (TheNGMPGame != nullptr)
-		{
-			std::map<int64_t, PlayerConnection>& connections = NGMP_OnlineServicesManager::GetNetworkMesh()->GetAllConnections();
-			for (auto& kvPair : connections)
-			{
-				PlayerConnection& conn = kvPair.second;
-				if (conn.GetLatency() > highestLatency)
-				{
-					highestLatency = conn.GetLatency();
-				}
-			}
-		}
-		*/
-
-		int highestLatency = TheNetwork->getRunAhead() * (1000 / GENERALS_ONLINE_HIGH_FPS_LIMIT);
-
-		TimeString.format(L"%2.2d:%2.2d:%2.2d - R%d L%ld | Lat: %d frames (%d ms) - %d GenTool frames - RA %d", systemTime.wHour, systemTime.wMinute, systemTime.wSecond,
-			m_lastFPS, TheNetwork->getFrameRate(), ConvertMSLatencyToFrames(highestLatency), highestLatency, ConvertMSLatencyToGenToolFrames(highestLatency), TheNetwork->getRunAhead());
+		TimeString.format(L"%2.2d:%2.2d:%2.2d", systemTime.wHour, systemTime.wMinute, systemTime.wSecond);
 	}
 	else
 	{

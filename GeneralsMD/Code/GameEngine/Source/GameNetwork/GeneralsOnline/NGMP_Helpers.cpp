@@ -200,5 +200,5 @@ int ConvertMSLatencyToFrames(int ms)
 
 int ConvertMSLatencyToGenToolFrames(int ms)
 {
-	return ConvertMSLatencyToFrames(ms) / GENERALS_ONLINE_HIGH_FPS_FRAME_MULTIPLIER;
+	return (int)ceil((float)ConvertMSLatencyToFrames(ms) / (float)GENERALS_ONLINE_HIGH_FPS_FRAME_MULTIPLIER);
 }
