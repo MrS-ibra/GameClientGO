@@ -481,7 +481,7 @@ Real GameEngine::getActualLogicTimeScaleOverFpsRatio(LogicTimeQueryFlags flags)
 {
 	// TheSuperHackers @info Clamps ratio to min 1, because the logic
 	// frame rate is currently capped by the render frame rate.
-	return min(1.0f, (Real)getActualLogicTimeScaleFps(flags) / getUpdateFps());
+	return (min(1.0f, (Real)getActualLogicTimeScaleFps(flags) / getUpdateFps()))/2.f;
 }
 
 Real GameEngine::getLogicTimeStepSeconds(LogicTimeQueryFlags flags)
