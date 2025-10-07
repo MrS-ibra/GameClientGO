@@ -209,8 +209,7 @@ UnsignedInt INI::loadFileDirectory(AsciiString fileDirName, INILoadType loadType
 {
 	if (strstr(fileDirName.str(), ".ini") != NULL)
 	{
-		int x = 0;
-		x = 1;
+		__debugbreak();
 	}
 
 	UnsignedInt filesRead = 0;
@@ -256,8 +255,7 @@ UnsignedInt INI::loadDirectory(AsciiString dirName, INILoadType loadType, Xfer* 
 {
 	if (strstr(dirName.str(), ".ini") != NULL)
 	{
-		int x = 0;
-		x = 1;
+		__debugbreak();
 	}
 
 	UnsignedInt filesRead = 0;
@@ -400,8 +398,7 @@ UnsignedInt INI::load(AsciiString filename, INILoadType loadType, Xfer* pXfer)
 {
 	if (strstr(filename.str(), ".ini") == NULL)
 	{
-		int x = 0;
-		x = 1;
+		__debugbreak();
 	}
 
 	setFPMode(); // so we have consistent Real values for GameLogic -MDC

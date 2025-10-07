@@ -73,11 +73,7 @@
 enum
 {
 	BaseFps = 30, // The historic base frame rate for this game. This value must never change.
-#if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
-	LOGICFRAMES_PER_SECOND = GENERALS_ONLINE_HIGH_FPS_LIMIT,
-#else
 	LOGICFRAMES_PER_SECOND = WWSyncPerSecond, // TODO_MERGE: Use this instead of above
-#endif
 	MSEC_PER_SECOND = 1000
 };
 const Real LOGICFRAMES_PER_MSEC_REAL = (((Real)LOGICFRAMES_PER_SECOND) / ((Real)MSEC_PER_SECOND));

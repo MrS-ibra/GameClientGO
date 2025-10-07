@@ -6124,8 +6124,6 @@ void InGameUI::drawSystemTime(Int &x, Int &y)
 	GetLocalTime( &systemTime );
 
 	UnicodeString TimeString;
-	TimeString.format(L"%2.2d:%2.2d:%2.2d", systemTime.wHour, systemTime.wMinute, systemTime.wSecond);
-	m_systemTimeString->setText(TimeString);
 
 #if defined(GENERALS_ONLINE)
 	if (NGMP_OnlineServicesManager::Settings.Graphics_DrawStatsOverlay() && TheNetwork != nullptr)
@@ -6168,6 +6166,8 @@ void InGameUI::drawSystemTime(Int &x, Int &y)
 #else
 	TimeString.format(L"%2.2d:%2.2d:%2.2d", systemTime.wHour, systemTime.wMinute, systemTime.wSecond);
 #endif
+
+	m_systemTimeString->setText(TimeString);
 
 	// TheSuperHackers @info at the HUD anchor this draws inline and advances x otherwise uses configured position
 	if (isAtHudAnchorPos(m_systemTimePosition))

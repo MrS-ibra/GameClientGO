@@ -609,6 +609,7 @@ void HTreeClass::Anim_Update(const Matrix3D & root,HAnimClass * motion,float fra
 For use by 'Generals' -MW*/
 void HTreeClass::Anim_Update_Without_Interpolation(const Matrix3D & root,HRawAnimClass * motion,float frame)
 {
+#if !defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
 	if (WW3D::Get_Sync_Frame_Time() == 0 && (int)motion->Get_Frame_Rate() == WWSyncPerSecond)
 	{
 		// TheSuperHackers @tweak Keep the animation frame step in sync with the ww3d frame step if they can align.
@@ -616,6 +617,7 @@ void HTreeClass::Anim_Update_Without_Interpolation(const Matrix3D & root,HRawAni
 		static_assert(WWSyncPerSecond == 30, "This is currently catered to a 30 fps sync");
 		return;
 	}
+#endif
 
 	PivotClass *pivot,*endpivot,*lastAnimPivot;
 
