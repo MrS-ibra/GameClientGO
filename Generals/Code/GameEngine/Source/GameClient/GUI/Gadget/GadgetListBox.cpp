@@ -197,6 +197,14 @@ static Int getListboxBottomEntry( ListboxData *list )
 {
 	Int entry;
 
+	// Safety checks to prevent access violations during screen transitions
+	if( list == NULL )
+		return 0;
+	if( list->listData == NULL )
+		return 0;
+	if( list->endPos <= 0 )
+		return 0;
+
 	// determine which entry is at the top of the display area
 	for( entry=list->endPos - 1; ; entry-- )
 	{
