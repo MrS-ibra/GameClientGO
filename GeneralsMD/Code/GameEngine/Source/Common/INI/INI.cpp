@@ -207,6 +207,12 @@ INI::~INI(void)
 //-------------------------------------------------------------------------------------------------
 UnsignedInt INI::loadFileDirectory(AsciiString fileDirName, INILoadType loadType, Xfer* pXfer, Bool subdirs)
 {
+	if (strstr(fileDirName.str(), ".ini") != NULL)
+	{
+		int x = 0;
+		x = 1;
+	}
+
 	UnsignedInt filesRead = 0;
 
 	AsciiString iniDir = fileDirName;
@@ -248,6 +254,12 @@ UnsignedInt INI::loadFileDirectory(AsciiString fileDirName, INILoadType loadType
 	//-------------------------------------------------------------------------------------------------
 UnsignedInt INI::loadDirectory(AsciiString dirName, INILoadType loadType, Xfer* pXfer, Bool subdirs)
 {
+	if (strstr(dirName.str(), ".ini") != NULL)
+	{
+		int x = 0;
+		x = 1;
+	}
+
 	UnsignedInt filesRead = 0;
 
 	// sanity
@@ -386,6 +398,12 @@ static INIFieldParseProc findFieldParse(const FieldParse* parseTable, const char
 //-------------------------------------------------------------------------------------------------
 UnsignedInt INI::load(AsciiString filename, INILoadType loadType, Xfer* pXfer)
 {
+	if (strstr(filename.str(), ".ini") == NULL)
+	{
+		int x = 0;
+		x = 1;
+	}
+
 	setFPMode(); // so we have consistent Real values for GameLogic -MDC
 
 	s_xfer = pXfer;
