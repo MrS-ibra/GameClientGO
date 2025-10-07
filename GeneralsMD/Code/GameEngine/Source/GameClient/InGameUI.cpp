@@ -6045,7 +6045,7 @@ void InGameUI::updateRenderFpsString()
 void InGameUI::drawNetworkLatency(Int &x, Int &y)
 {
 #if defined(GENERALS_ONLINE)
-	const UnsignedInt actualLatencyInMS = 5 * (1000 / GENERALS_ONLINE_HIGH_FPS_LIMIT);
+	const UnsignedInt actualLatencyInMS = TheNetwork->getRunAhead() * (1000 / GENERALS_ONLINE_HIGH_FPS_LIMIT);
 	const UnsignedInt actualFrames = ConvertMSLatencyToFrames(actualLatencyInMS);
 	const UnsignedInt gentoolFrames = ConvertMSLatencyToGenToolFrames(actualLatencyInMS);
 
