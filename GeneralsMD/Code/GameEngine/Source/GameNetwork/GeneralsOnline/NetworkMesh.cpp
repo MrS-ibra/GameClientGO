@@ -496,7 +496,7 @@ public:
 							// the peer has a good reason for trying to connect, sending an active failure
 							// can improve error handling and the UX, instead of relying on timeout.  But
 							// just consider the security implications.
-
+							NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING] Sending rejection signal");
 							// Silence warnings
 							(void)identityPeer;
 							(void)pMsg;
@@ -531,6 +531,8 @@ public:
 
 NetworkMesh::NetworkMesh()
 {
+	SteamNetworkingUtils()->SetGlobalConfigValueInt32(k_ESteamNetworkingConfig_LogLevel_P2PRendezvous, k_ESteamNetworkingSocketsDebugOutputType_Error);
+
 	// try a shutdown
 	GameNetworkingSockets_Kill();
 
