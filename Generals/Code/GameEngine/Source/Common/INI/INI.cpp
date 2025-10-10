@@ -481,6 +481,11 @@ void INI::readLine( void )
 														 INI_MAX_CHARS_PER_LINE) );
 
 		}
+
+		// ensure buffer is always null-terminated, even if we hit the buffer limit
+		// this prevents buffer overruns when the buffer is passed to strtok() and other string functions
+		if( i >= INI_MAX_CHARS_PER_LINE )
+			m_buffer[ INI_MAX_CHARS_PER_LINE - 1 ] = '\0';
 	}
 
 	if (s_xfer)
