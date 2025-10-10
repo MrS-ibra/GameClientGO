@@ -17,7 +17,10 @@
 */
 
 #pragma once
+
 #include "../../GeneralsMD/Code/GameEngine/Include/GameNetwork/GeneralsOnline/NextGenMP_defines.h"
+
+#include "STLUtils.h"
 
 
 // This macro serves as a general way to determine the number of elements within an array.
