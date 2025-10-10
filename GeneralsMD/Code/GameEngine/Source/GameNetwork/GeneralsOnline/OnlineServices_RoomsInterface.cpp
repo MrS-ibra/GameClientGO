@@ -93,6 +93,10 @@ void WebSocket::Connect(const char* url)
 			m_bConnected = true;
 			m_vecWSPartialBuffer.clear();
 
+			// connecting is as good as a pong
+			m_lastPong = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::utc_clock::now().time_since_epoch()).count();
+			
+
 			NetworkLog(ELogVerbosity::LOG_RELEASE, "[WebSocket] Connected");
 		}
 	}
@@ -840,9 +844,9 @@ void WebSocket::Tick()
 	}
 
 	// time since last pong?
-	if ((currTime - m_lastPong) >= m_timeForWSTimeout)
+	if (m_lastPong != -1 && (currTime - m_lastPong) >= m_timeForWSTimeout)
 	{
-		NetworkLog(ELogVerbosity::LOG_RELEASE, "Got websocket disconnect (Timeout)");
+		NetworkLog(ELogVerbosity::LOG_RELEASE, "Got websocket disconnect (Timeout), last pong was at %UI64d, current time is %UI64d", m_lastPong, currTime);
 		NGMP_OnlineServicesManager::GetInstance()->SetPendingFullTeardown(EGOTearDownReason::LOST_CONNECTION);
 		m_bConnected = false;
 		m_vecWSPartialBuffer.clear();

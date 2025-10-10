@@ -189,6 +189,9 @@ public:
 
 #if defined(GENERALS_ONLINE)
 	ConnectionManager* GetConnectionManager() override { return m_conMgr; }
+
+	bool IsSlugging() override { return m_didSelfSlug; }
+	
 #endif
 
 protected:

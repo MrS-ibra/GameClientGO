@@ -6049,17 +6049,19 @@ void InGameUI::drawNetworkLatency(Int &x, Int &y)
 	const UnsignedInt actualFrames = ConvertMSLatencyToFrames(actualLatencyInMS);
 	const UnsignedInt gentoolFrames = ConvertMSLatencyToGenToolFrames(actualLatencyInMS);
 
+	bool bIsSelfSlugged = TheNetwork->IsSlugging();
+
 	if (gentoolFrames != m_lastNetworkLatencyFrames)
 	{
 		UnicodeString latencyStr;
 
 		if (actualFrames != gentoolFrames)
 		{
-			latencyStr.format(L"%u [%ums|%u][L: %u]", gentoolFrames, actualLatencyInMS, actualFrames, TheNetwork->getFrameRate());
+			latencyStr.format(L"%u [%ums|%u][L: %u%s]", gentoolFrames, actualLatencyInMS, actualFrames, TheNetwork->getFrameRate(), bIsSelfSlugged ? L" SLOWED" : L"");
 		}
 		else
 		{
-			latencyStr.format(L"%u [%ums][L: %u]", gentoolFrames, actualLatencyInMS, TheNetwork->getFrameRate());
+			latencyStr.format(L"%u [%ums][L: %u%s]", gentoolFrames, actualLatencyInMS, TheNetwork->getFrameRate(), bIsSelfSlugged ? L" SLOWED" : L"");
 		}
 		m_networkLatencyString->setText(latencyStr);
 		m_lastNetworkLatencyFrames = gentoolFrames;
@@ -6210,12 +6212,16 @@ void InGameUI::drawGameTime()
 					SteamNetConnectionRealTimeLaneStatus_t laneStatus[k_nLanes];
 					EResult res = SteamNetworkingSockets()->GetConnectionRealTimeStatus(connection.second.m_hSteamConnection, &status, k_nLanes, laneStatus);
 
+					
+					int avgFPS = TheNetwork->getSlotAverageFPS(lobbyMember.m_SlotIndex);
+
 					UnicodeString netString;
-					netString.format(L"\n[usr %s|%d][%hs %hs] Lat: %i, QualL: %.2f, QualR: %.2f OutP/s: %.2f, OutB/s: %.2f, InP/s: %.2f, InB/s: %.2f, SendRate %i PU: %d, PR: %d, NoACK: %d, QT: %I64d",
+					netString.format(L"\n[usr %s|%d][%hs %hs][AVGFPS: %d] Lat: %i, QL: %.2f, QR: %.2f OutP/s: %.2f, OutB/s: %.2f, InP/s: %.2f, InB/s: %.2f, SR %i PU: %d, PR: %d, NACK: %d, QT: %I64d",
 						from_utf8(lobbyMember.display_name).c_str(),
 						(int)res,
 						connection.second.IsIPV4() ? "IPv4" : "IPv6",
 						connection.second.IsDirect() ? "Direct" : "Relay",
+						avgFPS,
 						status.m_nPing,
 						status.m_flConnectionQualityLocal,
 						status.m_flConnectionQualityRemote,

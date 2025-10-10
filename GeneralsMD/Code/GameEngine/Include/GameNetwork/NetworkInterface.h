@@ -101,6 +101,7 @@ public:
 
 #if defined(GENERALS_ONLINE)
 	virtual void SeedLatencyData(int highestLatency) = 0;
+	virtual bool IsSlugging() = 0;
 #endif
 
 	virtual void updateLoadProgress( Int percent ) = 0;

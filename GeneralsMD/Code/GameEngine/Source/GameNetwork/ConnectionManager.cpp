@@ -1382,11 +1382,16 @@ void ConnectionManager::updateRunAhead(Int oldRunAhead, Int frameRate, Bool didS
 
 Real ConnectionManager::getMaximumLatency()
 {
-	ServiceConfig& serviceConf = NGMP_OnlineServicesManager::GetInstance()->GetServiceConfig();
-	int latencyLogicModel = serviceConf.network_latency_logic_model;
-	// 0 = original
-	// 1 = pick highest between original and Valve latency (current)
-	// 2 = pick highest between original and Valve latency (historic)
+	int latencyLogicModel = 0;
+
+	if (TheNGMPGame != nullptr)
+	{
+		ServiceConfig& serviceConf = NGMP_OnlineServicesManager::GetInstance()->GetServiceConfig();
+		latencyLogicModel = serviceConf.network_latency_logic_model;
+		// 0 = original
+		// 1 = pick highest between original and Valve latency (current)
+		// 2 = pick highest between original and Valve latency (historic)
+	}
 
 	Real maxLatency = 0.0f;
 
