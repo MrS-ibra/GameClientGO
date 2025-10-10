@@ -349,7 +349,6 @@ void W3DTreeBuffer::loadTreesInVertexAndIndexBuffers(RefRenderObjListIterator *p
 		}
 
 		Real typeOffset = type*0.5;
-		Int startVertex = m_curNumTreeVertices;
 		Int i, j;
 		Int numVertex = m_typeMesh[type]->Peek_Model()->Get_Vertex_Count();
 		Vector3 *pVert = m_typeMesh[type]->Peek_Model()->Get_Vertex_Array();
@@ -362,6 +361,8 @@ void W3DTreeBuffer::loadTreesInVertexAndIndexBuffers(RefRenderObjListIterator *p
 		if (m_curNumTreeIndices+3*numIndex+6 >= MAX_TREE_INDEX) {
 			break;
 		}
+
+		Int startVertex = m_curNumTreeVertices;
 
 		const Vector2*uvs=m_typeMesh[type]->Get_Model()->Get_UV_Array_By_Index(0);
 
