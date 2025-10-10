@@ -379,14 +379,6 @@ void NGMPGame::launchGame(void)
 	TheWritableGlobalData->m_showMetrics = true;
 #endif
 
-#if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
-	TheWritableGlobalData->m_networkFPSHistoryLength = 10;
-	TheWritableGlobalData->m_networkLatencyHistoryLength = 10;
-#else
-	TheWritableGlobalData->m_networkFPSHistoryLength = 10;
-	TheWritableGlobalData->m_networkLatencyHistoryLength = 10;
-#endif
-
 	TheWritableGlobalData->m_networkPlayerTimeoutTime = 10000;
 	TheWritableGlobalData->m_networkDisconnectScreenNotifyTime = 2500;
 
@@ -395,12 +387,26 @@ void NGMPGame::launchGame(void)
 	if (pOnlineServicesMgr != nullptr)
 	{
 		ServiceConfig& serviceConf = pOnlineServicesMgr->GetServiceConfig();
-		MIN_RUNAHEAD = serviceConf.min_run_ahead_frames;
 
-		TheWritableGlobalData->m_networkRunAheadSlack = serviceConf.ra_slack_percent;
-		TheWritableGlobalData->m_networkRunAheadMetricsTime = serviceConf.ra_update_frequency_frames * (float)(1000.f/GENERALS_ONLINE_HIGH_FPS_LIMIT);
+		if (serviceConf.use_default_config)
+		{
+			TheWritableGlobalData->m_networkFPSHistoryLength = 30;
+			TheWritableGlobalData->m_networkLatencyHistoryLength = 200;
+			TheWritableGlobalData->m_networkRunAheadSlack = 10;
+			TheWritableGlobalData->m_networkRunAheadMetricsTime = 5000;
+		}
+		else
+		{
+			TheWritableGlobalData->m_networkFPSHistoryLength = 10;
+			TheWritableGlobalData->m_networkLatencyHistoryLength = 10;
 
-		FRAME_GROUPING_CAP = serviceConf.frame_grouping_frames * (float)(1000.f / GENERALS_ONLINE_HIGH_FPS_LIMIT);
+			MIN_RUNAHEAD = serviceConf.min_run_ahead_frames;
+
+			TheWritableGlobalData->m_networkRunAheadSlack = serviceConf.ra_slack_percent;
+			TheWritableGlobalData->m_networkRunAheadMetricsTime = serviceConf.ra_update_frequency_frames * (float)(1000.f / GENERALS_ONLINE_HIGH_FPS_LIMIT);
+
+			FRAME_GROUPING_CAP = serviceConf.frame_grouping_frames * (float)(1000.f / GENERALS_ONLINE_HIGH_FPS_LIMIT);
+		}
 	}
 	
 
