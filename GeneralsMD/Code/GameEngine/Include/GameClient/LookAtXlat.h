@@ -50,10 +50,11 @@ class LookAtTranslator : public GameMessageTranslator
 public:
 	LookAtTranslator();
 	~LookAtTranslator();
-	virtual GameMessageDisposition translateGameMessage(const GameMessage *msg);
+
+	virtual GameMessageDisposition translateGameMessage(const GameMessage* msg);
 	virtual const ICoord2D* getRMBScrollAnchor(void); // get m_anchor ICoord2D if we're RMB scrolling
-	Bool hasMouseMovedRecently( void );
-	void setCurrentPos( const ICoord2D& pos );
+	Bool hasMouseMovedRecently(void);
+	void setCurrentPos(const ICoord2D& pos);
 	void setScreenEdgeScrollMode(ScreenEdgeScrollMode mode);
 
 	void resetModes(); //Used when disabling input, so when we reenable it we aren't stuck in a mode.
@@ -89,6 +90,6 @@ private:
 	Bool canScrollAtScreenEdge() const;
 };
 
-extern LookAtTranslator *TheLookAtTranslator;
+extern LookAtTranslator* TheLookAtTranslator;
 
 #endif
