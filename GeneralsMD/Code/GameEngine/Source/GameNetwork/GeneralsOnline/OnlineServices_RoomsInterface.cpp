@@ -921,7 +921,7 @@ void NGMP_OnlineServices_RoomsInterface::JoinRoom(int roomIndex, std::function<v
 
 			NetworkRoom targetNetworkRoom = pRoomsInterface->GetGroupRooms().at(roomIndex);
 
-			WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();;
+			std::shared_ptr<WebSocket>  pWS = NGMP_OnlineServicesManager::GetWebSocket();;
 			if (pWS != nullptr)
 			{
 				pWS->SendData_JoinNetworkRoom(targetNetworkRoom.GetRoomID());
@@ -940,7 +940,7 @@ std::map<uint64_t, NetworkRoomMember>& NGMP_OnlineServices_RoomsInterface::GetMe
 
 void NGMP_OnlineServices_RoomsInterface::SendChatMessageToCurrentRoom(UnicodeString& strChatMsgUnicode, bool bIsAction)
 {
-	WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();;
+	std::shared_ptr<WebSocket>  pWS = NGMP_OnlineServicesManager::GetWebSocket();;
 	if (pWS != nullptr)
 	{
 		pWS->SendData_RoomChatMessage(strChatMsgUnicode, bIsAction);

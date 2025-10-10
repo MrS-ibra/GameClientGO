@@ -1071,7 +1071,7 @@ static void StartPressed(void)
 		UnicodeString strInform = UnicodeString(L"Starting full mesh connectivity checks...");
 		GadgetListBoxAddEntryText(listboxGameSetupChat, strInform, GameMakeColor(255, 194, 15, 255), -1, -1);
 
-		WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();
+		std::shared_ptr<WebSocket>  pWS = NGMP_OnlineServicesManager::GetWebSocket();
 		if (pWS != nullptr)
 		{
 			// we've started, there's no going back
@@ -2359,7 +2359,7 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 					TheNGMPGame->StopCountdown();
 
 					// send start game packet
-					WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();
+					std::shared_ptr<WebSocket>  pWS = NGMP_OnlineServicesManager::GetWebSocket();
 					if (pWS != nullptr)
 					{
 						pWS->SendData_StartGame();
@@ -3450,7 +3450,7 @@ Bool handleGameSetupSlashCommands(UnicodeString uText)
 				}
 				else
 				{
-					WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();
+					std::shared_ptr<WebSocket>  pWS = NGMP_OnlineServicesManager::GetWebSocket();
 					if (pWS != nullptr)
 					{
 						pWS->SendData_ChangeLobbyPassword(newPassword);
@@ -3480,7 +3480,7 @@ Bool handleGameSetupSlashCommands(UnicodeString uText)
 			{
 				if (theLobby.passworded)
 				{
-					WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();
+					std::shared_ptr<WebSocket>  pWS = NGMP_OnlineServicesManager::GetWebSocket();
 					if (pWS != nullptr)
 					{
 						pWS->SendData_RemoveLobbyPassword();

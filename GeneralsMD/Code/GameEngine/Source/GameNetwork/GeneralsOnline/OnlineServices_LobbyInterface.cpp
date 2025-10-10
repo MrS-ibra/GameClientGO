@@ -424,7 +424,7 @@ void NGMP_OnlineServices_LobbyInterface::UpdateCurrentLobby_ForceReady()
 
 void NGMP_OnlineServices_LobbyInterface::SendChatMessageToCurrentLobby(UnicodeString& strChatMsgUnicode, bool bIsAction)
 {
-	WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();;
+	std::shared_ptr<WebSocket>  pWS = NGMP_OnlineServicesManager::GetWebSocket();;
 	if (pWS != nullptr)
 	{
 		pWS->SendData_LobbyChatMessage(strChatMsgUnicode, bIsAction, false, false);
@@ -434,7 +434,7 @@ void NGMP_OnlineServices_LobbyInterface::SendChatMessageToCurrentLobby(UnicodeSt
 // TODO_NGMP: Just send a separate packet for each announce, more efficient and less hacky
 void NGMP_OnlineServices_LobbyInterface::SendAnnouncementMessageToCurrentLobby(UnicodeString& strAnnouncementMsgUnicode, bool bShowToHost)
 {
-	WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();;
+	std::shared_ptr<WebSocket>  pWS = NGMP_OnlineServicesManager::GetWebSocket();;
 	if (pWS != nullptr)
 	{
 		pWS->SendData_LobbyChatMessage(strAnnouncementMsgUnicode, false, true, bShowToHost);
@@ -640,11 +640,9 @@ void NGMP_OnlineServices_LobbyInterface::Tick()
 void NGMP_OnlineServices_LobbyInterface::ApplyLocalUserPropertiesToCurrentNetworkRoom()
 {
 	// TODO_NGMP: Better detection of this, dont update always
-	
-	// TODO_NGMP: Support unreadying again when player changes team etc
 	// are we ready?
 
-	WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();;
+	std::shared_ptr<WebSocket>  pWS = NGMP_OnlineServicesManager::GetWebSocket();;
 	if (pWS != nullptr)
 	{
 		GameSlot* pLocalSlot = TheNGMPGame->getSlot(TheNGMPGame->getLocalSlotNum());

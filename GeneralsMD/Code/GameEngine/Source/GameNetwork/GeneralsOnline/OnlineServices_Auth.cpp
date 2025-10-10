@@ -88,7 +88,7 @@ void NGMP_OnlineServices_AuthInterface::GoToDetermineNetworkCaps()
 				bool bResult = true;
 
 				// WS should be connected by this point
-				WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();
+				std::shared_ptr<WebSocket>  pWS = NGMP_OnlineServicesManager::GetWebSocket();
 				bool bWSConnected = pWS == nullptr ? false : pWS->IsConnected();
 				if (!bWSConnected)
 				{
@@ -118,7 +118,7 @@ void NGMP_OnlineServices_AuthInterface::GoToDetermineNetworkCaps()
 				bool bResult = true;
 
 				// WS should be connected by this point
-				WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();;
+				std::shared_ptr<WebSocket>  pWS = NGMP_OnlineServicesManager::GetWebSocket();;
 				bool bWSConnected = pWS == nullptr ? false : pWS->IsConnected();
 				if (!bWSConnected)
 				{

@@ -193,7 +193,7 @@ Bool handleLobbySlashCommands(UnicodeString uText)
 		}
 		else
 		{
-			WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();
+			std::shared_ptr<WebSocket>  pWS = NGMP_OnlineServicesManager::GetWebSocket();
 			if (pWS != nullptr)
 			{
 				pWS->SendData_ChangeName(newName);
@@ -2609,7 +2609,7 @@ WindowMsgHandledType WOLLobbyMenuSystem( GameWindow *window, UnsignedInt msg,
 					// Send the message
 					if (!handleLobbySlashCommands(txtInput))
 					{
-						WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();
+						std::shared_ptr<WebSocket>  pWS = NGMP_OnlineServicesManager::GetWebSocket();
 						if (pWS != nullptr)
 						{
 							pWS->SendData_RoomChatMessage(txtInput, false);

@@ -979,7 +979,6 @@ void RefreshGameListBox( GameWindow *win, Bool showMap )
 
 	// save off selection
 	Int selectedIndex = -1;
-	Int indexToSelect = -1;
 	Int selectedID = 0;
 	GadgetListBoxGetSelected(win, &selectedIndex);
 	if (selectedIndex != -1 )

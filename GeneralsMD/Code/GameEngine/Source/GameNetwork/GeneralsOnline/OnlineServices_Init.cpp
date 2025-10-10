@@ -261,6 +261,8 @@ void NGMP_OnlineServicesManager::WaitForScreenshotThreads()
 	NetworkLog(ELogVerbosity::LOG_RELEASE, "[NGMP] All screenshot threads completed");
 }
 
+void NGMP_OnlineServicesManager::Shutdown()
+{
 	if (m_pWebSocket)
 	{
 		m_pWebSocket->Shutdown();

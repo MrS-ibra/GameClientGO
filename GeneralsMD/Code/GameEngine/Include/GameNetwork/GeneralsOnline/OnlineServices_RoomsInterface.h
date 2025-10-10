@@ -99,7 +99,7 @@ public:
 
 	void LeaveRoom()
 	{
-		WebSocket* pWS = NGMP_OnlineServicesManager::GetWebSocket();
+		std::shared_ptr<WebSocket> pWS = NGMP_OnlineServicesManager::GetWebSocket();
 		if (pWS != nullptr)
 		{
 			pWS->SendData_LeaveNetworkRoom();
