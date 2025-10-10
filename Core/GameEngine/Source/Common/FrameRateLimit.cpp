@@ -57,7 +57,11 @@ Real FrameRateLimit::wait(UnsignedInt maxFps)
 const UnsignedInt RenderFpsPreset::s_fpsValues[] = {
 	30, 50, 56, 60, 65, 70, 72, 75, 80, 85, 90, 100, 110, 120, 144, 240, 480, UncappedFpsValue };
 
+#if defined(GENERALS_ONLINE)
+static_assert(LOGICFRAMES_PER_SECOND <= GENERALS_ONLINE_HIGH_FPS_LIMIT, "Min FPS values need to be revisited!");
+#else
 static_assert(LOGICFRAMES_PER_SECOND <= 30, "Min FPS values need to be revisited!");
+#endif
 
 UnsignedInt RenderFpsPreset::getNextFpsValue(UnsignedInt value)
 {

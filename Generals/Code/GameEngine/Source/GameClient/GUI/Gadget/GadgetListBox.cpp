@@ -197,6 +197,14 @@ static Int getListboxBottomEntry( ListboxData *list )
 {
 	Int entry;
 
+	// Safety checks to prevent access violations during screen transitions
+	if( list == NULL )
+		return 0;
+	if( list->listData == NULL )
+		return 0;
+	if( list->endPos <= 0 )
+		return 0;
+
 	// determine which entry is at the top of the display area
 	for( entry=list->endPos - 1; ; entry-- )
 	{
@@ -258,6 +266,11 @@ static void adjustDisplay( GameWindow *window, Int adjustment,
 		GameWindow *child;
 
 		sData = (SliderData *)list->slider->winGetUserData();
+		
+		// Safety check: ensure slider data is valid before accessing it
+		if( sData == NULL )
+			return;
+		
 		list->slider->winGetSize( &sliderSize.x, &sliderSize.y );
 		// Take into account that there is a line-drawn outline surrounding listbox
 		sData->maxVal = list->totalHeight - ( list->displayHeight - TOTAL_OUTLINE_HEIGHT ) + 1;
@@ -268,6 +281,12 @@ static void adjustDisplay( GameWindow *window, Int adjustment,
 		}
 
 		child = list->slider->winGetChild();
+		if( child == NULL )
+		{
+			// Slider thumb button is missing - cannot adjust display properly
+			DEBUG_LOG(( "adjustDisplay: slider child is NULL, skipping slider adjustment" ));
+			return;
+		}
 		child->winGetSize( &sliderChildSize.x, &sliderChildSize.y );
 		sData->numTicks = (float)((sliderSize.y - sliderChildSize.y) / (float)sData->maxVal);
 
@@ -1972,6 +1991,11 @@ WindowMsgHandledType GadgetListBoxSystem( GameWindow *window, UnsignedInt msg,
 			delete[]( list->columnWidthPercentage );
 			if( list->multiSelect )
 				delete[]( list->selections );
+
+			// Clear child window pointers to prevent dangling pointer access
+			list->slider = NULL;
+			list->upButton = NULL;
+			list->downButton = NULL;
 
 			delete (ListboxData *)window->winGetUserData();
 			window->winSetUserData( NULL );

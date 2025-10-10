@@ -96,14 +96,14 @@ private:
 		unsigned short	m_numCharsAllocated;  // length of data allocated
 		// char m_stringdata[];
 
-		inline char* peek() { return (char*)(this+1); }
+		inline char* peek() { return (char*)(this + 1); }
 	};
 
-	#ifdef RTS_DEBUG
+#ifdef RTS_DEBUG
 	void validate() const;
-	#else
-	inline void validate() const { }
-	#endif
+#else
+	inline void validate() const {}
+#endif
 
 protected:
 	AsciiStringData* m_data;   // pointer to ref counted string data
@@ -113,6 +113,10 @@ protected:
 	void ensureUniqueBufferOfSize(int numCharsNeeded, Bool preserveData, const char* strToCpy, const char* strToCat);
 
 public:
+
+	typedef Char value_type;
+	typedef value_type* pointer;
+	typedef const value_type* const_pointer;
 
 	enum
 	{
@@ -147,6 +151,12 @@ public:
 		always wanted, anyhow.
 	*/
 	AsciiString(const char* s);
+
+	/**
+		Constructs an AsciiString with the given string and length.
+		The length must not be larger than the actual string length.
+	*/
+	AsciiString(const char* s, int len);
 
 	/**
 		Destructor. Not too exciting... clean up the works and such.
@@ -200,11 +210,19 @@ public:
 		refcount.)
 	*/
 	void set(const AsciiString& stringSrc);
+
 	/**
 		Replace the contents of self with the given string.
 		Note that a copy of the string is made; the input ptr is not saved.
 	*/
 	void set(const char* s);
+
+	/**
+		Replace the contents of self with the given string and length.
+		Note that a copy of the string is made; the input ptr is not saved.
+		The length must not be larger than the actual string length.
+	*/
+	void set(const char* s, int len);
 
 	/**
 		replace contents of self with the given string. Note the
@@ -231,7 +249,7 @@ public:
 	/**
 	  Remove leading and trailing whitespace from the string.
 	*/
-	void trim( void );
+	void trim(void);
 
 	/**
 	  Remove trailing whitespace from the string.
@@ -246,7 +264,7 @@ public:
 	/**
 	  Make the string lowercase
 	*/
-	void toLower( void );
+	void toLower(void);
 
 	/**
 		Remove the final character in the string. If the string is empty,
@@ -351,15 +369,15 @@ public:
 	Bool isNotEmpty() const { return !isEmpty(); }
 	Bool isNotNone() const { return !isNone(); }
 
-//
-// You might think it would be a good idea to overload the * operator
-// to allow for an implicit conversion to an char*. This is
-// (in theory) a good idea, but in practice, there's lots of code
-// that assumes it should check text fields for null, which
-// is meaningless for us, since we never return a null ptr.
-//
-//	operator const char*() const { return str(); }
-//
+	//
+	// You might think it would be a good idea to overload the * operator
+	// to allow for an implicit conversion to an char*. This is
+	// (in theory) a good idea, but in practice, there's lots of code
+	// that assumes it should check text fields for null, which
+	// is meaningless for us, since we never return a null ptr.
+	//
+	//	operator const char*() const { return str(); }
+	//
 
 	AsciiString& operator=(const AsciiString& stringSrc);	///< the same as set()
 	AsciiString& operator=(const char* s);				///< the same as set()

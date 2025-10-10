@@ -1194,7 +1194,7 @@ InGameUI::~InGameUI()
 void InGameUI::init( void )
 {
 	INI ini;
-	ini.loadFileDirectory( AsciiString( "Data\\INI\\InGameUI.ini" ), INI_LOAD_OVERWRITE, NULL );
+	ini.loadFileDirectory( AsciiString( "Data\\INI\\InGameUI" ), INI_LOAD_OVERWRITE, NULL );
 
 	//override INI values with language localized values:
 	if (TheGlobalLanguageData)
@@ -6044,6 +6044,27 @@ void InGameUI::updateRenderFpsString()
 
 void InGameUI::drawNetworkLatency(Int &x, Int &y)
 {
+#if defined(GENERALS_ONLINE)
+	const UnsignedInt actualLatencyInMS = TheNetwork->getRunAhead() * (1000 / GENERALS_ONLINE_HIGH_FPS_LIMIT);
+	const UnsignedInt actualFrames = ConvertMSLatencyToFrames(actualLatencyInMS);
+	const UnsignedInt gentoolFrames = ConvertMSLatencyToGenToolFrames(actualLatencyInMS);
+
+	if (gentoolFrames != m_lastNetworkLatencyFrames)
+	{
+		UnicodeString latencyStr;
+
+		if (actualFrames != gentoolFrames)
+		{
+			latencyStr.format(L"%u [%ums|%u][L: %u]", gentoolFrames, actualLatencyInMS, actualFrames, TheNetwork->getFrameRate());
+		}
+		else
+		{
+			latencyStr.format(L"%u [%ums][L: %u]", gentoolFrames, actualLatencyInMS, TheNetwork->getFrameRate());
+		}
+		m_networkLatencyString->setText(latencyStr);
+		m_lastNetworkLatencyFrames = gentoolFrames;
+	}
+#else
 	const UnsignedInt networkLatencyFrames = TheNetwork->getRunAhead();
 
 	if (networkLatencyFrames != m_lastNetworkLatencyFrames)
@@ -6053,6 +6074,9 @@ void InGameUI::drawNetworkLatency(Int &x, Int &y)
 		m_networkLatencyString->setText(latencyStr);
 		m_lastNetworkLatencyFrames = networkLatencyFrames;
 	}
+#endif
+
+	
 
 	// TheSuperHackers @info at the HUD anchor this draws inline and advances x otherwise uses configured position
 	if (isAtHudAnchorPos(m_networkLatencyPosition))
@@ -6124,8 +6148,6 @@ void InGameUI::drawSystemTime(Int &x, Int &y)
 	GetLocalTime( &systemTime );
 
 	UnicodeString TimeString;
-	TimeString.format(L"%2.2d:%2.2d:%2.2d", systemTime.wHour, systemTime.wMinute, systemTime.wSecond);
-	m_systemTimeString->setText(TimeString);
 
 #if defined(GENERALS_ONLINE)
 	if (NGMP_OnlineServicesManager::Settings.Graphics_DrawStatsOverlay() && TheNetwork != nullptr)
@@ -6139,27 +6161,7 @@ void InGameUI::drawSystemTime(Int &x, Int &y)
 		}
 		++m_currentFPS;
 
-		// TODO_NGMP: Cache this in a stats interface
-		/*
-		int highestLatency = 0;
-		if (TheNGMPGame != nullptr)
-		{
-			std::map<int64_t, PlayerConnection>& connections = NGMP_OnlineServicesManager::GetNetworkMesh()->GetAllConnections();
-			for (auto& kvPair : connections)
-			{
-				PlayerConnection& conn = kvPair.second;
-				if (conn.GetLatency() > highestLatency)
-				{
-					highestLatency = conn.GetLatency();
-				}
-			}
-		}
-		*/
-
-		int highestLatency = TheNetwork->getRunAhead() * (1000 / GENERALS_ONLINE_HIGH_FPS_LIMIT);
-
-		TimeString.format(L"%2.2d:%2.2d:%2.2d - R%d L%ld | Lat: %d frames (%d ms) - %d GenTool frames - RA %d", systemTime.wHour, systemTime.wMinute, systemTime.wSecond,
-			m_lastFPS, TheNetwork->getFrameRate(), ConvertMSLatencyToFrames(highestLatency), highestLatency, ConvertMSLatencyToGenToolFrames(highestLatency), TheNetwork->getRunAhead());
+		TimeString.format(L"%2.2d:%2.2d:%2.2d", systemTime.wHour, systemTime.wMinute, systemTime.wSecond);
 	}
 	else
 	{
@@ -6168,6 +6170,8 @@ void InGameUI::drawSystemTime(Int &x, Int &y)
 #else
 	TimeString.format(L"%2.2d:%2.2d:%2.2d", systemTime.wHour, systemTime.wMinute, systemTime.wSecond);
 #endif
+
+	m_systemTimeString->setText(TimeString);
 
 	// TheSuperHackers @info at the HUD anchor this draws inline and advances x otherwise uses configured position
 	if (isAtHudAnchorPos(m_systemTimePosition))
@@ -6184,47 +6188,59 @@ void InGameUI::drawSystemTime(Int &x, Int &y)
 void InGameUI::drawGameTime()
 {
 	// draw connections
-	/*
-	if (TheNGMPGame != nullptr)
+	if (NGMP_OnlineServicesManager::IsAdvancedNetworkStatsEnabled())
 	{
-		NetworkMesh* pMesh = NGMP_OnlineServicesManager::GetNetworkMesh();
-
-		if (pMesh != nullptr)
+		if (TheNGMPGame != nullptr)
 		{
-			int i = 0;
-			for (const auto& connection : pMesh->GetAllConnections())
+			NetworkMesh* pMesh = NGMP_OnlineServicesManager::GetNetworkMesh();
+
+			NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+
+			if (pMesh != nullptr && pLobbyInterface != nullptr)
 			{
-				const int k_nLanes = 1;
-				SteamNetConnectionRealTimeStatus_t status;
-				SteamNetConnectionRealTimeLaneStatus_t laneStatus[k_nLanes];
-				EResult res = SteamNetworkingSockets()->GetConnectionRealTimeStatus(connection.second.m_hSteamConnection, &status, k_nLanes, laneStatus);
+				//std::vector<LobbyMemberEntry>& vecMembers = pLobbyInterface->GetMembersListForCurrentRoom();
+				
+				int i = 0;
+				for (auto& connection : pMesh->GetAllConnections())
+				{
+					LobbyMemberEntry lobbyMember = pLobbyInterface->GetRoomMemberFromID(connection.first);
 
-				UnicodeString netString;
-				netString.format(L"\n[usr %lld | %d] Lat: %i, QualL: %.2f, QualR: %.2f OutP/s: %.2f, OutB/s: %.2f, InP/s: %.2f, InB/s: %.2f, SendRate %i PU: %d, PR: %d",
-					connection.first,
-					(int)res,
-					status.m_nPing,
-					status.m_flConnectionQualityLocal,
-					status.m_flConnectionQualityRemote,
-					status.m_flOutPacketsPerSec,
-					status.m_flOutBytesPerSec,
-					status.m_flInPacketsPerSec,
-					status.m_flInBytesPerSec,
-					status.m_nSendRateBytesPerSecond,
-					status.m_cbPendingUnreliable,
-					status.m_cbPendingReliable);
+					const int k_nLanes = 1;
+					SteamNetConnectionRealTimeStatus_t status;
+					SteamNetConnectionRealTimeLaneStatus_t laneStatus[k_nLanes];
+					EResult res = SteamNetworkingSockets()->GetConnectionRealTimeStatus(connection.second.m_hSteamConnection, &status, k_nLanes, laneStatus);
 
-				int w, h;
-				m_gameTimeString->getSize(&w, &h);
+					UnicodeString netString;
+					netString.format(L"\n[usr %s|%d][%hs %hs] Lat: %i, QualL: %.2f, QualR: %.2f OutP/s: %.2f, OutB/s: %.2f, InP/s: %.2f, InB/s: %.2f, SendRate %i PU: %d, PR: %d, NoACK: %d, QT: %I64d",
+						from_utf8(lobbyMember.display_name).c_str(),
+						(int)res,
+						connection.second.IsIPV4() ? "IPv4" : "IPv6",
+						connection.second.IsDirect() ? "Direct" : "Relay",
+						status.m_nPing,
+						status.m_flConnectionQualityLocal,
+						status.m_flConnectionQualityRemote,
+						status.m_flOutPacketsPerSec,
+						status.m_flOutBytesPerSec,
+						status.m_flInPacketsPerSec,
+						status.m_flInBytesPerSec,
+						status.m_nSendRateBytesPerSecond,
+						status.m_cbPendingUnreliable,
+						status.m_cbPendingReliable,
+						status.m_cbSentUnackedReliable,
+						status.m_usecQueueTime);
 
-				m_gameTimeString->setText(netString);
-				m_gameTimeString->draw(0, 500 + (i * h/2), m_gameTimeColor, m_gameTimeDropColor);
-				++i;
+					int w, h;
+					m_gameTimeString->getSize(&w, &h);
+
+					m_gameTimeString->setText(netString);
+					m_gameTimeString->draw(0, 500 + (i * h / 2), m_gameTimeColor, m_gameTimeDropColor);
+					++i;
+				}
 			}
+
 		}
-		
 	}
-	*/
+
 	Int currentFrame = TheGameLogic->getFrame();
 	Int gameSeconds = (Int) (SECONDS_PER_LOGICFRAME_REAL * currentFrame );
 	Int hours = gameSeconds / 60 / 60;

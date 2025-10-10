@@ -72,8 +72,25 @@ public:
 
 	virtual void execute( void );											/**< The "main loop" of the game engine.
 																								 It will not return until the game exits. */
-	virtual void setFramesPerSecondLimit( Int fps );	///< Set the maximum rate engine updates are allowed to occur
-	virtual Int  getFramesPerSecondLimit( void );			///< Get maxFPS.  Not inline since it is called from another lib.
+
+	virtual void setFramesPerSecondLimit( Int fps ); ///< Set the max render and engine update fps.
+	virtual Int getFramesPerSecondLimit( void ); ///< Get the max render and engine update fps.
+	Real getUpdateTime(); ///< Get the last engine update delta time in seconds.
+	Real getUpdateFps(); ///< Get the last engine update fps.
+
+	static Bool isTimeFrozen(); ///< Returns true if a script has frozen time.
+	static Bool isGameHalted(); ///< Returns true if the game is paused or the network is stalling.
+
+	virtual void setLogicTimeScaleFps( Int fps ); ///< Set the logic time scale fps and therefore scale the simulation time. Is capped by the max render fps and does not apply to network matches.
+	virtual Int getLogicTimeScaleFps(); ///< Get the raw logic time scale fps value.
+	virtual void enableLogicTimeScale( Bool enable ); ///< Enable the logic time scale setup. If disabled, the simulation time scale is bound to the render frame time or network update time.
+	virtual Bool isLogicTimeScaleEnabled(); ///< Check whether the logic time scale setup is enabled.
+	Int  getActualLogicTimeScaleFps(LogicTimeQueryFlags flags = 0); ///< Get the real logic time scale fps, depending on the max render fps, network state and enabled state.
+	Real getActualLogicTimeScaleRatio(LogicTimeQueryFlags flags = 0); ///< Get the real logic time scale ratio, depending on the max render fps, network state and enabled state.
+	Real getActualLogicTimeScaleOverFpsRatio(LogicTimeQueryFlags flags = 0); ///< Get the real logic time scale over render fps ratio, used to scale down steps in render updates to match logic updates.
+	Real getLogicTimeStepSeconds(LogicTimeQueryFlags flags = 0); ///< Get the logic time step in seconds
+	Real getLogicTimeStepMilliseconds(LogicTimeQueryFlags flags = 0); ///< Get the logic time step in milliseconds
+
 	virtual void setQuitting( Bool quitting );				///< set quitting status
 	virtual Bool getQuitting(void);						///< is app getting ready to quit.
 
@@ -104,6 +121,15 @@ protected:
 	Int m_maxFPS;																									///< Maximum frames per second allowed
   Bool m_quitting;  ///< true when we need to quit the game
 	Bool m_isActive;	///< app has OS focus.
+
+	Real m_updateTime; ///< Last engine update delta time in seconds
+	Real m_logicTimeAccumulator; ///< Frame time accumulated towards submitting a new logic frame
+
+	Bool m_quitting; ///< true when we need to quit the game
+	Bool m_isActive; ///< app has OS focus.
+	Bool m_enableLogicTimeScale;
+	Bool m_isTimeFrozen;
+	Bool m_isGameHalted;
 
 };
 inline void GameEngine::setQuitting( Bool quitting ) { m_quitting = quitting; }

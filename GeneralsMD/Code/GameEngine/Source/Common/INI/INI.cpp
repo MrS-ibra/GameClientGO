@@ -207,6 +207,11 @@ INI::~INI(void)
 //-------------------------------------------------------------------------------------------------
 UnsignedInt INI::loadFileDirectory(AsciiString fileDirName, INILoadType loadType, Xfer* pXfer, Bool subdirs)
 {
+	if (strstr(fileDirName.str(), ".ini") != NULL)
+	{
+		__debugbreak();
+	}
+
 	UnsignedInt filesRead = 0;
 
 	AsciiString iniDir = fileDirName;
@@ -248,6 +253,11 @@ UnsignedInt INI::loadFileDirectory(AsciiString fileDirName, INILoadType loadType
 	//-------------------------------------------------------------------------------------------------
 UnsignedInt INI::loadDirectory(AsciiString dirName, INILoadType loadType, Xfer* pXfer, Bool subdirs)
 {
+	if (strstr(dirName.str(), ".ini") != NULL)
+	{
+		__debugbreak();
+	}
+
 	UnsignedInt filesRead = 0;
 
 	// sanity
@@ -386,6 +396,11 @@ static INIFieldParseProc findFieldParse(const FieldParse* parseTable, const char
 //-------------------------------------------------------------------------------------------------
 UnsignedInt INI::load(AsciiString filename, INILoadType loadType, Xfer* pXfer)
 {
+	if (strstr(filename.str(), ".ini") == NULL)
+	{
+		__debugbreak();
+	}
+
 	setFPMode(); // so we have consistent Real values for GameLogic -MDC
 
 	s_xfer = pXfer;
@@ -515,6 +530,11 @@ void INI::readLine(void)
 				INI_MAX_CHARS_PER_LINE));
 
 		}
+
+		// ensure buffer is always null-terminated, even if we hit the buffer limit
+		// this prevents buffer overruns when the buffer is passed to strtok() and other string functions
+		if (p >= m_buffer + INI_MAX_CHARS_PER_LINE)
+			m_buffer[INI_MAX_CHARS_PER_LINE - 1] = '\0';
 	}
 
 	if (s_xfer)

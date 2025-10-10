@@ -1143,6 +1143,13 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 			{
 				NetworkLog(ELogVerbosity::LOG_DEBUG, "[QUICKMATCH] GOT START GAME EVENT");
 
+				// Check if TheNGMPGame is initialized before dereferencing it
+				if (!TheNGMPGame)
+				{
+					NetworkLog(ELogVerbosity::LOG_DEBUG, "[QUICKMATCH] NO NGMP GAME INSTANCE");
+					return;
+				}
+
 				// mark everyone as having the map, we dont allow user provided custom maps or map transfers in QM
 				// TODO_QUICKMATCH: Do this automatically for game type quickmatch, or better yet, do it on the service
 				for (int i = 0; i < MAX_SLOTS; i++)
@@ -1161,12 +1168,6 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 				if (pLobbyInterface == nullptr || !myGame || !myGame->isInGame())
 				{
 					NetworkLog(ELogVerbosity::LOG_DEBUG, "[QUICKMATCH] Checks failed, %d, %d, %d", pLobbyInterface == nullptr, !myGame, !myGame->isInGame());
-					return;
-				}
-
-				if (!TheNGMPGame)
-				{
-					NetworkLog(ELogVerbosity::LOG_DEBUG, "[QUICKMATCH] NO NGMP GAME INSTANCE");
 					return;
 				}
 

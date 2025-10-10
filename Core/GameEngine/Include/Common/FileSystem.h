@@ -54,6 +54,8 @@
 #include "Common/STLTypedefs.h"
 #include "Common/SubsystemInterface.h"
 
+#include <Utility/hash_map_adapter.h>
+
 //----------------------------------------------------------------------------
 //           Forward References
 //----------------------------------------------------------------------------
@@ -87,11 +89,13 @@ typedef FilenameList::iterator FilenameListIter;
 
 // LOAD_TEST_ASSETS automatically loads w3d assets from the TEST_W3D_DIR_PATH
 // without having to add an INI entry.
-///@todo this allows us to use the test art directory, it should be removed for FINAL release
+#if defined(RTS_DEBUG)
 #define LOAD_TEST_ASSETS 1
+#endif
+
 #ifdef LOAD_TEST_ASSETS
-	#define ROAD_DIRECTORY		"../TestArt/TestRoad/"
-	#define TEST_STRING				"***TESTING"
+#define ROAD_DIRECTORY		"../TestArt/TestRoad/"
+#define TEST_STRING				"***TESTING"
 // the following directories will be used to look for test art
 #define LOOK_FOR_TEST_ART
 #define TEST_W3D_DIR_PATH "../TestArt/"					///< .w3d files live here
@@ -114,13 +118,12 @@ struct FileInfo {
 	* A FileSystem object's implemenation decides what derivative of File object needs to be
 	* created when FileSystem::Open() gets called.
 	*/
-//===============================
-#include <map>
+	//===============================
 
 class FileSystem : public SubsystemInterface
 {
-  FileSystem(const FileSystem&);
-  FileSystem& operator=(const FileSystem&);
+	FileSystem(const FileSystem&);
+	FileSystem& operator=(const FileSystem&);
 
 public:
 	FileSystem();
@@ -130,10 +133,10 @@ public:
 	void reset();
 	void update();
 
-	File* openFile( const Char *filename, Int access = File::NONE, size_t bufferSize = File::BUFFERSIZE );		///< opens a File interface to the specified file
-	Bool doesFileExist(const Char *filename) const;								///< returns TRUE if the file exists.  filename should have no directory.
-	void getFileListInDirectory(const AsciiString& directory, const AsciiString& searchName, FilenameList &filenameList, Bool searchSubdirectories) const; ///< search the given directory for files matching the searchName (egs. *.ini, *.rep).  Possibly search subdirectories.
-	Bool getFileInfo(const AsciiString& filename, FileInfo *fileInfo) const; ///< fills in the FileInfo struct for the file given. returns TRUE if successful.
+	File* openFile(const Char* filename, Int access = File::NONE, size_t bufferSize = File::BUFFERSIZE);		///< opens a File interface to the specified file
+	Bool doesFileExist(const Char* filename) const;								///< returns TRUE if the file exists.  filename should have no directory.
+	void getFileListInDirectory(const AsciiString& directory, const AsciiString& searchName, FilenameList& filenameList, Bool searchSubdirectories) const; ///< search the given directory for files matching the searchName (egs. *.ini, *.rep).  Possibly search subdirectories.
+	Bool getFileInfo(const AsciiString& filename, FileInfo* fileInfo) const; ///< fills in the FileInfo struct for the file given. returns TRUE if successful.
 
 	Bool createDirectory(AsciiString directory); ///< create a directory of the given name.
 
@@ -145,11 +148,15 @@ public:
 
 protected:
 #if ENABLE_FILESYSTEM_EXISTENCE_CACHE
-	mutable std::map<unsigned,bool> m_fileExist;
+	typedef std::hash_map<
+		rts::string_key<AsciiString>, bool,
+		rts::string_key_hash<AsciiString>,
+		rts::string_key_equal<AsciiString> > FileExistMap;
+	mutable FileExistMap m_fileExist;
 #endif
 };
 
-extern FileSystem*	TheFileSystem;
+extern FileSystem* TheFileSystem;
 
 
 

@@ -93,15 +93,15 @@ enum ScienceAvailabilityType CPP_11(: Int)
 {
 	SCIENCE_AVAILABILITY_INVALID = -1,
 
-	SCIENCE_AVAILABLE,
-	SCIENCE_DISABLED,
-	SCIENCE_HIDDEN,
+		SCIENCE_AVAILABLE,
+		SCIENCE_DISABLED,
+		SCIENCE_HIDDEN,
 
-	SCIENCE_AVAILABILITY_COUNT,
+		SCIENCE_AVAILABILITY_COUNT,
 };
 
 #ifdef DEFINE_SCIENCE_AVAILABILITY_NAMES
-static const char *const ScienceAvailabilityNames[] =
+static const char* const ScienceAvailabilityNames[] =
 {
 	"Available",
 	"Disabled",
@@ -137,7 +137,7 @@ struct SpecialPowerReadyTimerType
 	{
 		clear();
 	}
-	void clear( void )
+	void clear(void)
 	{
 		m_readyFrame = 0xffffffff;
 		m_templateID = INVALID_ID;
@@ -152,14 +152,14 @@ struct SpecialPowerReadyTimerType
 // ------------------------------------------------------------------------------------------------
 typedef std::hash_map< PlayerIndex, Relationship, std::hash<PlayerIndex>, std::equal_to<PlayerIndex> > PlayerRelationMapType;
 class PlayerRelationMap : public MemoryPoolObject,
-													public Snapshot
+	public Snapshot
 {
 
-	MEMORY_POOL_GLUE_WITH_USERLOOKUP_CREATE( PlayerRelationMap, "PlayerRelationMapPool" )
+	MEMORY_POOL_GLUE_WITH_USERLOOKUP_CREATE(PlayerRelationMap, "PlayerRelationMapPool")
 
 public:
 
-	PlayerRelationMap( void );
+	PlayerRelationMap(void);
 	// virtual destructor provided by memory pool object
 
 	/** @todo I'm jsut wrappign this up in a nice snapshot object, we really should isolate
@@ -168,9 +168,9 @@ public:
 
 protected:
 
-	virtual void crc( Xfer *xfer );
-	virtual void xfer( Xfer *xfer );
-	virtual void loadPostProcess( void );
+	virtual void crc(Xfer* xfer);
+	virtual void xfer(Xfer* xfer);
+	virtual void loadPostProcess(void);
 
 };
 
@@ -210,7 +210,7 @@ class Player : public Snapshot
 {
 public:
 
-	Player( Int playerIndex );
+	Player(Int playerIndex);
 	virtual ~Player();
 
 	void update();			///< player update opportunity
@@ -229,29 +229,29 @@ public:
 	inline AsciiString getSide() const { return m_side; }
 	inline AsciiString getBaseSide() const { return m_baseSide; }
 
-	inline const PlayerTemplate* getPlayerTemplate() const { return m_playerTemplate;	}
+	inline const PlayerTemplate* getPlayerTemplate() const { return m_playerTemplate; }
 	/// return the Player's Handicap sub-object
-	inline const Handicap *getHandicap() const { return &m_handicap; }
-	inline Handicap *getHandicap() { return &m_handicap; }
+	inline const Handicap* getHandicap() const { return &m_handicap; }
+	inline Handicap* getHandicap() { return &m_handicap; }
 
 	/// return the Player's Money sub-object
-	inline Money *getMoney() { return &m_money; }
-	inline const Money *getMoney() const { return &m_money; }
+	inline Money* getMoney() { return &m_money; }
+	inline const Money* getMoney() const { return &m_money; }
 
 	UnsignedInt getSupplyBoxValue();///< Many things can affect the alue of a crate, but at heart it is a GlobalData ratio.
 
-	inline Energy *getEnergy() { return &m_energy; }
-	inline const Energy *getEnergy() const { return &m_energy; }
+	inline Energy* getEnergy() { return &m_energy; }
+	inline const Energy* getEnergy() const { return &m_energy; }
 
 	// adds a power bonus to this player because of energy upgrade at his power plants
-	inline void addPowerBonus(Object *obj) { m_energy.addPowerBonus(obj); }
-	inline void removePowerBonus(Object *obj) { m_energy.removePowerBonus(obj); }
+	inline void addPowerBonus(Object* obj) { m_energy.addPowerBonus(obj); }
+	inline void removePowerBonus(Object* obj) { m_energy.removePowerBonus(obj); }
 
-	inline ResourceGatheringManager *getResourceGatheringManager(){ return m_resourceGatheringManager; }
-	inline TunnelTracker* getTunnelSystem(){ return m_tunnelSystem; }
+	inline ResourceGatheringManager* getResourceGatheringManager() { return m_resourceGatheringManager; }
+	inline TunnelTracker* getTunnelSystem() { return m_tunnelSystem; }
 
 	inline Color getPlayerColor() const { return m_color; }
-	inline Color getPlayerNightColor() const { return m_nightColor;}
+	inline Color getPlayerNightColor() const { return m_nightColor; }
 	/// return the type of controller
 	inline PlayerType getPlayerType() const { return m_playerType; }
 	void setPlayerType(PlayerType t, Bool skirmish);
@@ -263,16 +263,16 @@ public:
 
 	/// a convenience function to test the ThingTemplate against the players canBuild flags
 	/// called by canBuild
-	Bool allowedToBuild(const ThingTemplate *tmplate) const;
+	Bool allowedToBuild(const ThingTemplate* tmplate) const;
 
 	/// true if we have the prereqs for this item
-	Bool canBuild(const ThingTemplate *tmplate) const;
+	Bool canBuild(const ThingTemplate* tmplate) const;
 
 	// Can we afford to build?
-	Bool canAffordBuild( const ThingTemplate *whatToBuild ) const;
+	Bool canAffordBuild(const ThingTemplate* whatToBuild) const;
 
-  // Check MaxSimultaneousOfType
-  Bool canBuildMoreOfType( const ThingTemplate *whatToBuild ) const;
+	// Check MaxSimultaneousOfType
+	Bool canBuildMoreOfType(const ThingTemplate* whatToBuild) const;
 
 	/// Difficulty level for this player.
 	GameDifficulty getPlayerDifficulty(void) const;
@@ -283,59 +283,59 @@ public:
 			if he has multiple, return one arbitrarily. */
 	Object* findNaturalCommandCenter();
 
-	Object* findAnyExistingObjectWithThingTemplate( const ThingTemplate *thing );
+	Object* findAnyExistingObjectWithThingTemplate(const ThingTemplate* thing);
 
 	// Finds a short-cut firing special power of specified type returning the first ready power or
 	// the most ready if none ready.
-	Object* findMostReadyShortcutSpecialPowerOfType( SpecialPowerType spType );
+	Object* findMostReadyShortcutSpecialPowerOfType(SpecialPowerType spType);
 
 	//Find specified thing template's most ready weapon.
-	Object* findMostReadyShortcutWeaponForThing( const ThingTemplate *thing, UnsignedInt &mostReadyPercentage );
-	Object* findMostReadyShortcutSpecialPowerForThing( const ThingTemplate *thing, UnsignedInt &mostReadyPercentage );
+	Object* findMostReadyShortcutWeaponForThing(const ThingTemplate* thing, UnsignedInt& mostReadyPercentage);
+	Object* findMostReadyShortcutSpecialPowerForThing(const ThingTemplate* thing, UnsignedInt& mostReadyPercentage);
 
 	// Finds a short-cut firing special power of any type arbitrarily.
 	Bool hasAnyShortcutSpecialPower();
 
 	// Counts available shortcut special power of specified type that can fire now.
-	Int countReadyShortcutSpecialPowersOfType( SpecialPowerType spType );
+	Int countReadyShortcutSpecialPowersOfType(SpecialPowerType spType);
 
 	/// return t if the player has the given science, either intrinsically, via specialization, or via capture.
 	Bool hasScience(ScienceType t) const;
-	Bool isScienceDisabled( ScienceType t ) const;	///< Can't purchase this science because of script reasons.
-	Bool isScienceHidden( ScienceType t ) const;		///< This science is effectively hidden due to  script reasons.
+	Bool isScienceDisabled(ScienceType t) const;	///< Can't purchase this science because of script reasons.
+	Bool isScienceHidden(ScienceType t) const;		///< This science is effectively hidden due to  script reasons.
 
 	//Allows scripts to make specific sciences available, hidden, or disabled.
-	void setScienceAvailability( ScienceType science, ScienceAvailabilityType type );
+	void setScienceAvailability(ScienceType science, ScienceAvailabilityType type);
 
-	ScienceAvailabilityType getScienceAvailabilityTypeFromString( const AsciiString& name );
+	ScienceAvailabilityType getScienceAvailabilityTypeFromString(const AsciiString& name);
 
 	/// return t iff the player has all sciences that are prereqs for knowing the given science
 	Bool hasPrereqsForScience(ScienceType t) const;
 
-	Bool hasUpgradeComplete( const UpgradeTemplate *upgradeTemplate );		///< does player have totally done and produced upgrade
-	Bool hasUpgradeComplete( UpgradeMaskType testMask );		///< does player have totally done and produced upgrade
+	Bool hasUpgradeComplete(const UpgradeTemplate* upgradeTemplate);		///< does player have totally done and produced upgrade
+	Bool hasUpgradeComplete(UpgradeMaskType testMask);		///< does player have totally done and produced upgrade
 	UpgradeMaskType getCompletedUpgradeMask() const { return m_upgradesCompleted; }	///< get list of upgrades that are completed
-	Bool hasUpgradeInProduction( const UpgradeTemplate *upgradeTemplate );		///< does player have this upgrade in progress right now
-	Upgrade *addUpgrade( const UpgradeTemplate *upgradeTemplate,
-											 UpgradeStatusType status );		///< add upgrade, or update existing upgrade status
-	void removeUpgrade( const UpgradeTemplate *upgradeTemplate );	///< remove thsi upgrade from us
+	Bool hasUpgradeInProduction(const UpgradeTemplate* upgradeTemplate);		///< does player have this upgrade in progress right now
+	Upgrade* addUpgrade(const UpgradeTemplate* upgradeTemplate,
+		UpgradeStatusType status);		///< add upgrade, or update existing upgrade status
+	void removeUpgrade(const UpgradeTemplate* upgradeTemplate);	///< remove thsi upgrade from us
 
 	/** find upgrade, NOTE, the upgrade may *NOT* be "complete" and therefore "active", it could be in production
 	  This function is for actually retrieving the Upgrade.  To test existance, use the fast bit testers hasUpgradeX()
 	*/
-	Upgrade *findUpgrade( const UpgradeTemplate *upgradeTemplate );
+	Upgrade* findUpgrade(const UpgradeTemplate* upgradeTemplate);
 
-	void onUpgradeCompleted( const UpgradeTemplate *upgradeTemplate );				///< An upgrade just finished, do things like tell all objects to recheck UpgradeModules
-	void onUpgradeRemoved(){}					///< An upgrade just got removed, this doesn't do anything now.
+	void onUpgradeCompleted(const UpgradeTemplate* upgradeTemplate);				///< An upgrade just finished, do things like tell all objects to recheck UpgradeModules
+	void onUpgradeRemoved() {}					///< An upgrade just got removed, this doesn't do anything now.
 
 #if defined(RTS_DEBUG)
 	/// Prereq disabling cheat key
-	void toggleIgnorePrereqs(){ m_DEMO_ignorePrereqs = !m_DEMO_ignorePrereqs; }
+	void toggleIgnorePrereqs() { m_DEMO_ignorePrereqs = !m_DEMO_ignorePrereqs; }
 	void enableIgnorePrereqs(Bool enable) { m_DEMO_ignorePrereqs = enable; }
 	Bool ignoresPrereqs() const { return m_DEMO_ignorePrereqs; }
 
 	/// No cost building cheat key
-	void toggleFreeBuild(){ m_DEMO_freeBuild = !m_DEMO_freeBuild; }
+	void toggleFreeBuild() { m_DEMO_freeBuild = !m_DEMO_freeBuild; }
 	void enableFreeBuild(Bool enable) { m_DEMO_freeBuild = enable; }
 	Bool buildsForFree() const { return m_DEMO_freeBuild; }
 
@@ -343,26 +343,26 @@ public:
 
 #if defined(RTS_DEBUG) || defined(_ALLOW_DEBUG_CHEATS_IN_RELEASE)
 	/// No time building cheat key
-	void toggleInstantBuild(){ m_DEMO_instantBuild = !m_DEMO_instantBuild; }
+	void toggleInstantBuild() { m_DEMO_instantBuild = !m_DEMO_instantBuild; }
 	void enableInstantBuild(Bool enable) { m_DEMO_instantBuild = enable; }
 	Bool buildsInstantly() const { return m_DEMO_instantBuild; }
 #endif
 
 	///< Power just changed at all.  Didn't make two functions so you can't forget to undo something you didin one of them.
 	///< @todo Can't do edge trigger until after demo; make things check for power on creation
-	void onPowerBrownOutChange( Bool brownOut );
+	void onPowerBrownOutChange(Bool brownOut);
 
 
 	///< one of my command centers just fired a special power, let us reset timers for all command centers.
-	void resetOrStartSpecialPowerReadyFrame( const SpecialPowerTemplate *temp );
+	void resetOrStartSpecialPowerReadyFrame(const SpecialPowerTemplate* temp);
 	///< my new command center wants to init his timers to the status quo
-	UnsignedInt getOrStartSpecialPowerReadyFrame( const SpecialPowerTemplate *temp);
-	void expressSpecialPowerReadyFrame( const SpecialPowerTemplate *temp, UnsignedInt frame );
-	void addNewSharedSpecialPowerTimer( const SpecialPowerTemplate *temp, UnsignedInt frame );
+	UnsignedInt getOrStartSpecialPowerReadyFrame(const SpecialPowerTemplate* temp);
+	void expressSpecialPowerReadyFrame(const SpecialPowerTemplate* temp, UnsignedInt frame);
+	void addNewSharedSpecialPowerTimer(const SpecialPowerTemplate* temp, UnsignedInt frame);
 
 
-	void addRadar( Bool disableProof );///< One more producer of Radar exists
-	void removeRadar( Bool disableProof );///< One less thing produces radar
+	void addRadar(Bool disableProof);///< One more producer of Radar exists
+	void removeRadar(Bool disableProof);///< One less thing produces radar
 	void disableRadar();	///< No matter how many radar producers I have, I do not have radar
 	void enableRadar();	///< remove the restriction imposed by disableRadar
 	Bool hasRadar() const;///< A positive number of radar producers, plus my radar is not disabled
@@ -371,13 +371,13 @@ public:
 	//it's possible for multiple strategy centers to have the same plan, so we need
 	//to keep track of that like radar. Keep in mind multiple strategy centers with
 	//same plan do not stack, but different strategy centers with different plans do.
-	void changeBattlePlan( BattlePlanStatus plan, Int delta, BattlePlanBonuses *bonus );
+	void changeBattlePlan(BattlePlanStatus plan, Int delta, BattlePlanBonuses* bonus);
 	Int getNumBattlePlansActive() const { return m_bombardBattlePlans + m_holdTheLineBattlePlans + m_searchAndDestroyBattlePlans; }
-	Int getBattlePlansActiveSpecific( BattlePlanStatus plan ) const;
-	void applyBattlePlanBonusesForObject( Object *obj ) const;	//New object or converted object gaining our current battle plan bonuses.
-	void removeBattlePlanBonusesForObject( Object *obj ) const; //Object left team
-	void applyBattlePlanBonusesForPlayerObjects( const BattlePlanBonuses *bonus ); //Battle plan bonuses changing, so apply to all of our objects!
-	Bool doesObjectQualifyForBattlePlan( Object *obj ) const;
+	Int getBattlePlansActiveSpecific(BattlePlanStatus plan) const;
+	void applyBattlePlanBonusesForObject(Object* obj) const;	//New object or converted object gaining our current battle plan bonuses.
+	void removeBattlePlanBonusesForObject(Object* obj) const; //Object left team
+	void applyBattlePlanBonusesForPlayerObjects(const BattlePlanBonuses* bonus); //Battle plan bonuses changing, so apply to all of our objects!
+	Bool doesObjectQualifyForBattlePlan(Object* obj) const;
 
 	// If apply is false, then we are repealing already granted bonuses.
 	// Note: Should only be called by Object.
@@ -386,21 +386,21 @@ public:
 	/// Decrement the ref counter on the typeof production list node
 	void removeKindOfProductionCostChange(KindOfMaskType kindOf, Real percent);
 	/// add type of production cost change (Used for upgrades)
-	void addKindOfProductionCostChange( KindOfMaskType kindOf, Real percent);
+	void addKindOfProductionCostChange(KindOfMaskType kindOf, Real percent);
 	/// Returns production cost change based on typeof (Used for upgrades)
-	Real getProductionCostChangeBasedOnKindOf( KindOfMaskType kindOf ) const;
+	Real getProductionCostChangeBasedOnKindOf(KindOfMaskType kindOf) const;
 
 	/** Return bonus or penalty for construction of this thing.
 	*/
-	Real getProductionCostChangePercent( AsciiString buildTemplateName ) const;
+	Real getProductionCostChangePercent(AsciiString buildTemplateName) const;
 
 	/** Return bonus or penalty for construction of this thing.
 	*/
-	Real getProductionTimeChangePercent( AsciiString buildTemplateName ) const;
+	Real getProductionTimeChangePercent(AsciiString buildTemplateName) const;
 
 	/** Return starting veterancy level of a newly built thing of this type
 	*/
-	VeterancyLevel getProductionVeterancyLevel( AsciiString buildTemplateName ) const;
+	VeterancyLevel getProductionVeterancyLevel(AsciiString buildTemplateName) const;
 
 	// Friend function for the script engine's usage.
 	void friend_setSkillset(Int skillSet);
@@ -408,7 +408,7 @@ public:
 	/**
 		the given object has just become (or just ceased to be) a member of one of our teams (or subteams)
 	*/
-	void becomingTeamMember(Object *obj, Bool yes);
+	void becomingTeamMember(Object* obj, Bool yes);
 
 	/**
 		this is called when the player becomes the local player (yes==true)
@@ -427,48 +427,48 @@ public:
 	Bool getListInScoreScreen();
 
 	/// A unit was just created and is ready to control
-	void onUnitCreated( Object *factory, Object *unit );
+	void onUnitCreated(Object* factory, Object* unit);
 
 	/// A team is about to be destroyed.
-	void preTeamDestroy( const Team *team );
+	void preTeamDestroy(const Team* team);
 
 	/// Is the nearest supply source safe?
-	Bool isSupplySourceSafe( Int minSupplies );
+	Bool isSupplySourceSafe(Int minSupplies);
 
 	/// Is a supply source attacked?
-	Bool isSupplySourceAttacked( void );
+	Bool isSupplySourceAttacked(void);
 
 	/// Set delay between team production.
 	void setTeamDelaySeconds(Int delay);
 
 	/// Have the team guard a supply center.
-	void guardSupplyCenter( Team *team, Int minSupplies );
+	void guardSupplyCenter(Team* team, Int minSupplies);
 
-	virtual Bool computeSuperweaponTarget(const SpecialPowerTemplate *power, Coord3D *pos, Int playerNdx, Real weaponRadius); ///< Calculates best pos for weapon given radius.
+	virtual Bool computeSuperweaponTarget(const SpecialPowerTemplate* power, Coord3D* pos, Int playerNdx, Real weaponRadius); ///< Calculates best pos for weapon given radius.
 
 	/// Get the enemy an ai player is currently focused on.  NOTE - Can be NULL.
-	Player  *getCurrentEnemy( void );
+	Player* getCurrentEnemy(void);
 
 	/// Is this player a skirmish ai player?
-	Bool isSkirmishAIPlayer( void );
+	Bool isSkirmishAIPlayer(void);
 
 	/// Have the ai check for bridges.
-	virtual Bool checkBridges(Object *unit, Waypoint *way);
+	virtual Bool checkBridges(Object* unit, Waypoint* way);
 
 	/// Get the center of the ai's base.
-	virtual Bool getAiBaseCenter(Coord3D *pos);
+	virtual Bool getAiBaseCenter(Coord3D* pos);
 
 	/// Have the ai check for bridges.
 	virtual void repairStructure(ObjectID structureID);
 
 	/// a structuer was just created, but is under construction
-	void onStructureCreated( Object *builder, Object *structure );
+	void onStructureCreated(Object* builder, Object* structure);
 
 	/// a structure that was under construction has become completed
-	void onStructureConstructionComplete( Object *builder, Object *structure, Bool isRebuild );
+	void onStructureConstructionComplete(Object* builder, Object* structure, Bool isRebuild);
 
 	/// a structure that was created has been pre-emptively removed and shouldn't be counted in the score.
-	void onStructureUndone(Object *structure);
+	void onStructureUndone(Object* structure);
 
 	/**
 		a convenience routine to count the number of owned objects that match a set of ThingTemplates.
@@ -476,7 +476,7 @@ public:
 		size. It fills in the array to the correct counts. This is handy because we must traverse
 		the player's list-of-objects only once.
 	*/
-	void countObjectsByThingTemplate(Int numTmplates, const ThingTemplate* const * things, Bool ignoreDead, Int *counts, Bool ignoreUnderConstruction = TRUE ) const;
+	void countObjectsByThingTemplate(Int numTmplates, const ThingTemplate* const* things, Bool ignoreDead, Int* counts, Bool ignoreUnderConstruction = TRUE) const;
 
 	/**
 		simply returns the number of buildings owned by this player
@@ -489,7 +489,7 @@ public:
 	Int countObjects(KindOfMaskType setMask, KindOfMaskType clearMask);
 
 	/// Returns the closest of a given type to the given object
-	Object *findClosestByKindOf( Object *queryObject, KindOfMaskType setMask, KindOfMaskType clearMask );
+	Object* findClosestByKindOf(Object* queryObject, KindOfMaskType setMask, KindOfMaskType clearMask);
 
 	/**
 		a convenience routine to quickly check if any buildings are owned.
@@ -529,27 +529,27 @@ public:
 	/**
 		* Iterate all objects that this player has
 		*/
-	void iterateObjects( ObjectIterateFunc func, void *userData ) const;
+	void iterateObjects(ObjectIterateFunc func, void* userData) const;
 
 	/**
 		return this player's "default" team.
 	*/
-	Team *getDefaultTeam() { DEBUG_ASSERTCRASH(m_defaultTeam!=NULL,("default team is null")); return m_defaultTeam; }
-	const Team *getDefaultTeam() const { DEBUG_ASSERTCRASH(m_defaultTeam!=NULL,("default team is null")); return m_defaultTeam; }
+	Team* getDefaultTeam() { DEBUG_ASSERTCRASH(m_defaultTeam != NULL, ("default team is null")); return m_defaultTeam; }
+	const Team* getDefaultTeam() const { DEBUG_ASSERTCRASH(m_defaultTeam != NULL, ("default team is null")); return m_defaultTeam; }
 
-	void setBuildList(BuildListInfo *pBuildList);			///< sets the build list.
-	BuildListInfo *getBuildList( void ) { return m_pBuildList; }		///< returns the build list. (build list might be modified by the solo AI)
-	void addToBuildList(Object *obj);			///< Adds this to the build list.	 Used for factories placed instead of in build list.
-	void addToPriorityBuildList(AsciiString templateName, Coord3D *pos, Real angle);			///< Adds this to the build list.	 Used for factories placed instead of in build list.
+	void setBuildList(BuildListInfo* pBuildList);			///< sets the build list.
+	BuildListInfo* getBuildList(void) { return m_pBuildList; }		///< returns the build list. (build list might be modified by the solo AI)
+	void addToBuildList(Object* obj);			///< Adds this to the build list.	 Used for factories placed instead of in build list.
+	void addToPriorityBuildList(AsciiString templateName, Coord3D* pos, Real angle);			///< Adds this to the build list.	 Used for factories placed instead of in build list.
 
 	/// get the relationship between this->that.
-	Relationship getRelationship(const Team *that) const;
+	Relationship getRelationship(const Team* that) const;
 
 	/// set the relationship between this->that. (note that this doesn't affect the that->this relationship.)
-	void setPlayerRelationship(const Player *that, Relationship r);
-	Bool removePlayerRelationship(const Player *that);
-	void setTeamRelationship(const Team *that, Relationship r);
-	Bool removeTeamRelationship(const Team *that);
+	void setPlayerRelationship(const Player* that, Relationship r);
+	Bool removePlayerRelationship(const Player* that);
+	void setTeamRelationship(const Team* that, Relationship r);
+	Bool removeTeamRelationship(const Team* that);
 
 	void addTeamToList(TeamPrototype* team);
 	void removeTeamFromList(TeamPrototype* team);
@@ -557,14 +557,14 @@ public:
 	typedef std::list<TeamPrototype*> PlayerTeamList;
 	inline const PlayerTeamList* getPlayerTeams() const { return &m_playerTeamPrototypes; }
 
-	inline Int getMpStartIndex(void) {return m_mpStartIndex;}
+	inline Int getMpStartIndex(void) { return m_mpStartIndex; }
 
 	/// Set that all units should begin hunting.
 	void setUnitsShouldHunt(Bool unitsShouldHunt, CommandSourceType source);
 	Bool getUnitsShouldHunt() const { return m_unitsShouldHunt; }
 
 	/// All of our units are new spied upon; they sight for the given enemy
-	void setUnitsVisionSpied( Bool setting, KindOfMaskType whichUnits, PlayerIndex byWhom );
+	void setUnitsVisionSpied(Bool setting, KindOfMaskType whichUnits, PlayerIndex byWhom);
 
 	/// Destroy all of the teams for this player, causing him to DIE.
 	void killPlayer(void);
@@ -573,31 +573,31 @@ public:
 	void setObjectsEnabled(AsciiString templateTypeToAffect, Bool enable);
 
 	/// Build an instance of a specific team.  Gets passed to aiPlayer.
-	void buildSpecificTeam(TeamPrototype *teamProto);
+	void buildSpecificTeam(TeamPrototype* teamProto);
 
 	/// Build an instance of a specific building.  Gets passed to aiPlayer.
-	void buildSpecificBuilding(const AsciiString &thingName);
+	void buildSpecificBuilding(const AsciiString& thingName);
 
 	/// Build a building near a supply dump with at least cash.  Gets passed to aiPlayer.
-	void buildBySupplies(Int minimumCash, const AsciiString &thingName);
+	void buildBySupplies(Int minimumCash, const AsciiString& thingName);
 
 	/// Build an instance of a specific building nearest specified team.  Gets passed to aiPlayer.
-	void buildSpecificBuildingNearestTeam( const AsciiString &thingName, const Team *team );
+	void buildSpecificBuildingNearestTeam(const AsciiString& thingName, const Team* team);
 
 	/// Build an upgrade.  Gets passed to aiPlayer.
-	void buildUpgrade(const AsciiString &upgrade);
+	void buildUpgrade(const AsciiString& upgrade);
 
 	/// Build base defense on front or flank of base.  Gets passed to aiPlayer.
 	void buildBaseDefense(Bool flank);
 
 	/// Build structure type on front or flank of base.  Gets passed to aiPlayer.
-	void buildBaseDefenseStructure(const AsciiString &thingName, Bool flank);
+	void buildBaseDefenseStructure(const AsciiString& thingName, Bool flank);
 
 	/// Recruits an instance of a specific team.  Gets passed to aiPlayer.
-	void recruitSpecificTeam(TeamPrototype *teamProto, Real recruitRadius);
+	void recruitSpecificTeam(TeamPrototype* teamProto, Real recruitRadius);
 
 	/// Calculates the closest construction zone location based on a template. Gets plassed to aiPlayer
-	Bool calcClosestConstructionZoneLocation( const ThingTemplate *constructTemplate, Coord3D *location );
+	Bool calcClosestConstructionZoneLocation(const ThingTemplate* constructTemplate, Coord3D* location);
 
 	/// Enable/Disable the construction of units
 	Bool getCanBuildUnits(void) { return m_canBuildUnits; }
@@ -618,47 +618,47 @@ public:
 
 	void setUnitsShouldIdleOrResume(Bool idle);
 
-	Bool isPlayableSide( void ) const;
+	Bool isPlayableSide(void) const;
 
-	Bool isPlayerObserver( void ) const; // Favor !isActive() - this is used for Observer GUI mostly, not in-game stuff
+	Bool isPlayerObserver(void) const; // Favor !isActive() - this is used for Observer GUI mostly, not in-game stuff
 	Bool isPlayerDead(void) const; // Favor !isActive() - this is used so OCLs don't give us stuff after death.
 	Bool isPlayerActive(void) const;
 
-	Bool didPlayerPreorder( void ) const { return m_isPreorder; }
+	Bool didPlayerPreorder(void) const { return m_isPreorder; }
 
 	/// Grab the scorekeeper so we can score up in here!
-	ScoreKeeper* getScoreKeeper( void ) { return &m_scoreKeeper; }
+	ScoreKeeper* getScoreKeeper(void) { return &m_scoreKeeper; }
 
 	/// time to create a hotkey team based on this GameMessage
-	void processCreateTeamGameMessage(Int hotkeyNum, GameMessage *msg);
+	void processCreateTeamGameMessage(Int hotkeyNum, const GameMessage* msg);
 
 	/// time to select a hotkey team based on this GameMessage
-	void processSelectTeamGameMessage(Int hotkeyNum, GameMessage *msg);
+	void processSelectTeamGameMessage(Int hotkeyNum, GameMessage* msg);
 
 	// add to the player's current selection this hotkey team.
-	void processAddTeamGameMessage(Int hotkeyNum, GameMessage *msg);
+	void processAddTeamGameMessage(Int hotkeyNum, GameMessage* msg);
 
 	// fills an AIGroup object that is the currently selected group.
-	void getCurrentSelectionAsAIGroup(AIGroup *group);
+	void getCurrentSelectionAsAIGroup(AIGroup* group);
 
 	// sets the currently selected group to be the given AIGroup
-	void setCurrentlySelectedAIGroup(AIGroup *group);
+	void setCurrentlySelectedAIGroup(AIGroup* group);
 
 	// adds the given AIGroup to the current selection of this player.
-	void addAIGroupToCurrentSelection(AIGroup *group);
+	void addAIGroupToCurrentSelection(AIGroup* group);
 
 	// return the requested hotkey squad
-	Squad *getHotkeySquad(Int squadNumber);
+	Squad* getHotkeySquad(Int squadNumber);
 
 	// return the hotkey squad that a unit is in, or NO_HOTKEY_SQUAD if it isn't in one.
-	Int getSquadNumberForObject(const Object *objToFind) const;
+	Int getSquadNumberForObject(const Object* objToFind) const;
 
 	// remove an object from any hotkey squads that its in.
-	void removeObjectFromHotkeySquad(Object *objToRemove);
+	void removeObjectFromHotkeySquad(Object* objToRemove);
 
-	void setAttackedBy( Int playerNdx );
-	Bool getAttackedBy( Int playerNdx ) const;
-	UnsignedInt getAttackedFrame(void) {return m_attackedFrame;}  // Return last frame attacked.
+	void setAttackedBy(Int playerNdx);
+	Bool getAttackedBy(Int playerNdx) const;
+	UnsignedInt getAttackedFrame(void) { return m_attackedFrame; }  // Return last frame attacked.
 
 	Real getCashBounty() const { return m_cashBountyPercent; }
 	void setCashBounty(Real percentage) { m_cashBountyPercent = percentage; }
@@ -670,7 +670,7 @@ public:
 	//Set via logical message. Options menu sets the client value in global data. Player::update()
 	//detects a change, and posts a message. When the message gets processed, this value gets set.
 	Bool isLogicalRetaliationModeEnabled() const { return m_logicalRetaliationModeEnabled; }
-	void setLogicalRetaliationModeEnabled( Bool set ) { m_logicalRetaliationModeEnabled = set; }
+	void setLogicalRetaliationModeEnabled(Bool set) { m_logicalRetaliationModeEnabled = set; }
 
 private:
 
@@ -685,13 +685,13 @@ private:
 	Bool addScience(ScienceType science);
 
 public:
-	Int getSkillPoints() const						{ return m_skillPoints; }
-	Int getSciencePurchasePoints() const	{ return m_sciencePurchasePoints; }
-	Int getRankLevel() const							{ return m_rankLevel; }
-	Int getSkillPointsLevelUp() const			{ return m_levelUp;	}
-	Int getSkillPointsLevelDown() const			{ return m_levelDown;	}
-	UnicodeString getGeneralName() const	{ return m_generalName; }
-	void setGeneralName( UnicodeString name ){ m_generalName = name;	}
+	Int getSkillPoints() const { return m_skillPoints; }
+	Int getSciencePurchasePoints() const { return m_sciencePurchasePoints; }
+	Int getRankLevel() const { return m_rankLevel; }
+	Int getSkillPointsLevelUp() const { return m_levelUp; }
+	Int getSkillPointsLevelDown() const { return m_levelDown; }
+	UnicodeString getGeneralName() const { return m_generalName; }
+	void setGeneralName(UnicodeString name) { m_generalName = name; }
 	/// returns TRUE if rank level really changed.
 	Bool setRankLevel(Int level);
 
@@ -732,15 +732,15 @@ public:
 protected:
 
 	// snapshot methods
-	virtual void crc( Xfer *xfer );
-	virtual void xfer( Xfer *xfer );
-	virtual void loadPostProcess( void );
+	virtual void crc(Xfer* xfer);
+	virtual void xfer(Xfer* xfer);
+	virtual void loadPostProcess(void);
 
-	void deleteUpgradeList( void );															///< delete all our upgrades
+	void deleteUpgradeList(void);															///< delete all our upgrades
 
 private:
 
-	const PlayerTemplate*				m_playerTemplate;			///< Pointer back to the Player Template
+	const PlayerTemplate* m_playerTemplate;			///< Pointer back to the Player Template
 
 	UnicodeString								m_playerDisplayName;					///< This player's persistent name.
 	Handicap										m_handicap;										///< adjustment to varied capabilities (@todo: is this persistent or recalced each time?)
@@ -751,29 +751,29 @@ private:
 	AsciiString									m_baseSide;											///< the base side, GLA, USA, or China
 	PlayerType									m_playerType;									///< human/computer control
 	Money												m_money;											///< Player's current wealth
-	Upgrade*										m_upgradeList;								///< list of all upgrades this player has
+	Upgrade* m_upgradeList;								///< list of all upgrades this player has
 	Int													m_radarCount;									///< # of facilities that have a radar under the players control
 	Int													m_disableProofRadarCount;			///< # of disable proof radars.  A disable proof one will be in both refcounts
 	Bool												m_radarDisabled;							///< The radar is disabled regardless of the number of radar objects
 	Int													m_bombardBattlePlans;					///< Number of strategy centers with active bombardment plan
 	Int													m_holdTheLineBattlePlans;			///< Number of strategy centers with active hold the line plan
 	Int													m_searchAndDestroyBattlePlans;///< Number of strategy centers with active search and destroy plan
-	BattlePlanBonuses*					m_battlePlanBonuses;
+	BattlePlanBonuses* m_battlePlanBonuses;
 	UpgradeMaskType							m_upgradesInProgress;					///< Bit field of in Production status upgrades
 	UpgradeMaskType							m_upgradesCompleted;					///< Bit field of upgrades completed.  Bits are assigned by UpgradeCenter
 	Energy											m_energy;											///< current energy production & consumption
 	MissionStats								m_stats;											///< stats about the current mission (units destroyed, etc)
-	BuildListInfo*							m_pBuildList;									///< linked list of buildings for PLAYER_COMPUTER.
+	BuildListInfo* m_pBuildList;									///< linked list of buildings for PLAYER_COMPUTER.
 	Color												m_color;											///< color for our units
 	Color												m_nightColor;	///<tweaked version of regular color to make it easier to see on night maps.
 	ProductionChangeMap					m_productionCostChanges;			///< Map to keep track of Faction specific discounts or penalties on prices of units
 	ProductionChangeMap					m_productionTimeChanges;			///< Map to keep track of Faction specific discounts or penalties on build times of units
 	ProductionVeterancyMap			m_productionVeterancyLevels;	///< Map to keep track of starting level of produced units
-	AIPlayer*										m_ai;													///< if PLAYER_COMPUTER, the entity that does the thinking
+	AIPlayer* m_ai;													///< if PLAYER_COMPUTER, the entity that does the thinking
 	Int													m_mpStartIndex;								///< The player's starting index for multiplayer.
-	ResourceGatheringManager*		m_resourceGatheringManager;		///< Keeps track of all Supply Centers and Warehouses
-	TunnelTracker*							m_tunnelSystem;								///< All TunnelContain buildings use this part of me for actual conatinment
-	Team*												m_defaultTeam;								///< our "default" team.
+	ResourceGatheringManager* m_resourceGatheringManager;		///< Keeps track of all Supply Centers and Warehouses
+	TunnelTracker* m_tunnelSystem;								///< All TunnelContain buildings use this part of me for actual conatinment
+	Team* m_defaultTeam;								///< our "default" team.
 
 	ScienceVec						m_sciences;					///< (SAVE) sciences that we know (either intrinsically or via later purchases)
 	ScienceVec						m_sciencesDisabled;	///< (SAVE) sciences that we are not permitted to purchase "yet". Controlled by mission scripts.
@@ -786,8 +786,8 @@ private:
 	UnicodeString					m_generalName;		///< (SAVE) This is the name of the general the player is allowed to change.
 
 	PlayerTeamList				m_playerTeamPrototypes;				///< ALL the teams we control, via prototype
-	PlayerRelationMap			*m_playerRelations;						///< allies & enemies
-	TeamRelationMap				*m_teamRelations;							///< allies & enemies
+	PlayerRelationMap* m_playerRelations;						///< allies & enemies
+	TeamRelationMap* m_teamRelations;							///< allies & enemies
 
 	AcademyStats					m_academyStats;				///< Keeps track of various statistics in order to provide advice to the player about how to improve playing.
 
@@ -826,8 +826,8 @@ private:
 	typedef SpecialPowerReadyTimerList::iterator SpecialPowerReadyTimerListIterator;
 	SpecialPowerReadyTimerList m_specialPowerReadyTimerList;
 
-	Squad									*m_squads[NUM_HOTKEY_SQUADS];	///< The hotkeyed squads
-	Squad									*m_currentSelection;		///< This player's currently selected group
+	Squad* m_squads[NUM_HOTKEY_SQUADS];	///< The hotkeyed squads
+	Squad* m_currentSelection;		///< This player's currently selected group
 
 	Bool									m_isPlayerDead;
 	Bool									m_logicalRetaliationModeEnabled;

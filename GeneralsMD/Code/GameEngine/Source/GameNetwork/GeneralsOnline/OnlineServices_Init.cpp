@@ -34,6 +34,9 @@ std::thread::id NGMP_OnlineServicesManager::g_MainThreadID;
 std::mutex NGMP_OnlineServicesManager::m_ScreenshotMutex;
 std::vector<std::string> NGMP_OnlineServicesManager::m_vecGuardedSSData;
 
+
+bool NGMP_OnlineServicesManager::g_bAdvancedNetworkStats;
+
 NetworkMesh* NGMP_OnlineServicesManager::GetNetworkMesh()
 {
 	if (m_pOnlineServicesManager != nullptr)
@@ -238,12 +241,25 @@ void NGMP_OnlineServicesManager::CommitReplay(AsciiString absoluteReplayPath)
 		}, nullptr, HTTP_UPLOAD_TIMEOUT);
 }
 
-void NGMP_OnlineServicesManager::Shutdown()
+void NGMP_OnlineServicesManager::WaitForScreenshotThreads()
 {
-	if (m_pHTTPManager != nullptr)
+	std::scoped_lock<std::mutex> lock(m_mutexScreenshotThreads);
+	
+	NetworkLog(ELogVerbosity::LOG_RELEASE, "[NGMP] Waiting for %d screenshot threads to complete...", (int)m_vecScreenshotThreads.size());
+	
+	for (std::thread* pThread : m_vecScreenshotThreads)
 	{
-		m_pHTTPManager->Shutdown();
+		if (pThread != nullptr && pThread->joinable())
+		{
+			pThread->join();
+			delete pThread;
+		}
 	}
+	
+	m_vecScreenshotThreads.clear();
+	
+	NetworkLog(ELogVerbosity::LOG_RELEASE, "[NGMP] All screenshot threads completed");
+}
 
 	if (m_pWebSocket)
 	{
@@ -252,7 +268,16 @@ void NGMP_OnlineServicesManager::Shutdown()
 		m_pWebSocket.reset();
 	}
 
+	// Then shutdown HTTP manager to complete any pending requests
+	if (m_pHTTPManager != nullptr)
+	{
+		m_pHTTPManager->Shutdown();
+	}
+
+	// Finally shutdown Sentry
 	ShutdownSentry();
+	
+	NetworkLog(ELogVerbosity::LOG_RELEASE, "[NGMP] OnlineServicesManager shutdown complete");
 }
 
 void NGMP_OnlineServicesManager::StartVersionCheck(std::function<void(bool bSuccess, bool bNeedsUpdate)> fnCallback)
@@ -328,8 +353,11 @@ void NGMP_OnlineServicesManager::ContinueUpdate()
 		uint32_t downloadSize = m_vecFilesSizes.front();
 		m_vecFilesSizes.pop();
 
-		TheDownloadManager->SetFileName(AsciiString(strDownloadPath.c_str()));
-		TheDownloadManager->OnStatusUpdate(DOWNLOADSTATUS_DOWNLOADING);
+		if (TheDownloadManager != nullptr)
+		{
+			TheDownloadManager->SetFileName(AsciiString(strDownloadPath.c_str()));
+			TheDownloadManager->OnStatusUpdate(DOWNLOADSTATUS_DOWNLOADING);
+		}
 
 		// this isnt a super nice way of doing this, lets make a download manager
 		std::map<std::string, std::string> mapHeaders;
@@ -348,7 +376,10 @@ void NGMP_OnlineServicesManager::ContinueUpdate()
 				else
 				{
 					// set done
-					TheDownloadManager->OnProgressUpdate(downloadSize, downloadSize, 0, 0);
+					if (TheDownloadManager != nullptr)
+					{
+						TheDownloadManager->OnProgressUpdate(downloadSize, downloadSize, 0, 0);
+					}
 
 					m_vecFilesDownloaded.push_back(strDownloadPath);
 
@@ -380,14 +411,20 @@ void NGMP_OnlineServicesManager::ContinueUpdate()
 			{
 				//m_bytesReceivedSoFar += bytesReceived;
 
-				TheDownloadManager->OnProgressUpdate(bytesReceived, downloadSize, -1, -1);
+				if (TheDownloadManager != nullptr)
+				{
+					TheDownloadManager->OnProgressUpdate(bytesReceived, downloadSize, -1, -1);
+				}
 			}
 			);
 	}
 	else if (m_vecFilesToDownload.size() == 0 && m_vecFilesDownloaded.size() > 0) // nothing left but we did download something
 	{
-		TheDownloadManager->SetFileName("Update is complete!");
-		TheDownloadManager->OnStatusUpdate(DOWNLOADSTATUS_FINISHING);
+		if (TheDownloadManager != nullptr)
+		{
+			TheDownloadManager->SetFileName("Update is complete!");
+			TheDownloadManager->OnStatusUpdate(DOWNLOADSTATUS_FINISHING);
+		}
 
 		m_updateCompleteCallback();
 	}
@@ -462,8 +499,8 @@ void NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit, std:
 	// release the image surface
 	surf->Release();
 
-	// process on thread
-	new std::thread([cbOnDataAvailable, width, height, pBits, pitch, rgbData, bResizeForTransmit]()
+	// process on thread - track the thread so we can join it during shutdown
+	std::thread* pNewThread = new std::thread([cbOnDataAvailable, width, height, pBits, pitch, rgbData, bResizeForTransmit]()
 		{
 			CHECK_WORKER_THREAD;
 
@@ -514,6 +551,13 @@ void NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit, std:
 			cbOnDataAvailable(vecData);
 		}
 	);
+
+	// Store the thread so we can join it during shutdown
+	if (m_pOnlineServicesManager != nullptr)
+	{
+		std::scoped_lock<std::mutex> lock(m_pOnlineServicesManager->m_mutexScreenshotThreads);
+		m_pOnlineServicesManager->m_vecScreenshotThreads.push_back(pNewThread);
+	}
 }
 
 void NGMP_OnlineServicesManager::CancelUpdate()
@@ -714,6 +758,7 @@ void NGMP_OnlineServicesManager::Tick()
 
 void NGMP_OnlineServicesManager::InitSentry()
 {
+#if !_DEBUG
 	std::string strDumpPath = std::format("{}/GeneralsOnlineCrashData/", TheGlobalData->getPath_UserData().str());
 	if (!std::filesystem::exists(strDumpPath))
 	{
@@ -721,9 +766,11 @@ void NGMP_OnlineServicesManager::InitSentry()
 	}
 
 	sentry_options_t* options = sentry_options_new();
-	sentry_options_set_dsn(options, "{REPLACE_SENTRY_DSN}");
+
+	sentry_options_set_dsn(options, "https://61750bebd112d279bcc286d617819269@o4509316925554688.ingest.us.sentry.io/4509316927586304");
 	sentry_options_set_database_path(options, strDumpPath.c_str());
-	sentry_options_set_release(options, "generalsonline-client@0.1");
+	sentry_options_set_release(options, "generalsonline-client@092625_QFE5");
+
 
 #if _DEBUG
 	sentry_options_set_debug(options, 1);
@@ -743,6 +790,7 @@ void NGMP_OnlineServicesManager::InitSentry()
 
 	int i = sentry_init(options);
 	NetworkLog(ELogVerbosity::LOG_RELEASE, "Sentry init: %d", i);
+#endif
 }
 
 void NGMP_OnlineServicesManager::ShutdownSentry()
@@ -759,7 +807,19 @@ std::string NGMP_OnlineServicesManager::GetPatcherDirectoryPath()
 
 void WebSocket::Shutdown()
 {
+	NetworkLog(ELogVerbosity::LOG_RELEASE, "[WebSocket] Shutdown initiated");
+	
+	// Signal that we're shutting down
+	m_bShuttingDown = true;
+	
+	// Disconnect from the websocket
 	Disconnect();
+	
+	// Give CURL time to process the disconnect and cease operations
+	// This ensures any background I/O threads have completed before we return
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	
+	NetworkLog(ELogVerbosity::LOG_RELEASE, "[WebSocket] Shutdown complete");
 }
 
 void WebSocket::SendData_ChangeLobbyPassword(UnicodeString& strNewPassword)
