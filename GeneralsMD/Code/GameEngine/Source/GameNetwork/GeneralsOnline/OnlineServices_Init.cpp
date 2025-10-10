@@ -34,6 +34,9 @@ std::thread::id NGMP_OnlineServicesManager::g_MainThreadID;
 std::mutex NGMP_OnlineServicesManager::m_ScreenshotMutex;
 std::vector<std::string> NGMP_OnlineServicesManager::m_vecGuardedSSData;
 
+
+bool NGMP_OnlineServicesManager::g_bAdvancedNetworkStats;
+
 NetworkMesh* NGMP_OnlineServicesManager::GetNetworkMesh()
 {
 	if (m_pOnlineServicesManager != nullptr)

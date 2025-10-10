@@ -3747,6 +3747,12 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 
 			disp = DESTROY_MESSAGE;
 		}
+		else if (key == KEY_F10)
+		{
+			NGMP_OnlineServicesManager::ToggleAdvancedNetworkStats();
+
+			disp = DESTROY_MESSAGE;
+		}
 
 		break;
 	}

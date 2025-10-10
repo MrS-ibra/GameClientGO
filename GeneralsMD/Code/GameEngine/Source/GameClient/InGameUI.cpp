@@ -6188,47 +6188,59 @@ void InGameUI::drawSystemTime(Int &x, Int &y)
 void InGameUI::drawGameTime()
 {
 	// draw connections
-	/*
-	if (TheNGMPGame != nullptr)
+	if (NGMP_OnlineServicesManager::IsAdvancedNetworkStatsEnabled())
 	{
-		NetworkMesh* pMesh = NGMP_OnlineServicesManager::GetNetworkMesh();
-
-		if (pMesh != nullptr)
+		if (TheNGMPGame != nullptr)
 		{
-			int i = 0;
-			for (const auto& connection : pMesh->GetAllConnections())
+			NetworkMesh* pMesh = NGMP_OnlineServicesManager::GetNetworkMesh();
+
+			NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+
+			if (pMesh != nullptr && pLobbyInterface != nullptr)
 			{
-				const int k_nLanes = 1;
-				SteamNetConnectionRealTimeStatus_t status;
-				SteamNetConnectionRealTimeLaneStatus_t laneStatus[k_nLanes];
-				EResult res = SteamNetworkingSockets()->GetConnectionRealTimeStatus(connection.second.m_hSteamConnection, &status, k_nLanes, laneStatus);
+				//std::vector<LobbyMemberEntry>& vecMembers = pLobbyInterface->GetMembersListForCurrentRoom();
+				
+				int i = 0;
+				for (auto& connection : pMesh->GetAllConnections())
+				{
+					LobbyMemberEntry lobbyMember = pLobbyInterface->GetRoomMemberFromID(connection.first);
 
-				UnicodeString netString;
-				netString.format(L"\n[usr %lld | %d] Lat: %i, QualL: %.2f, QualR: %.2f OutP/s: %.2f, OutB/s: %.2f, InP/s: %.2f, InB/s: %.2f, SendRate %i PU: %d, PR: %d",
-					connection.first,
-					(int)res,
-					status.m_nPing,
-					status.m_flConnectionQualityLocal,
-					status.m_flConnectionQualityRemote,
-					status.m_flOutPacketsPerSec,
-					status.m_flOutBytesPerSec,
-					status.m_flInPacketsPerSec,
-					status.m_flInBytesPerSec,
-					status.m_nSendRateBytesPerSecond,
-					status.m_cbPendingUnreliable,
-					status.m_cbPendingReliable);
+					const int k_nLanes = 1;
+					SteamNetConnectionRealTimeStatus_t status;
+					SteamNetConnectionRealTimeLaneStatus_t laneStatus[k_nLanes];
+					EResult res = SteamNetworkingSockets()->GetConnectionRealTimeStatus(connection.second.m_hSteamConnection, &status, k_nLanes, laneStatus);
 
-				int w, h;
-				m_gameTimeString->getSize(&w, &h);
+					UnicodeString netString;
+					netString.format(L"\n[usr %s|%d][%hs %hs] Lat: %i, QualL: %.2f, QualR: %.2f OutP/s: %.2f, OutB/s: %.2f, InP/s: %.2f, InB/s: %.2f, SendRate %i PU: %d, PR: %d, NoACK: %d, QT: %I64d",
+						from_utf8(lobbyMember.display_name).c_str(),
+						(int)res,
+						connection.second.IsIPV4() ? "IPv4" : "IPv6",
+						connection.second.IsDirect() ? "Direct" : "Relay",
+						status.m_nPing,
+						status.m_flConnectionQualityLocal,
+						status.m_flConnectionQualityRemote,
+						status.m_flOutPacketsPerSec,
+						status.m_flOutBytesPerSec,
+						status.m_flInPacketsPerSec,
+						status.m_flInBytesPerSec,
+						status.m_nSendRateBytesPerSecond,
+						status.m_cbPendingUnreliable,
+						status.m_cbPendingReliable,
+						status.m_cbSentUnackedReliable,
+						status.m_usecQueueTime);
 
-				m_gameTimeString->setText(netString);
-				m_gameTimeString->draw(0, 500 + (i * h/2), m_gameTimeColor, m_gameTimeDropColor);
-				++i;
+					int w, h;
+					m_gameTimeString->getSize(&w, &h);
+
+					m_gameTimeString->setText(netString);
+					m_gameTimeString->draw(0, 500 + (i * h / 2), m_gameTimeColor, m_gameTimeDropColor);
+					++i;
+				}
 			}
+
 		}
-		
 	}
-	*/
+
 	Int currentFrame = TheGameLogic->getFrame();
 	Int gameSeconds = (Int) (SECONDS_PER_LOGICFRAME_REAL * currentFrame );
 	Int hours = gameSeconds / 60 / 60;
