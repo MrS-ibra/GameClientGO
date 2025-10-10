@@ -326,8 +326,11 @@ void NGMP_OnlineServicesManager::ContinueUpdate()
 		uint32_t downloadSize = m_vecFilesSizes.front();
 		m_vecFilesSizes.pop();
 
-		TheDownloadManager->SetFileName(AsciiString(strDownloadPath.c_str()));
-		TheDownloadManager->OnStatusUpdate(DOWNLOADSTATUS_DOWNLOADING);
+		if (TheDownloadManager != nullptr)
+		{
+			TheDownloadManager->SetFileName(AsciiString(strDownloadPath.c_str()));
+			TheDownloadManager->OnStatusUpdate(DOWNLOADSTATUS_DOWNLOADING);
+		}
 
 		// this isnt a super nice way of doing this, lets make a download manager
 		std::map<std::string, std::string> mapHeaders;
@@ -346,7 +349,10 @@ void NGMP_OnlineServicesManager::ContinueUpdate()
 				else
 				{
 					// set done
-					TheDownloadManager->OnProgressUpdate(downloadSize, downloadSize, 0, 0);
+					if (TheDownloadManager != nullptr)
+					{
+						TheDownloadManager->OnProgressUpdate(downloadSize, downloadSize, 0, 0);
+					}
 
 					m_vecFilesDownloaded.push_back(strDownloadPath);
 
@@ -378,14 +384,20 @@ void NGMP_OnlineServicesManager::ContinueUpdate()
 			{
 				//m_bytesReceivedSoFar += bytesReceived;
 
-				TheDownloadManager->OnProgressUpdate(bytesReceived, downloadSize, -1, -1);
+				if (TheDownloadManager != nullptr)
+				{
+					TheDownloadManager->OnProgressUpdate(bytesReceived, downloadSize, -1, -1);
+				}
 			}
 			);
 	}
 	else if (m_vecFilesToDownload.size() == 0 && m_vecFilesDownloaded.size() > 0) // nothing left but we did download something
 	{
-		TheDownloadManager->SetFileName("Update is complete!");
-		TheDownloadManager->OnStatusUpdate(DOWNLOADSTATUS_FINISHING);
+		if (TheDownloadManager != nullptr)
+		{
+			TheDownloadManager->SetFileName("Update is complete!");
+			TheDownloadManager->OnStatusUpdate(DOWNLOADSTATUS_FINISHING);
+		}
 
 		m_updateCompleteCallback();
 	}
