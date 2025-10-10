@@ -841,7 +841,7 @@ WindowLayout *Shell::getSaveLoadMenuLayout( void )
 {
 
 	// if layout has not been created, create it now
-	if( m_saveLoadMenuLayout == NULL )
+	if( m_saveLoadMenuLayout == NULL && TheWindowManager != NULL )
    m_saveLoadMenuLayout = TheWindowManager->winCreateLayout( AsciiString( "Menus/PopupSaveLoad.wnd" ) );
 
 	// sanity
@@ -858,7 +858,7 @@ WindowLayout *Shell::getPopupReplayLayout( void )
 {
 
 	// if layout has not been created, create it now
-	if( m_popupReplayLayout == NULL )
+	if( m_popupReplayLayout == NULL && TheWindowManager != NULL )
    m_popupReplayLayout = TheWindowManager->winCreateLayout( AsciiString( "Menus/PopupReplay.wnd" ) );
 
 	// sanity

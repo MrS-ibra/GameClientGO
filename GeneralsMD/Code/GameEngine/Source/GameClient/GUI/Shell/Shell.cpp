@@ -848,8 +848,8 @@ WindowLayout* Shell::getSaveLoadMenuLayout(void)
 {
 
 	// if layout has not been created, create it now
-	if (m_saveLoadMenuLayout == NULL)
-		m_saveLoadMenuLayout = TheWindowManager->winCreateLayout(AsciiString("Menus/PopupSaveLoad.wnd"));
+	if( m_saveLoadMenuLayout == NULL && TheWindowManager != NULL )
+   m_saveLoadMenuLayout = TheWindowManager->winCreateLayout( AsciiString( "Menus/PopupSaveLoad.wnd" ) );
 
 	// sanity
 	DEBUG_ASSERTCRASH(m_saveLoadMenuLayout, ("Unable to create save/load menu layout"));
@@ -865,8 +865,8 @@ WindowLayout* Shell::getPopupReplayLayout(void)
 {
 
 	// if layout has not been created, create it now
-	if (m_popupReplayLayout == NULL)
-		m_popupReplayLayout = TheWindowManager->winCreateLayout(AsciiString("Menus/PopupReplay.wnd"));
+	if( m_popupReplayLayout == NULL && TheWindowManager != NULL )
+   m_popupReplayLayout = TheWindowManager->winCreateLayout( AsciiString( "Menus/PopupReplay.wnd" ) );
 
 	// sanity
 	DEBUG_ASSERTCRASH(m_popupReplayLayout, ("Unable to create replay save menu layout"));
