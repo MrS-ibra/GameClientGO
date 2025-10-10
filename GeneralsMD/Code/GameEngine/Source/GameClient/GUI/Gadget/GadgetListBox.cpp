@@ -273,6 +273,12 @@ static void adjustDisplay( GameWindow *window, Int adjustment,
 		}
 
 		child = list->slider->winGetChild();
+		if( child == NULL )
+		{
+			// Slider thumb button is missing - cannot adjust display properly
+			DEBUG_LOG(( "adjustDisplay: slider child is NULL, skipping slider adjustment" ));
+			return;
+		}
 		child->winGetSize( &sliderChildSize.x, &sliderChildSize.y );
 		sData->numTicks = (float)((sliderSize.y - sliderChildSize.y) / (float)sData->maxVal);
 

@@ -2352,6 +2352,15 @@ GameWindow *GameWindowManager::gogoGadgetSlider( GameWindow *parent,
 		button = gogoGadgetPushButton( slider, statusFlags, 0, 0,
 																	 width, width+1, &buttonInstData, NULL, TRUE );
 
+	// Check if button creation failed
+	if( button == NULL )
+	{
+		DEBUG_LOG(( "gogoGadgetSlider error: Failed to create slider thumb button" ));
+		// Clean up the slider window before returning
+		winDestroy( slider );
+		return NULL;
+	}
+
 	// Protect against divide by zero
 	if( sliderData->maxVal == sliderData->minVal )
 		sliderData->maxVal = sliderData->minVal + 1;
