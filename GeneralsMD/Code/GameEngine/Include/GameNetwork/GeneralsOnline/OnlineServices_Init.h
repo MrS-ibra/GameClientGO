@@ -22,6 +22,7 @@ enum class EScreenshotType : int
 };
 
 #include <mutex>
+#include <atomic>
 
 #pragma comment(lib, "libcurl/libcurl.lib")
 #pragma comment(lib, "sentry/sentry.lib")
@@ -218,6 +219,8 @@ private:
 	const int64_t m_timeBetweenUserPings = 1000;
 	const int64_t m_timeForWSTimeout = 10000;
 
+	std::atomic<bool> m_bShuttingDown = false;
+
 	std::recursive_timed_mutex m_mutex;
 };
 
@@ -378,6 +381,8 @@ public:
 
 	void Shutdown();
 
+	void WaitForScreenshotThreads();
+
 	void GetAndParseServiceConfig(std::function<void(void)> cbOnDone);
 
 	~NGMP_OnlineServicesManager()
@@ -486,6 +491,10 @@ private:
 	// main thread SS Upload
 	static std::mutex m_ScreenshotMutex;
 	static std::vector<std::string> m_vecGuardedSSData;
+
+	// Screenshot thread management
+	std::vector<std::thread*> m_vecScreenshotThreads;
+	std::mutex m_mutexScreenshotThreads;
 
 	ServiceConfig m_ServiceConfig;
 

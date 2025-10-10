@@ -5,6 +5,7 @@
 #include <vector>
 #include <mutex>
 #include <thread>
+#include <atomic>
 #include <winhttp.h>
 #include "../NGMP_include.h"
 
@@ -61,6 +62,8 @@ private:
 	bool m_bProxyEnabled = false;
 	std::string m_strProxyAddr;
 	uint16_t m_proxyPort;
+
+	std::atomic<bool> m_bShuttingDown = false;
 
 	std::vector<HTTPRequest*> m_vecRequestsPendingStart = std::vector<HTTPRequest*>();
 	std::vector<HTTPRequest*> m_vecRequestsInFlight = std::vector<HTTPRequest*>();

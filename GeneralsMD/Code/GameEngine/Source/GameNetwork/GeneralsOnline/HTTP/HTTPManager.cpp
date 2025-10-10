@@ -50,8 +50,72 @@ void HTTPManager::Shutdown()
 {
 	CHECK_MAIN_THREAD;
 
-	curl_multi_cleanup(m_pCurl);
-	m_pCurl = nullptr;
+	// Signal that we're shutting down
+	m_bShuttingDown = true;
+
+	NetworkLog(ELogVerbosity::LOG_RELEASE, "[HTTPManager] Shutdown initiated, canceling pending requests...");
+
+	// Cancel all pending requests
+	for (HTTPRequest* pRequest : m_vecRequestsPendingStart)
+	{
+		if (pRequest != nullptr)
+		{
+			delete pRequest;
+		}
+	}
+	m_vecRequestsPendingStart.clear();
+
+	NetworkLog(ELogVerbosity::LOG_RELEASE, "[HTTPManager] Waiting for %d in-flight requests to complete...", (int)m_vecRequestsInFlight.size());
+
+	// Wait for all in-flight requests to complete
+	if (m_pCurl != nullptr)
+	{
+		int numRunning = 0;
+		do
+		{
+			// Perform any pending operations
+			curl_multi_perform(m_pCurl, &numRunning);
+			
+			// Check for completed requests
+			int msgq = 0;
+			CURLMsg* m = nullptr;
+			while ((m = curl_multi_info_read(m_pCurl, &msgq)) != nullptr)
+			{
+				if (m->msg == CURLMSG_DONE)
+				{
+					CURL* pCurlHandle = m->easy_handle;
+					
+					// Find and remove the associated request
+					for (auto it = m_vecRequestsInFlight.begin(); it != m_vecRequestsInFlight.end(); ++it)
+					{
+						HTTPRequest* pRequest = *it;
+						if (pRequest != nullptr && pRequest->EasyHandleMatches(pCurlHandle))
+						{
+							pRequest->Threaded_SetComplete(m->data.result);
+							delete pRequest;
+							m_vecRequestsInFlight.erase(it);
+							break;
+						}
+					}
+				}
+			}
+			
+			// Small sleep to avoid busy-waiting if there are still operations pending
+			if (numRunning > 0)
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			}
+			
+		} while (numRunning > 0 || !m_vecRequestsInFlight.empty());
+		
+		NetworkLog(ELogVerbosity::LOG_RELEASE, "[HTTPManager] All in-flight requests completed");
+
+		// Now safe to cleanup
+		curl_multi_cleanup(m_pCurl);
+		m_pCurl = nullptr;
+	}
+
+	NetworkLog(ELogVerbosity::LOG_RELEASE, "[HTTPManager] Shutdown complete");
 }
 
 
