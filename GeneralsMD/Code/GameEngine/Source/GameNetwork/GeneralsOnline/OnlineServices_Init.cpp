@@ -261,19 +261,11 @@ void NGMP_OnlineServicesManager::WaitForScreenshotThreads()
 	NetworkLog(ELogVerbosity::LOG_RELEASE, "[NGMP] All screenshot threads completed");
 }
 
-void NGMP_OnlineServicesManager::Shutdown()
-{
-	NetworkLog(ELogVerbosity::LOG_RELEASE, "[NGMP] OnlineServicesManager shutdown initiated");
-	
-	// CRITICAL: Wait for all screenshot threads to complete first
-	// This prevents threads from accessing destroyed objects
-	WaitForScreenshotThreads();
-	
-	// Now shutdown network components in safe order
-	// Shutdown WebSocket first to stop incoming messages
-	if (m_pWebSocket != nullptr)
+	if (m_pWebSocket)
 	{
 		m_pWebSocket->Shutdown();
+		// Reset shared_ptr, which will delete WebSocket only when all references are released
+		m_pWebSocket.reset();
 	}
 
 	// Then shutdown HTTP manager to complete any pending requests
@@ -661,7 +653,7 @@ void NGMP_OnlineServicesManager::OnLogin(bool bSuccess, const char* szWSAddr)
 	{
 		// connect to WS
 		// TODO_NGMP: Handle WS conn failure
-		m_pWebSocket = new WebSocket();
+		m_pWebSocket = std::make_shared<WebSocket>();
 
 		m_pWebSocket->Connect(szWSAddr);
 
