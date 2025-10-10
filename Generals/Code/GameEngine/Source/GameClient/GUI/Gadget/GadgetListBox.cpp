@@ -258,6 +258,11 @@ static void adjustDisplay( GameWindow *window, Int adjustment,
 		GameWindow *child;
 
 		sData = (SliderData *)list->slider->winGetUserData();
+		
+		// Safety check: ensure slider data is valid before accessing it
+		if( sData == NULL )
+			return;
+		
 		list->slider->winGetSize( &sliderSize.x, &sliderSize.y );
 		// Take into account that there is a line-drawn outline surrounding listbox
 		sData->maxVal = list->totalHeight - ( list->displayHeight - TOTAL_OUTLINE_HEIGHT ) + 1;
@@ -1972,6 +1977,11 @@ WindowMsgHandledType GadgetListBoxSystem( GameWindow *window, UnsignedInt msg,
 			delete[]( list->columnWidthPercentage );
 			if( list->multiSelect )
 				delete[]( list->selections );
+
+			// Clear child window pointers to prevent dangling pointer access
+			list->slider = NULL;
+			list->upButton = NULL;
+			list->downButton = NULL;
 
 			delete (ListboxData *)window->winGetUserData();
 			window->winSetUserData( NULL );
