@@ -1380,38 +1380,56 @@ void ConnectionManager::updateRunAhead(Int oldRunAhead, Int frameRate, Bool didS
 	}
 }
 
-Real ConnectionManager::getMaximumLatency() {
-#if defined(GENERALS_ONLINE)
-	Real Maxlat = 0.0f;
+Real ConnectionManager::getMaximumLatency()
+{
+	ServiceConfig& serviceConf = NGMP_OnlineServicesManager::GetInstance()->GetServiceConfig();
+	int latencyLogicModel = serviceConf.network_latency_logic_model;
+	// 0 = original
+	// 1 = pick highest between original and Valve latency (current)
+	// 2 = pick highest between original and Valve latency (historic)
+
+	Real maxLatency = 0.0f;
 
 	for (Int i = 0; i < MAX_SLOTS; ++i) {
-		if (isPlayerConnected(i) && m_latencyAverages[i] > Maxlat) {
-			Maxlat = m_latencyAverages[i];
+		if (isPlayerConnected(i) && m_latencyAverages[i] > maxLatency) {
+			maxLatency = m_latencyAverages[i];
 		}
 	}
 
-	// TheSuperHackers @info the latencyAverage is the roundtrip latency
-	return Maxlat;
-#else
-	// This works for 2 player games because the latency for the packet router is always 0.
-	Real lat1 = 0.0;
-	Real lat2 = 0.0;
 
-	for (Int i = 0; i < MAX_SLOTS; ++i) {
-		if (isPlayerConnected(i)) {
-			if (m_latencyAverages[i] != 0.0) {
-				if (m_latencyAverages[i] > lat1) {
-					lat2 = lat1;
-					lat1 = m_latencyAverages[i];
-				} else if (m_latencyAverages[i] > lat2) {
-					lat2 = m_latencyAverages[i];
-				}
-			}
+	if (latencyLogicModel == 0)
+	{
+		return maxLatency;
+	}
+	else if (latencyLogicModel == 1)
+	{
+		NetworkMesh* pMesh = NGMP_OnlineServicesManager::GetNetworkMesh();
+
+		if (pMesh != nullptr)
+		{
+			Real maxGOLatency = (pMesh->getMaximumLatency() / 1000.f);
+			return maxLatency > maxGOLatency ? maxLatency : maxGOLatency;
+		}
+		else
+		{
+			return maxLatency;
+		}
+	}
+	else if (latencyLogicModel == 2)
+	{
+		NetworkMesh* pMesh = NGMP_OnlineServicesManager::GetNetworkMesh();
+		if (pMesh != nullptr)
+		{
+			Real maxGOLatency = (pMesh->getMaximumHistoricalLatency() / 1000.f);
+			return maxLatency > maxGOLatency ? maxLatency : maxGOLatency;
+		}
+		else
+		{
+			return maxLatency;
 		}
 	}
 
-	return (lat1 + lat2);
-#endif
+	return maxLatency;
 }
 
 void ConnectionManager::getMinimumFps(Int &minFps, Int &minFpsPlayer) {

@@ -266,7 +266,9 @@ struct ServiceConfig
 	bool network_do_immediate_flush_per_frame = true;
 	int network_send_flags = -1;
 
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ServiceConfig, retry_signalling, use_mapped_port, min_run_ahead_frames, ra_update_frequency_frames, relay_all_traffic, ra_slack_percent, frame_grouping_frames, enable_host_migration, network_do_immediate_flush_per_frame, network_send_flags)
+	int network_latency_logic_model = 0;
+	
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ServiceConfig, retry_signalling, use_mapped_port, min_run_ahead_frames, ra_update_frequency_frames, relay_all_traffic, ra_slack_percent, frame_grouping_frames, enable_host_migration, network_do_immediate_flush_per_frame, network_send_flags, network_latency_logic_model)
 };
 
 class NGMP_OnlineServicesManager
@@ -430,6 +432,10 @@ public:
 	static void CaptureScreenshot(bool bResizeForTransmit, std::function<void(std::vector<unsigned char>)> cbOnDataAvailable);
 	static void CaptureScreenshotToDisk();
 	static void CaptureScreenshotForProbe(EScreenshotType screenshotType);
+
+	static bool g_bAdvancedNetworkStats;
+	static void ToggleAdvancedNetworkStats() { g_bAdvancedNetworkStats = !g_bAdvancedNetworkStats; }
+	static bool IsAdvancedNetworkStatsEnabled() { return g_bAdvancedNetworkStats; }
 
 	/*
 	NGMP_OnlineServices_AuthInterface* GetAuthInterface() const { return m_pAuthInterface; }
