@@ -934,7 +934,9 @@ void Player::initFromDict(const Dict* d)
 					// Now do the TheKey_teamGenericScriptHookN (where N can be from 0 to 15.)
 					for (j = 0; j < MAX_GENERIC_SCRIPTS; ++j) {
 						AsciiString keyName;
-						keyName.format("%s%d", TheNameKeyGenerator->keyToName(TheKey_teamGenericScriptHook).str(), j);
+						// Store the result of keyToName in a local variable to avoid dangling pointer
+						AsciiString hookName = TheNameKeyGenerator->keyToName(TheKey_teamGenericScriptHook);
+						keyName.format("%s%d", hookName.str(), j);
 						tmpStr = teamDict.getAsciiString(NAMEKEY(keyName), &exists);
 						if (exists && !tmpStr.isEmpty())
 						{
