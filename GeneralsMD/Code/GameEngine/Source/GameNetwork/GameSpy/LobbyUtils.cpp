@@ -1066,17 +1066,10 @@ void RefreshGameListBox( GameWindow *win, Bool showMap )
 	}
 	*/
 
-	clearBuddyGames();
-
-	// restore selection
-	GadgetListBoxSetSelected(win, indexToSelect); // even for -1, so we can disable the 'Join Game' button
-//	if(prevPos > 10)
-		GadgetListBoxSetTopVisibleEntry( win, prevPos  );//+ 1
-
-	if (indexToSelect < 0 && selectedID)
-	{
-		TheWindowManager->winSetLoneWindow(NULL);
-	}
+	// Note: clearBuddyGames(), GadgetListBoxSetSelected(), and GadgetListBoxSetTopVisibleEntry()
+	// are now handled inside the SearchForLobbies callback above (after async operation completes).
+	// The code below was removed to fix a race condition where these operations executed on the
+	// empty/reset listbox before the async callback populated it, causing crashes.
 }
 
 void RefreshGameInfoListBox( GameWindow *mainWin, GameWindow *win )
