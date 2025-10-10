@@ -496,7 +496,7 @@ public:
 							// the peer has a good reason for trying to connect, sending an active failure
 							// can improve error handling and the UX, instead of relying on timeout.  But
 							// just consider the security implications.
-
+							NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING] Sending rejection signal");
 							// Silence warnings
 							(void)identityPeer;
 							(void)pMsg;
@@ -531,6 +531,8 @@ public:
 
 NetworkMesh::NetworkMesh()
 {
+	SteamNetworkingUtils()->SetGlobalConfigValueInt32(k_ESteamNetworkingConfig_LogLevel_P2PRendezvous, k_ESteamNetworkingSocketsDebugOutputType_Error);
+
 	// try a shutdown
 	GameNetworkingSockets_Kill();
 
@@ -652,9 +654,15 @@ NetworkMesh::NetworkMesh()
 
 void NetworkMesh::Flush()
 {
-	for (auto& connectionData : m_mapConnections)
+	ServiceConfig& serviceConf = NGMP_OnlineServicesManager::GetInstance()->GetServiceConfig();
+	bool bDoImmediateFlushPerFrame = serviceConf.network_do_immediate_flush_per_frame;
+
+	if (bDoImmediateFlushPerFrame)
 	{
-		SteamNetworkingSockets()->FlushMessagesOnConnection(connectionData.second.m_hSteamConnection);
+		for (auto& connectionData : m_mapConnections)
+		{
+			SteamNetworkingSockets()->FlushMessagesOnConnection(connectionData.second.m_hSteamConnection);
+		}
 	}
 }
 
@@ -900,9 +908,38 @@ PlayerConnection::PlayerConnection(int64_t userID, HSteamNetConnection hSteamCon
 
 int PlayerConnection::SendGamePacket(void* pBuffer, uint32_t totalDataSize)
 {
+	int sendFlags = k_nSteamNetworkingSend_Reliable | k_nSteamNetworkingSend_AutoRestartBrokenSession; // default from last patch
+
+	ServiceConfig& serviceConf = NGMP_OnlineServicesManager::GetInstance()->GetServiceConfig();
+	int netSendFlags = serviceConf.network_send_flags;
+
+	if (netSendFlags != -1)
+	{
+		if (netSendFlags == 0)
+		{
+			sendFlags = k_nSteamNetworkingSend_Unreliable;
+		}
+		else if (netSendFlags == 1)
+		{
+			sendFlags = k_nSteamNetworkingSend_UnreliableNoNagle;
+		}
+		else if (netSendFlags == 2)
+		{
+			sendFlags = k_nSteamNetworkingSend_UnreliableNoDelay;
+		}
+		else if (netSendFlags == 3)
+		{
+			sendFlags = k_nSteamNetworkingSend_Reliable;
+		}
+		else if (netSendFlags == 4)
+		{
+			sendFlags = k_nSteamNetworkingSend_ReliableNoNagle;
+		}
+	}
+
 	NetworkLog(ELogVerbosity::LOG_DEBUG, "[GAME PACKET] Sending msg of size %ld\n", totalDataSize);
 	EResult r = SteamNetworkingSockets()->SendMessageToConnection(
-		m_hSteamConnection, pBuffer, (int)totalDataSize, k_nSteamNetworkingSend_Reliable | k_nSteamNetworkingSend_AutoRestartBrokenSession, nullptr);
+		m_hSteamConnection, pBuffer, (int)totalDataSize, sendFlags, nullptr);
 
 	if (r != k_EResultOK)
 	{

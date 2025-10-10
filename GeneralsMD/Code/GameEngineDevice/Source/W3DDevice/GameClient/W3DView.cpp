@@ -694,7 +694,7 @@ void W3DView::reset( void )
 static void drawDrawable( Drawable *draw, void *userData )
 {
 
-	draw->draw( (View *)userData );
+	draw->draw();
 
 }
 

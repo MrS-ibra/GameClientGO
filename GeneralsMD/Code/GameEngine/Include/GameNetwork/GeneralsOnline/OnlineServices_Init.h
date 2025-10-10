@@ -22,6 +22,7 @@ enum class EScreenshotType : int
 };
 
 #include <mutex>
+#include <atomic>
 
 #pragma comment(lib, "libcurl/libcurl.lib")
 #pragma comment(lib, "sentry/sentry.lib")
@@ -218,6 +219,8 @@ private:
 	const int64_t m_timeBetweenUserPings = 1000;
 	const int64_t m_timeForWSTimeout = 10000;
 
+	std::atomic<bool> m_bShuttingDown = false;
+
 	std::recursive_timed_mutex m_mutex;
 };
 
@@ -263,7 +266,12 @@ struct ServiceConfig
 	int frame_grouping_frames = 2;
 	bool enable_host_migration = true;
 
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ServiceConfig, retry_signalling, use_mapped_port, min_run_ahead_frames, ra_update_frequency_frames, relay_all_traffic, ra_slack_percent, frame_grouping_frames, enable_host_migration)
+	bool network_do_immediate_flush_per_frame = true;
+	int network_send_flags = -1;
+
+	int network_latency_logic_model = 0;
+	
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ServiceConfig, retry_signalling, use_mapped_port, min_run_ahead_frames, ra_update_frequency_frames, relay_all_traffic, ra_slack_percent, frame_grouping_frames, enable_host_migration, network_do_immediate_flush_per_frame, network_send_flags, network_latency_logic_model)
 };
 
 class NGMP_OnlineServicesManager
@@ -373,6 +381,8 @@ public:
 
 	void Shutdown();
 
+	void WaitForScreenshotThreads();
+
 	void GetAndParseServiceConfig(std::function<void(void)> cbOnDone);
 
 	~NGMP_OnlineServicesManager()
@@ -428,6 +438,10 @@ public:
 	static void CaptureScreenshotToDisk();
 	static void CaptureScreenshotForProbe(EScreenshotType screenshotType);
 
+	static bool g_bAdvancedNetworkStats;
+	static void ToggleAdvancedNetworkStats() { g_bAdvancedNetworkStats = !g_bAdvancedNetworkStats; }
+	static bool IsAdvancedNetworkStatsEnabled() { return g_bAdvancedNetworkStats; }
+
 	/*
 	NGMP_OnlineServices_AuthInterface* GetAuthInterface() const { return m_pAuthInterface; }
 	NGMP_OnlineServices_LobbyInterface* GetLobbyInterface() const { return m_pLobbyInterface; }
@@ -477,6 +491,10 @@ private:
 	// main thread SS Upload
 	static std::mutex m_ScreenshotMutex;
 	static std::vector<std::string> m_vecGuardedSSData;
+
+	// Screenshot thread management
+	std::vector<std::thread*> m_vecScreenshotThreads;
+	std::mutex m_mutexScreenshotThreads;
 
 	ServiceConfig m_ServiceConfig;
 

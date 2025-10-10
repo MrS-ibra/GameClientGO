@@ -75,7 +75,7 @@ public:
 
 	void init();
 	void reset();
-	void update() { }
+	void update() {}
 
 	AsciiString m_unicodeFontName;
 	AsciiString m_unicodeFontFileName;
@@ -112,8 +112,8 @@ public:
 	typedef StringList::iterator StringListIt;
 
 	StringList m_localFonts;														// List of the font filenames that are in our local directory
-	static void parseFontFileName( INI *ini, void *instance, void *store, const void* userData );
-	static void parseFontDesc(INI *ini, void *instance, void *store, const void* userData);
+	static void parseFontFileName(INI* ini, void* instance, void* store, const void* userData);
+	static void parseFontDesc(INI* ini, void* instance, void* store, const void* userData);
 };
 //-----------------------------------------------------------------------------
 // INLINING ///////////////////////////////////////////////////////////////////
@@ -122,5 +122,5 @@ public:
 //-----------------------------------------------------------------------------
 // EXTERNALS //////////////////////////////////////////////////////////////////
 //-----------------------------------------------------------------------------
-extern GlobalLanguage *TheGlobalLanguageData;
+extern GlobalLanguage* TheGlobalLanguageData;
 #endif // __GLOBAL_LANGUAGE_H_

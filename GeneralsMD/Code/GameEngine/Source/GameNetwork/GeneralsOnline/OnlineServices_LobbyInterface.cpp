@@ -749,6 +749,9 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 						{
 							NetworkLog(ELogVerbosity::LOG_RELEASE, "Ignoring lobby members update request during gameplay.");
 
+							// retain the old members list
+							lobbyEntry.members = m_CurrentLobby.members;
+
 							// still store the lobby though
 							m_CurrentLobby = lobbyEntry;
 						}

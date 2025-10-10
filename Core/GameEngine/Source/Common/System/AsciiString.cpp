@@ -100,8 +100,8 @@ void AsciiString::validate() const
 	DEBUG_ASSERTCRASH(m_data->m_refCount > 0, ("m_refCount is zero"));
 	DEBUG_ASSERTCRASH(m_data->m_refCount < 32000, ("m_refCount is suspiciously large"));
 	DEBUG_ASSERTCRASH(m_data->m_numCharsAllocated > 0, ("m_numCharsAllocated is zero"));
-//	DEBUG_ASSERTCRASH(m_data->m_numCharsAllocated < 1024, ("m_numCharsAllocated suspiciously large"));
-	DEBUG_ASSERTCRASH(strlen(m_data->peek())+1 <= m_data->m_numCharsAllocated,("str is too long (%d) for storage",strlen(m_data->peek())+1));
+	//	DEBUG_ASSERTCRASH(m_data->m_numCharsAllocated < 1024, ("m_numCharsAllocated suspiciously large"));
+	DEBUG_ASSERTCRASH(strlen(m_data->peek()) + 1 <= m_data->m_numCharsAllocated, ("str is too long (%d) for storage", strlen(m_data->peek()) + 1));
 }
 #endif
 
@@ -125,14 +125,20 @@ void AsciiString::ensureUniqueBufferOfSize(int numCharsNeeded, Bool preserveData
 {
 	validate();
 
+	const int usableNumChars = numCharsNeeded - 1;
+
 	if (m_data &&
-			m_data->m_refCount == 1 &&
-			m_data->m_numCharsAllocated >= numCharsNeeded)
+		m_data->m_refCount == 1 &&
+		m_data->m_numCharsAllocated >= numCharsNeeded)
 	{
 		// no buffer manhandling is needed (it's already large enough, and unique to us)
 		if (strToCopy)
+		{
 			// TheSuperHackers @fix Mauller 04/04/2025 Replace strcpy with safer memmove as memory regions can overlap when part of string is copied to itself
-			memmove(m_data->peek(), strToCopy, strlen(strToCopy) + 1);
+			DEBUG_ASSERTCRASH(usableNumChars <= strlen(strToCopy), ("strToCopy is too small"));
+			memmove(m_data->peek(), strToCopy, usableNumChars);
+			m_data->peek()[usableNumChars] = 0;
+		}
 		if (strToCat)
 			strcat(m_data->peek(), strToCat);
 		return;
@@ -140,11 +146,11 @@ void AsciiString::ensureUniqueBufferOfSize(int numCharsNeeded, Bool preserveData
 
 	DEBUG_ASSERTCRASH(TheDynamicMemoryAllocator != NULL, ("Cannot use dynamic memory allocator before its initialization. Check static initialization order."));
 	DEBUG_ASSERTCRASH(numCharsNeeded <= MAX_LEN, ("AsciiString::ensureUniqueBufferOfSize exceeds max string length %d with requested length %d", MAX_LEN, numCharsNeeded));
-	int minBytes = sizeof(AsciiStringData) + numCharsNeeded*sizeof(char);
+	int minBytes = sizeof(AsciiStringData) + numCharsNeeded * sizeof(char);
 	int actualBytes = TheDynamicMemoryAllocator->getActualAllocationSize(minBytes);
 	AsciiStringData* newData = (AsciiStringData*)TheDynamicMemoryAllocator->allocateBytesDoNotZero(actualBytes, "STR_AsciiString::ensureUniqueBufferOfSize");
 	newData->m_refCount = 1;
-	newData->m_numCharsAllocated = (actualBytes - sizeof(AsciiStringData))/sizeof(char);
+	newData->m_numCharsAllocated = (actualBytes - sizeof(AsciiStringData)) / sizeof(char);
 #if defined(RTS_DEBUG)
 	newData->m_debugptr = newData->peek();	// just makes it easier to read in the debugger
 #endif
@@ -157,7 +163,11 @@ void AsciiString::ensureUniqueBufferOfSize(int numCharsNeeded, Bool preserveData
 	// do these BEFORE releasing the old buffer, so that self-copies
 	// or self-cats will work correctly.
 	if (strToCopy)
-		strcpy(newData->peek(), strToCopy);
+	{
+		DEBUG_ASSERTCRASH(usableNumChars <= strlen(strToCopy), ("strToCopy is too small"));
+		strncpy(newData->peek(), strToCopy, usableNumChars);
+		newData->peek()[usableNumChars] = 0;
+	}
 	if (strToCat)
 		strcat(newData->peek(), strToCat);
 
@@ -186,11 +196,21 @@ void AsciiString::releaseBuffer()
 }
 
 // -----------------------------------------------------
-AsciiString::AsciiString(const char* s) : m_data(0)
+AsciiString::AsciiString(const char* s) : m_data(NULL)
 {
 	//DEBUG_ASSERTCRASH(isMemoryManagerOfficiallyInited(), ("Initializing AsciiStrings prior to main (ie, as static vars) can cause memory leak reporting problems. Are you sure you want to do this?"));
-	int len = (s)?strlen(s):0;
-	if (len)
+	int len = s ? (int)strlen(s) : 0;
+	if (len > 0)
+	{
+		ensureUniqueBufferOfSize(len + 1, false, s, NULL);
+	}
+	validate();
+}
+
+// -----------------------------------------------------
+AsciiString::AsciiString(const char* s, int len) : m_data(NULL)
+{
+	if (len > 0)
 	{
 		ensureUniqueBufferOfSize(len + 1, false, s, NULL);
 	}
@@ -216,11 +236,17 @@ void AsciiString::set(const AsciiString& stringSrc)
 // -----------------------------------------------------
 void AsciiString::set(const char* s)
 {
+	int len = s ? strlen(s) : 0;
+	set(s, len);
+}
+
+// -----------------------------------------------------
+void AsciiString::set(const char* s, int len)
+{
 	validate();
 	if (!m_data || s != peek())
 	{
-		int len = s ? strlen(s) : 0;
-		if (len)
+		if (len > 0)
 		{
 			ensureUniqueBufferOfSize(len + 1, false, s, NULL);
 		}
@@ -233,10 +259,10 @@ void AsciiString::set(const char* s)
 }
 
 // -----------------------------------------------------
-char*  AsciiString::getBufferForRead(Int len)
+char* AsciiString::getBufferForRead(Int len)
 {
 	validate();
-	DEBUG_ASSERTCRASH(len>0, ("No need to allocate 0 len strings."));
+	DEBUG_ASSERTCRASH(len > 0, ("No need to allocate 0 len strings."));
 	ensureUniqueBufferOfSize(len + 1, false, NULL, NULL);
 	validate();
 	return peek();
@@ -280,7 +306,7 @@ void AsciiString::trim()
 
 	if (m_data)
 	{
-		char *c = peek();
+		char* c = peek();
 
 		//	Strip leading white space from the string.
 		c = skipWhitespace(c);
@@ -349,7 +375,7 @@ void AsciiString::toLower()
 		char buf[MAX_FORMAT_BUF_LEN];
 		strcpy(buf, peek());
 
-		char *c = buf;
+		char* c = buf;
 		while (c && *c)
 		{
 			*c = tolower(*c);
@@ -375,7 +401,7 @@ void AsciiString::truncateBy(const Int charCount)
 		const size_t len = strlen(peek());
 		if (len > 0)
 		{
-			ensureUniqueBufferOfSize(len+1, true, NULL, NULL);
+			ensureUniqueBufferOfSize(len + 1, true, NULL, NULL);
 			size_t count = charCount;
 			if (charCount > len)
 			{
@@ -408,9 +434,9 @@ void AsciiString::format(AsciiString format, ...)
 {
 	validate();
 	va_list args;
-  va_start(args, format);
+	va_start(args, format);
 	format_va(format, args);
-  va_end(args);
+	va_end(args);
 	validate();
 }
 
@@ -419,9 +445,9 @@ void AsciiString::format(const char* format, ...)
 {
 	validate();
 	va_list args;
-  va_start(args, format);
+	va_start(args, format);
 	format_va(format, args);
-  va_end(args);
+	va_end(args);
 	validate();
 }
 
@@ -436,7 +462,7 @@ void AsciiString::format_va(const char* format, va_list args)
 {
 	validate();
 	char buf[MAX_FORMAT_BUF_LEN];
-	const int result = vsnprintf(buf, sizeof(buf)/sizeof(char), format, args);
+	const int result = vsnprintf(buf, sizeof(buf) / sizeof(char), format, args);
 	if (result >= 0)
 	{
 		set(buf);
