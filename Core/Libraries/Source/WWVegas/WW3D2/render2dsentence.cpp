@@ -698,6 +698,17 @@ Render2DSentenceClass::Allocate_New_Surface (const WCHAR *text, bool justCalcExt
 		//
 		CurSurface = NEW_REF (SurfaceClass, (CurrTextureSize, CurrTextureSize, WW3D_FORMAT_A4R4G4B4));
 		WWASSERT (CurSurface != NULL);
+		
+		//
+		//	Validate that the underlying D3D surface was successfully created
+		//
+		if (CurSurface != NULL && !CurSurface->Is_Valid()) {
+			// Surface creation failed - clean up and return
+			REF_PTR_RELEASE(CurSurface);
+			CurSurface = NULL;
+			return;
+		}
+		
 		CurSurface->Add_Ref ();
 
 		//
@@ -931,7 +942,15 @@ void	Render2DSentenceClass::Build_Sentence_Centered (const WCHAR *text, int *hkX
 				//
 				if (LockedPtr == NULL) {
 					LockedPtr = (uint16 *)CurSurface->Lock (&LockedStride);
-					WWASSERT (LockedPtr != NULL);
+					// If Lock() failed (returned NULL), we cannot render text - abort gracefully
+					if (LockedPtr == NULL) {
+						// Stop processing - cannot continue without a valid surface
+						if(hkX)
+							*hkX = hotKeyPosX;
+						if(hkX)
+							*hkY = hotKeyPosY;
+						return;
+					}
 				}
 
 				//
@@ -1121,7 +1140,21 @@ Vector2	Render2DSentenceClass::Build_Sentence_Not_Centered (const WCHAR *text, i
 			{
 				if (LockedPtr == NULL) {
 					LockedPtr = (uint16 *)CurSurface->Lock (&LockedStride);
-					WWASSERT (LockedPtr != NULL);
+					// If Lock() failed (returned NULL), we cannot render text - abort gracefully
+					if (LockedPtr == NULL) {
+						// Return the extent we've calculated so far
+						Vector2 extent;
+						extent.X = maxX + Font->Get_Extra_Overlap();
+						extent.Y = Cursor.Y + char_height;
+						Cursor = cursor;
+						TextureOffset = textureOffset;
+						TextureStartX = textureStartX;
+						if(hkX)
+							*hkX = hotKeyPosX;
+						if(hkX)
+							*hkY = hotKeyPosY;
+						return extent;
+					}
 				}
 			}
 
