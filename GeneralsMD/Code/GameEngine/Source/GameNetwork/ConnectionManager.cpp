@@ -1997,6 +1997,13 @@ void ConnectionManager::parseUserList(const GameInfo *game)
 	TheMemoryPoolFactory->debugSetInitFillerIndex(m_localSlot);
 #endif
 
+	// Set the packet router slot to the first player (packet router fallback[0])
+	// This fixes the issue where m_packetRouterSlot was hardcoded to 0 and never updated
+	if (numUsers > 0) {
+		m_packetRouterSlot = m_packetRouterFallback[0];
+		DEBUG_LOG(("Packet router slot set to %d", m_packetRouterSlot));
+	}
+
 	/*
 	if ( numUsers < 2 || m_localSlot == -1 )
 	{
