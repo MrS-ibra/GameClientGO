@@ -11,8 +11,6 @@ public:
 
 	float DetermineCameraMaxHeight();
 
-	bool Input_LockCursorToGameWindow() const { return m_Input_LockCursorToGameWindow; }
-
 	void Save_Camera_MaxHeight_WhenLobbyHost(float maxHeight)
 	{
 		if (maxHeight >= GENERALS_ONLINE_MIN_LOBBY_CAMERA_ZOOM || maxHeight <= GENERALS_ONLINE_MAX_LOBBY_CAMERA_ZOOM)
@@ -49,8 +47,6 @@ private:
 	float m_Camera_MoveSpeedRatio = m_Camera_MoveSpeedRatio_default;
 
 	float m_Camera_MaxHeight_LobbyHost = GENERALS_ONLINE_DEFAULT_LOBBY_CAMERA_ZOOM;
-
-	bool m_Input_LockCursorToGameWindow = true;
 
 	bool m_bInitialized = false;
 

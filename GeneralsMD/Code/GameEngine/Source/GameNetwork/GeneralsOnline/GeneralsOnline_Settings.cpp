@@ -8,9 +8,6 @@
 #define SETTINGS_KEY_CAMERA_MOVE_SPEED_RATIO "move_speed_ratio"
 #define SETTINGS_KEY_CAMERA_MAX_HEIGHT_WHEN_LOBBY_HOST "max_height_only_when_lobby_host"
 
-#define SETTINGS_KEY_INPUT "input"
-#define SETTINGS_KEY_INPUT_LOCK_CURSOR_TO_GAME_WINDOW "lock_cursor_to_game_window"
-
 #define SETTINGS_KEY_RENDER "render"
 #define SETTINGS_KEY_RENDER_LIMIT_FRAMERATE "limit_framerate"
 #define SETTINGS_KEY_RENDER_FRAMERATE_LIMIT_FPS_VAL "fps_limit"
@@ -126,16 +123,6 @@ void GenOnlineSettings::Load(void)
 				}
 			}
 
-			if (jsonSettings.contains(SETTINGS_KEY_INPUT))
-			{
-				auto inputSettings = jsonSettings[SETTINGS_KEY_INPUT];
-
-				if (inputSettings.contains(SETTINGS_KEY_INPUT_LOCK_CURSOR_TO_GAME_WINDOW))
-				{
-					m_Input_LockCursorToGameWindow = inputSettings[SETTINGS_KEY_INPUT_LOCK_CURSOR_TO_GAME_WINDOW];
-				}
-			}
-
 			if (jsonSettings.contains(SETTINGS_KEY_RENDER))
 			{
 				auto renderSettings = jsonSettings[SETTINGS_KEY_RENDER];
@@ -188,7 +175,6 @@ void GenOnlineSettings::Load(void)
 	{
 		m_Camera_MinHeight = m_Camera_MinHeight_default;
 		m_Camera_MaxHeight_LobbyHost = m_Camera_MaxHeight_LobbyHost;
-		m_Input_LockCursorToGameWindow = true;
 		m_bVerbose = false;
 		m_Render_LimitFramerate = true;
 		m_Render_FramerateLimit_FPSVal = 60;
@@ -216,13 +202,6 @@ void GenOnlineSettings::Save()
 					{ SETTINGS_KEY_CAMERA_MOVE_SPEED_RATIO, m_Camera_MoveSpeedRatio },
 				}
 		  },
-
-			{
-				SETTINGS_KEY_INPUT,
-					{
-						{SETTINGS_KEY_INPUT_LOCK_CURSOR_TO_GAME_WINDOW, m_Input_LockCursorToGameWindow}
-					}
-			},
 
 		{
 			SETTINGS_KEY_RENDER,
