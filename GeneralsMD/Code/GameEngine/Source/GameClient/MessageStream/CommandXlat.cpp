@@ -191,11 +191,25 @@ Bool hasThingsInProduction(PlayerType playerType)
 
 bool changeMaxRenderFps(FpsValueChange change)
 {
+	// GO change: dont let them change FPS in shellmap
+	if (TheShell->isShellActive())
+	{
+		UnicodeString message = UnicodeString(L"Max Render FPS can only be changed in-game");
+		TheInGameUI->messageNoFormat(message);
+		return false;
+	}
+
 	UnsignedInt maxRenderFps = TheGameEngine->getFramesPerSecondLimit();
 	maxRenderFps = RenderFpsPreset::changeFpsValue(maxRenderFps, change);
 
 	TheGameEngine->setFramesPerSecondLimit(maxRenderFps);
 	TheWritableGlobalData->m_useFpsLimit = (maxRenderFps != RenderFpsPreset::UncappedFpsValue);
+
+#if defined(GENERALS_ONLINE)
+	// Save to GO settings, SH does not save it yet
+
+	NGMP_OnlineServicesManager::Settings.Graphics_SetFPS(maxRenderFps, TheWritableGlobalData->m_useFpsLimit);
+#endif
 
 	UnicodeString message;
 

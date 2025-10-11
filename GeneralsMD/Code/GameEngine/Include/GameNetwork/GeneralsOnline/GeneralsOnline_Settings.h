@@ -11,6 +11,13 @@ public:
 
 	float DetermineCameraMaxHeight();
 
+	void Graphics_SetFPS(int fpsLimit, bool bLimitFramerate)
+	{
+		m_Render_FramerateLimit_FPSVal = fpsLimit;
+		m_Render_LimitFramerate = bLimitFramerate;
+		Save();
+	}
+
 	void Save_Camera_MaxHeight_WhenLobbyHost(float maxHeight)
 	{
 		if (maxHeight >= GENERALS_ONLINE_MIN_LOBBY_CAMERA_ZOOM || maxHeight <= GENERALS_ONLINE_MAX_LOBBY_CAMERA_ZOOM)
@@ -22,7 +29,16 @@ public:
 
 	bool Graphics_DrawStatsOverlay() const { return m_Render_DrawStatsOverlay; }
 	bool Graphics_LimitFramerate() const { return m_Render_LimitFramerate; }
-	int Graphics_GetFPSLimit() const { return std::clamp<int>(m_Render_FramerateLimit_FPSVal, 60, 240); }
+	int Graphics_GetFPSLimit() const
+	{
+		if (!m_Render_LimitFramerate)
+		{
+			return 1000000;
+		}
+
+		return m_Render_FramerateLimit_FPSVal;
+	}
+
 
 	bool Debug_VerboseLogging() const { return m_bVerbose; }
 

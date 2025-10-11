@@ -361,6 +361,12 @@ GameEngine::~GameEngine()
 void GameEngine::setFramesPerSecondLimit(Int fps)
 {
 	DEBUG_LOG(("GameEngine::setFramesPerSecondLimit() - setting max fps to %d (TheGlobalData->m_useFpsLimit == %d)", fps, TheGlobalData->m_useFpsLimit));
+
+	// clamp FPS to at least render at same as logic
+#if defined(GENERALS_ONLINE)
+	fps = std::max<int>(fps, GENERALS_ONLINE_HIGH_FPS_LIMIT);
+#endif
+
 	m_maxFPS = fps;
 }
 
@@ -1001,11 +1007,12 @@ void GameEngine::update(void)
 			// NGMP_NOTE: Lock the shellmap to 30fps until we fix everything
 			if (TheNGMPGame != nullptr && TheGameLogic->isInGame() && !TheShell->isShellActive())
 			{
-				m_maxFPS = NGMP_OnlineServicesManager::Settings.Graphics_GetFPSLimit();
+				setFramesPerSecondLimit(NGMP_OnlineServicesManager::Settings.Graphics_GetFPSLimit());
+				TheWritableGlobalData->m_useFpsLimit = NGMP_OnlineServicesManager::Settings.Graphics_GetFPSLimit();
 			}
 			else
 			{
-				m_maxFPS = 60;
+				setFramesPerSecondLimit(GENERALS_ONLINE_HIGH_FPS_LIMIT);
 			}
 #endif
 			
