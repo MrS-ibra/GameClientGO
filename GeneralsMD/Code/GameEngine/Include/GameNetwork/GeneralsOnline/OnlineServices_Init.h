@@ -218,7 +218,7 @@ private:
 	int64_t m_lastPong = -1;
 	int64_t m_lastPing = -1;
 	const int64_t m_timeBetweenUserPings = 1000;
-	const int64_t m_timeForWSTimeout = 10000;
+	const int64_t m_timeForWSTimeout = 20000;
 
 	std::atomic<bool> m_bShuttingDown = false;
 
@@ -273,8 +273,9 @@ struct ServiceConfig
 	int network_latency_logic_model = 0;
 
 	bool use_default_config = false;
+	int ra_slack_override_percent_in_default = 10;
 	
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ServiceConfig, retry_signalling, use_mapped_port, min_run_ahead_frames, ra_update_frequency_frames, relay_all_traffic, ra_slack_percent, frame_grouping_frames, enable_host_migration, network_do_immediate_flush_per_frame, network_send_flags, network_latency_logic_model, use_default_config)
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ServiceConfig, retry_signalling, use_mapped_port, min_run_ahead_frames, ra_update_frequency_frames, relay_all_traffic, ra_slack_percent, frame_grouping_frames, enable_host_migration, network_do_immediate_flush_per_frame, network_send_flags, network_latency_logic_model, use_default_config, ra_slack_override_percent_in_default)
 };
 
 class NGMP_OnlineServicesManager
@@ -472,9 +473,11 @@ public:
 
 	void ResetPendingFullTeardownReason() { m_teardownReason = EGOTearDownReason::UNKNOWN; }
 
+	static void InitSentry();
+	static void ShutdownSentry();
 private:
-		void InitSentry();
-		void ShutdownSentry();
+		
+		
 
 		std::string GetPatcherDirectoryPath();
 

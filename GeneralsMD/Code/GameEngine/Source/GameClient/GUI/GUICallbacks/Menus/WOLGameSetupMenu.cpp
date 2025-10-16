@@ -2206,8 +2206,8 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 	// need to exit?
 	if (NGMP_OnlineServicesManager::GetInstance() != nullptr && NGMP_OnlineServicesManager::GetInstance()->IsPendingFullTeardown())
 	{
-		// Only if not in game
-		if (!TheGameLogic->isInGame())
+		// Only if not in game and not in anim
+		if (!TheGameLogic->isInGame() && TheShell->isAnimFinished() && TheTransitionHandler->isFinished())
 		{
 			bool bForceShutdown = true;
 			WOLGameSetupMenuShutdown(layout, (void*)&bForceShutdown); // userdata is 'force shutdown'

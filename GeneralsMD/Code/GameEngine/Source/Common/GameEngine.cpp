@@ -353,6 +353,9 @@ GameEngine::~GameEngine()
 	PerfGather::termPerfDump();
 #endif
 
+	// Kill sentry
+	NGMP_OnlineServicesManager::ShutdownSentry();
+
 	// Restore the previous time slice for Windows.
 	timeEndPeriod(1);
 }
@@ -616,6 +619,9 @@ void GameEngine::init()
 		TheWritableGlobalData->parseCustomDefinition();
 
 
+		// Init sentry ASAP to catch early crashes
+		NGMP_OnlineServicesManager::InitSentry();
+
 	#ifdef DUMP_PERF_STATS///////////////////////////////////////////////////////////////////////////
 	GetPrecisionTimer(&endTime64);//////////////////////////////////////////////////////////////////
 	sprintf(Buf,"----------------------------------------------------------------------------After  TheWritableGlobalData = %f seconds",((double)(endTime64-startTime64)/(double)(freq64)));
@@ -635,7 +641,6 @@ void GameEngine::init()
 		// If we're in Debug, load the Debug settings as well.
 		ini.loadFileDirectory( AsciiString( "Data\\INI\\GameDataDebug" ), INI_LOAD_OVERWRITE, NULL );
 	#endif
-
 		// special-case: parse command-line parameters after loading global data
 		CommandLine::parseCommandLineForEngineInit();
 
@@ -656,8 +661,6 @@ void GameEngine::init()
 		ini.loadFileDirectory( AsciiString( "Data\\INI\\Water" ), INI_LOAD_OVERWRITE, &xferCRC );
 		ini.loadFileDirectory( AsciiString( "Data\\INI\\Default\\Weather" ), INI_LOAD_OVERWRITE, &xferCRC );
 		ini.loadFileDirectory( AsciiString( "Data\\INI\\Weather" ), INI_LOAD_OVERWRITE, &xferCRC );
-
-
 
 	#ifdef DUMP_PERF_STATS///////////////////////////////////////////////////////////////////////////
 	GetPrecisionTimer(&endTime64);//////////////////////////////////////////////////////////////////
@@ -696,7 +699,6 @@ void GameEngine::init()
 		initSubsystem(TheAudio,"TheAudio", TheGlobalData->m_headless ? NEW AudioManagerDummy : createAudioManager(), NULL);
 		if (!TheAudio->isMusicAlreadyLoaded())
 			setQuitting(TRUE);
-
 	#ifdef DUMP_PERF_STATS///////////////////////////////////////////////////////////////////////////
 	GetPrecisionTimer(&endTime64);//////////////////////////////////////////////////////////////////
 	sprintf(Buf,"----------------------------------------------------------------------------After TheAudio = %f seconds",((double)(endTime64-startTime64)/(double)(freq64)));
@@ -730,7 +732,6 @@ void GameEngine::init()
 		initSubsystem(TheDamageFXStore,"TheDamageFXStore", MSGNEW("GameEngineSubsystem") DamageFXStore(), &xferCRC, NULL, "Data\\INI\\DamageFX");
 		initSubsystem(TheArmorStore,"TheArmorStore", MSGNEW("GameEngineSubsystem") ArmorStore(), &xferCRC, NULL, "Data\\INI\\Armor");
 		initSubsystem(TheBuildAssistant,"TheBuildAssistant", MSGNEW("GameEngineSubsystem") BuildAssistant, NULL);
-
 
 	#ifdef DUMP_PERF_STATS///////////////////////////////////////////////////////////////////////////
 	GetPrecisionTimer(&endTime64);//////////////////////////////////////////////////////////////////
@@ -772,8 +773,6 @@ void GameEngine::init()
 		initSubsystem(TheRadar,"TheRadar", TheGlobalData->m_headless ? NEW RadarDummy : createRadar(), NULL);
 		initSubsystem(TheVictoryConditions,"TheVictoryConditions", createVictoryConditions(), NULL);
 
-
-
 	#ifdef DUMP_PERF_STATS///////////////////////////////////////////////////////////////////////////
 	GetPrecisionTimer(&endTime64);//////////////////////////////////////////////////////////////////
 	sprintf(Buf,"----------------------------------------------------------------------------After TheVictoryConditions = %f seconds",((double)(endTime64-startTime64)/(double)(freq64)));
@@ -796,7 +795,6 @@ void GameEngine::init()
 		ini.loadFileDirectory("Data\\INI\\CommandMapDemo", INI_LOAD_MULTIFILE, NULL);
 #endif
 
-
 		initSubsystem(TheActionManager,"TheActionManager", MSGNEW("GameEngineSubsystem") ActionManager(), NULL);
 		//initSubsystem((CComObject<WebBrowser> *)TheWebBrowser,"(CComObject<WebBrowser> *)TheWebBrowser", (CComObject<WebBrowser> *)createWebBrowser(), NULL);
 		initSubsystem(TheGameStateMap,"TheGameStateMap", MSGNEW("GameEngineSubsystem") GameStateMap, NULL, NULL, NULL );
@@ -804,7 +802,6 @@ void GameEngine::init()
 
 		// Create the interface for sending game results
 		initSubsystem(TheGameResultsQueue, "TheGameResultsQueue", GameResultsInterface::createNewGameResultsInterface(), NULL);
-
 
 	#ifdef DUMP_PERF_STATS///////////////////////////////////////////////////////////////////////////
 	GetPrecisionTimer(&endTime64);//////////////////////////////////////////////////////////////////

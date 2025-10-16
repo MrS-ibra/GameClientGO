@@ -392,7 +392,7 @@ void NGMPGame::launchGame(void)
 		{
 			TheWritableGlobalData->m_networkFPSHistoryLength = 30;
 			TheWritableGlobalData->m_networkLatencyHistoryLength = 200;
-			TheWritableGlobalData->m_networkRunAheadSlack = 10;
+			TheWritableGlobalData->m_networkRunAheadSlack = serviceConf.ra_slack_override_percent_in_default; // normally 10
 			TheWritableGlobalData->m_networkRunAheadMetricsTime = 5000;
 		}
 		else

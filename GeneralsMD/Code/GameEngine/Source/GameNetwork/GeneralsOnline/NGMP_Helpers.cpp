@@ -10,6 +10,8 @@
 std::string m_strNetworkLogFileName;
 std::mutex m_logMutex;
 
+extern NGMPGame* TheNGMPGame;
+
 std::string to_utf8(const std::wstring& wstr)
 {
 	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
@@ -24,6 +26,12 @@ std::wstring from_utf8(const std::string& utf8_str)
 
 void NetworkLog(ELogVerbosity logVerbosity, const char* fmt, ...)
 {
+	// no logging during gameplay
+	if (TheNGMPGame && TheNGMPGame->isGameInProgress())
+	{
+		return;
+	}
+
 	if (!NGMP_OnlineServicesManager::Settings.Debug_VerboseLogging())
 	{
 		if (logVerbosity < g_LogVerbosity)

@@ -140,6 +140,12 @@ void NGMP_OnlineServicesManager::CaptureScreenshotForProbe(EScreenshotType scree
 		{
 			CHECK_WORKER_THREAD;
 
+			if (vecData.empty())
+			{
+				NetworkLog(ELogVerbosity::LOG_DEBUG, "Screenshot capture failed, no data");
+				return;
+			}
+
 			nlohmann::json j;
 			j["img"] = nullptr;
 			j["imgtype"] = (int)screenshotType;
@@ -180,8 +186,6 @@ NGMP_OnlineServicesManager::NGMP_OnlineServicesManager()
 	NetworkLog(ELogVerbosity::LOG_RELEASE, "[NGMP] Init");
 
 	m_pOnlineServicesManager = this;
-
-	InitSentry();
 }
 
 std::string NGMP_OnlineServicesManager::GetAPIEndpoint(const char* szEndpoint)
@@ -276,9 +280,6 @@ void NGMP_OnlineServicesManager::Shutdown()
 		m_pHTTPManager->Shutdown();
 	}
 
-	// Finally shutdown Sentry
-	ShutdownSentry();
-	
 	NetworkLog(ELogVerbosity::LOG_RELEASE, "[NGMP] OnlineServicesManager shutdown complete");
 }
 
@@ -438,127 +439,168 @@ void NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit, std:
 {
 	CHECK_MAIN_THREAD;
 
-	// no callback, nothing to do
+	bool bSucceeded = false;
+
+	// no callback, nothing to do, early out
 	if (cbOnDataAvailable == nullptr)
 	{
 		return;
 	}
 
 	SurfaceClass* surface = DX8Wrapper::_Get_DX8_Back_Buffer();
+	LPDIRECT3DSURFACE8 surf = nullptr;
+	SurfaceClass* surfaceCopy = nullptr;
+	void* pBits = nullptr;
 
-	if (surface == nullptr)
+	if (surface != nullptr)
 	{
-		return;
-	}
+		SurfaceClass::SurfaceDescription surfaceDesc;
+		surface->Get_Description(surfaceDesc);
 
-	SurfaceClass::SurfaceDescription surfaceDesc;
-	surface->Get_Description(surfaceDesc);
+		IDirect3DSurface8* pDXsurf = DX8Wrapper::_Create_DX8_Surface(surfaceDesc.Width, surfaceDesc.Height, surfaceDesc.Format);
 
-	IDirect3DSurface8* pDXsurf = DX8Wrapper::_Create_DX8_Surface(surfaceDesc.Width, surfaceDesc.Height, surfaceDesc.Format);
-
-	if (pDXsurf == nullptr)
-	{
-		return;
-	}
-
-	SurfaceClass* surfaceCopy = NEW_REF(SurfaceClass, (pDXsurf));
-	DX8Wrapper::_Copy_DX8_Rects(surface->Peek_D3D_Surface(), NULL, 0, surfaceCopy->Peek_D3D_Surface(), NULL);
-
-	HRESULT hr;
-
-	D3DDISPLAYMODE mode;
-	if (FAILED(hr = DX8Wrapper::_Get_D3D_Device8()->GetDisplayMode(&mode)))
-	{
-		cbOnDataAvailable(std::vector<unsigned char>());
-		return;
-	}
-
-	LPDIRECT3DSURFACE8 surf;
-	if (FAILED(hr = DX8Wrapper::_Get_D3D_Device8()->CreateImageSurface(mode.Width, mode.Height,
-		D3DFMT_A8R8G8B8, &surf)))
-	{
-		cbOnDataAvailable(std::vector<unsigned char>());
-		return;
-	}
-
-	if (FAILED(hr = DX8Wrapper::_Get_D3D_Device8()->GetFrontBuffer(surf))) {
-		surf->Release();
+		if (pDXsurf != nullptr)
 		{
-			cbOnDataAvailable(std::vector<unsigned char>());
-			return;
-		}
-	}
+			surfaceCopy = NEW_REF(SurfaceClass, (pDXsurf));
 
-	// gather all our data
-	int pitch = 0;
-	void* pBits = surfaceCopy->Lock(&pitch);
+			if (surfaceCopy != nullptr)
+			{
+				DX8Wrapper::_Copy_DX8_Rects(surface->Peek_D3D_Surface(), NULL, 0, surfaceCopy->Peek_D3D_Surface(), NULL);
 
-	unsigned char* rgbData = new unsigned char[surfaceDesc.Width * surfaceDesc.Height * 3];
+				HRESULT hr;
 
-	int width = surfaceDesc.Width;
-	int height = surfaceDesc.Height;
+				D3DDISPLAYMODE mode;
+				if (SUCCEEDED(hr = DX8Wrapper::_Get_D3D_Device8()->GetDisplayMode(&mode)))
+				{
+					if (SUCCEEDED(hr = DX8Wrapper::_Get_D3D_Device8()->CreateImageSurface(mode.Width, mode.Height,
+						D3DFMT_A8R8G8B8, &surf)))
+					{
+						if (SUCCEEDED(hr = DX8Wrapper::_Get_D3D_Device8()->GetFrontBuffer(surf)))
+						{
+							// gather all our data
+							int pitch = 0;
+							pBits = surfaceCopy->Lock(&pitch);
 
-	// release the image surface
-	surf->Release();
+							if (pBits != nullptr)
+							{
+								int width = surfaceDesc.Width;
+								int height = surfaceDesc.Height;
 
-	// process on thread - track the thread so we can join it during shutdown
-	std::thread* pNewThread = new std::thread([cbOnDataAvailable, width, height, pBits, pitch, rgbData, bResizeForTransmit]()
-		{
-			CHECK_WORKER_THREAD;
+								// process on thread - track the thread so we can join it during shutdown
+								std::thread* pNewThread = new std::thread([cbOnDataAvailable, width, height, pBits, pitch, bResizeForTransmit]()
+									{
+										CHECK_WORKER_THREAD;
 
-			std::vector<unsigned char> vecData;
+										unsigned char* rgbData = new unsigned char[width * height * 3];
 
-			int finalWidth = width;
-			int finalHeight = height;
+										std::vector<unsigned char> vecData;
 
-			for (int y = 0; y < height; ++y) {
-				uint8_t* row = (uint8_t*)pBits + y * pitch;
-				for (int x = 0; x < width; ++x) {
-					int srcIndex = x * 4;
-					int dstIndex = (y * width + x) * 3;
+										int finalWidth = width;
+										int finalHeight = height;
 
-					rgbData[dstIndex + 0] = row[srcIndex + 2]; // R
-					rgbData[dstIndex + 1] = row[srcIndex + 1]; // G
-					rgbData[dstIndex + 2] = row[srcIndex + 0]; // B
+										for (int y = 0; y < height; ++y) {
+											uint8_t* row = static_cast<uint8_t*>(pBits) + y * pitch;
+											int rowOffset = y * width * 3;
+											int srcOffset = 0;
+											for (int x = 0; x < width; ++x, srcOffset += 4)
+											{
+												int dstIndex = rowOffset + x * 3;
+												rgbData[dstIndex + 0] = row[srcOffset + 2]; // R
+												rgbData[dstIndex + 1] = row[srcOffset + 1]; // G
+												rgbData[dstIndex + 2] = row[srcOffset + 0]; // B
+											}
+										}
+
+										// resize
+										unsigned char* pBufferToWrite = rgbData;
+										if (bResizeForTransmit)
+										{
+											int new_width = 557;
+											int new_height = 333;
+											int channels = 3;
+											unsigned char* resized = new unsigned char[new_width * new_height * channels];
+
+											stbir_resize_uint8(rgbData, width, height, 0,
+												resized, new_width, new_height, 0,
+												channels
+											);
+
+											// update data
+											finalWidth = new_width;
+											finalHeight = new_height;
+											pBufferToWrite = resized;
+										}
+										// end resize
+
+										stbi_write_jpg_to_func([](void* context, void* data, int size)
+											{
+												std::vector<unsigned char>* buffer = static_cast<std::vector<unsigned char>*>(context);
+												buffer->insert(buffer->end(), (unsigned char*)data, (unsigned char*)data + size);
+											}, &vecData, finalWidth, finalHeight, 3, pBufferToWrite, bResizeForTransmit ? 0 : 90);
+
+										// cleanup
+										if (bResizeForTransmit)
+										{
+											delete[] pBufferToWrite; // This is 'resized'
+											pBufferToWrite = nullptr;
+										}
+
+										delete[] rgbData;
+										rgbData = nullptr;
+
+										// invoke cb
+										if (cbOnDataAvailable != nullptr)
+										{
+											cbOnDataAvailable(vecData);
+										}
+									}
+								);
+
+								// Store the thread so we can join it during shutdown
+								if (m_pOnlineServicesManager != nullptr)
+								{
+									std::scoped_lock<std::mutex> lock(m_pOnlineServicesManager->m_mutexScreenshotThreads);
+									m_pOnlineServicesManager->m_vecScreenshotThreads.push_back(pNewThread);
+								}
+
+								bSucceeded = true;
+							}
+						}
+					}
 				}
 			}
-
-			// resize
-			unsigned char* pBufferToWrite = rgbData;
-			if (bResizeForTransmit)
-			{
-				int new_width = 557;
-				int new_height = 333;
-				int channels = 3;
-				unsigned char* resized = new unsigned char[new_width * new_height * channels];
-
-				stbir_resize_uint8(rgbData, width, height, 0,
-					resized, new_width, new_height, 0,
-					channels
-				);
-
-				// update data
-				finalWidth = new_width;
-				finalHeight = new_height;
-				pBufferToWrite = resized;
-			}
-			// end resize
-
-			stbi_write_jpg_to_func([](void* context, void* data, int size)
-				{
-					std::vector<unsigned char>* buffer = static_cast<std::vector<unsigned char>*>(context);
-					buffer->insert(buffer->end(), (unsigned char*)data, (unsigned char*)data + size);
-				}, &vecData, finalWidth, finalHeight, 3, pBufferToWrite, bResizeForTransmit ? 0 : 90);
-
-			cbOnDataAvailable(vecData);
 		}
-	);
+	}
 
-	// Store the thread so we can join it during shutdown
-	if (m_pOnlineServicesManager != nullptr)
+	// clean everything up, whether we succeeded or not
+
+	// release the image surface
+	if (surf != nullptr)
 	{
-		std::scoped_lock<std::mutex> lock(m_pOnlineServicesManager->m_mutexScreenshotThreads);
-		m_pOnlineServicesManager->m_vecScreenshotThreads.push_back(pNewThread);
+		surf->Release();
+		//delete surf;
+		surf = nullptr;
+	}
+
+	// unlock
+	if (surface != nullptr)
+	{
+		surface->Unlock();
+		surface->Release_Ref();
+ 		surface = nullptr;
+	}
+
+	if (surfaceCopy != nullptr)
+	{
+		surfaceCopy->Unlock();
+		surfaceCopy->Release_Ref();
+ 		surfaceCopy = nullptr;
+	}
+
+	// callback if failed
+	if (!bSucceeded)
+	{
+		cbOnDataAvailable(std::vector<unsigned char>());
 	}
 }
 
@@ -771,7 +813,7 @@ void NGMP_OnlineServicesManager::InitSentry()
 
 	sentry_options_set_dsn(options, "https://61750bebd112d279bcc286d617819269@o4509316925554688.ingest.us.sentry.io/4509316927586304");
 	sentry_options_set_database_path(options, strDumpPath.c_str());
-	sentry_options_set_release(options, "generalsonline-client@101025_QFE2");
+	sentry_options_set_release(options, "generalsonline-client@testbuild1013");
 
 
 #if _DEBUG
@@ -790,8 +832,7 @@ void NGMP_OnlineServicesManager::InitSentry()
 	}, nullptr);
 #endif
 
-	int i = sentry_init(options);
-	NetworkLog(ELogVerbosity::LOG_RELEASE, "Sentry init: %d", i);
+	sentry_init(options);
 #endif
 }
 
