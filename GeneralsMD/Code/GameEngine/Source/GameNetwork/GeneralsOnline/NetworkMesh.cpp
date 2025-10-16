@@ -955,9 +955,9 @@ void PlayerConnection::UpdateLatencyHistogram()
 	// update latency history
 	int currLatency = GetLatency();
 #if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
-	const int connectionHistoryLength = 120000/16; // ~2 min worth of frames
+	const int connectionHistoryLength = 10000 /16; // ~10 sec worth of frames
 #else
-	const int connectionHistoryLength = 120000/33; // ~2 min worth of frames
+	const int connectionHistoryLength = 10000/33; // ~10 sec worth of frames
 #endif
 
 	if (m_vecLatencyHistory.size() >= connectionHistoryLength)
