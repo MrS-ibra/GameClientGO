@@ -1092,6 +1092,11 @@ InGameUI::InGameUI()
 	m_gameTimeColor = GameMakeColor( 255, 255, 255, 255 );
 	m_gameTimeDropColor = GameMakeColor( 0, 0, 0, 255 );
 
+#if defined(GENERALS_ONLINE)
+	m_colorGood = GameMakeColor(0, 255, 0, 150);
+	m_colorBad = GameMakeColor(255, 0, 0, 150);
+#endif
+
 	m_superweaponPosition.x = 0.7f;
 	m_superweaponPosition.y = 0.7f;
 	m_superweaponFlashDuration = 1.0f;
@@ -6238,8 +6243,14 @@ void InGameUI::drawGameTime()
 					int w, h;
 					m_gameTimeString->getSize(&w, &h);
 
+					bool bIsHighQuality = true;
+					if (avgFPS < GENERALS_ONLINE_HIGH_FPS_LIMIT || status.m_cbSentUnackedReliable >= 1000 || (status.m_flConnectionQualityLocal != -1.f && status.m_flConnectionQualityLocal < 1.f) || (status.m_flConnectionQualityRemote != -1.f && status.m_flConnectionQualityRemote < 1.f))
+					{
+						bIsHighQuality = false;
+					}
+
 					m_gameTimeString->setText(netString);
-					m_gameTimeString->draw(0, 500 + (i * h / 2), m_gameTimeColor, m_gameTimeDropColor);
+					m_gameTimeString->draw(0, 500 + (i * h / 2), bIsHighQuality ? m_colorGood : m_colorBad, m_gameTimeDropColor);
 					++i;
 				}
 			}

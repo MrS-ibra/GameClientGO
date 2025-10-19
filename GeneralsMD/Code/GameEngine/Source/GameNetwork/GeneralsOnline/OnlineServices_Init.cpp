@@ -451,14 +451,15 @@ void NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit, std:
 	LPDIRECT3DSURFACE8 surf = nullptr;
 	SurfaceClass* surfaceCopy = nullptr;
 	void* pBits = nullptr;
+	IDirect3DSurface8* pDXsurf = nullptr;
 
 	if (surface != nullptr)
 	{
 		SurfaceClass::SurfaceDescription surfaceDesc;
 		surface->Get_Description(surfaceDesc);
-
-		IDirect3DSurface8* pDXsurf = DX8Wrapper::_Create_DX8_Surface(surfaceDesc.Width, surfaceDesc.Height, surfaceDesc.Format);
-
+		
+		pDXsurf = DX8Wrapper::_Create_DX8_Surface(surfaceDesc.Width, surfaceDesc.Height, surfaceDesc.Format);
+		
 		if (pDXsurf != nullptr)
 		{
 			surfaceCopy = NEW_REF(SurfaceClass, (pDXsurf));
@@ -487,7 +488,7 @@ void NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit, std:
 								int height = surfaceDesc.Height;
 
 								// process on thread - track the thread so we can join it during shutdown
-								std::thread* pNewThread = new std::thread([cbOnDataAvailable, width, height, pBits, pitch, bResizeForTransmit]()
+								std::thread* pNewThread = new std::thread([cbOnDataAvailable, width, height, pBits, pDXsurf, pitch, bResizeForTransmit]()
 									{
 										CHECK_WORKER_THREAD;
 
@@ -548,6 +549,11 @@ void NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit, std:
 										delete[] rgbData;
 										rgbData = nullptr;
 
+										if (pDXsurf != nullptr)
+										{
+											pDXsurf->Release();
+										}
+
 										// invoke cb
 										if (cbOnDataAvailable != nullptr)
 										{
@@ -595,6 +601,14 @@ void NGMP_OnlineServicesManager::CaptureScreenshot(bool bResizeForTransmit, std:
 		surfaceCopy->Unlock();
 		surfaceCopy->Release_Ref();
  		surfaceCopy = nullptr;
+	}
+
+	if (!bSucceeded) // if success, thread uses this and then destroys it
+	{
+		if (pDXsurf != nullptr)
+		{
+			pDXsurf->Release();
+		}
 	}
 
 	// callback if failed
@@ -813,7 +827,7 @@ void NGMP_OnlineServicesManager::InitSentry()
 
 	sentry_options_set_dsn(options, "https://61750bebd112d279bcc286d617819269@o4509316925554688.ingest.us.sentry.io/4509316927586304");
 	sentry_options_set_database_path(options, strDumpPath.c_str());
-	sentry_options_set_release(options, "generalsonline-client@101525");
+	sentry_options_set_release(options, "generalsonline-client@101525_QFE3");
 
 
 #if _DEBUG

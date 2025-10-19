@@ -813,6 +813,11 @@ protected:
 	Color												m_gameTimeColor;
 	Color												m_gameTimeDropColor;
 
+#if defined(GENERALS_ONLINE)
+	Color												m_colorGood;
+	Color												m_colorBad;
+#endif
+
 	// message data
 	UIMessage										m_uiMessages[ MAX_UI_MESSAGES ];/**< messages to display to the user, the
 																						array is organized with newer messages at

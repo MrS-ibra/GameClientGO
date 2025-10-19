@@ -1017,9 +1017,9 @@ void RefreshGameListBox( GameWindow *win, Bool showMap )
 				for (LobbyEntry lobby : vecLobbies)
 				{
 					Int index = insertGame(win, lobby, showMap);
-					if (i == selectedID)
+					if (lobby.lobbyID == selectedID)
 					{
-						indexToSelect = index;
+						indexToSelect = (int)index; // TODO_NGMP: downcast
 					}
 
 					++i;
