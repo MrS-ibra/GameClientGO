@@ -722,6 +722,29 @@ std::vector<int64_t> m_vecUsersProcessed;
 
 void PopulateLobbyPlayerListbox(void)
 {
+	// save off old selection
+	Int maxSelectedItems = GadgetListBoxGetNumEntries(listboxLobbyPlayers);
+	Int* selectedIndices;
+	GadgetListBoxGetSelected(listboxLobbyPlayers, (Int*)(&selectedIndices));
+	std::set<int> selectedUserIDs;	
+	Int numSelected = 0;
+	for (Int i = 0; i < maxSelectedItems; ++i)
+	{
+		if (selectedIndices[i] < 0)
+		{
+			break;
+		}
+		++numSelected;
+
+		int profileID = (int)GadgetListBoxGetItemData(listboxLobbyPlayers, selectedIndices[i], 0);
+		selectedUserIDs.insert(profileID);
+		DEBUG_LOG(("Saving off old selection %d (%s)", selectedIndices[i], selectedName.str()));
+	}
+
+	// save off old top entry
+	Int previousTopIndex = GadgetListBoxGetTopVisibleEntry(listboxLobbyPlayers);
+
+	// reset UI
 	m_vecUsersProcessed.clear();
 	GadgetListBoxReset(listboxLobbyPlayers);
 
@@ -733,7 +756,6 @@ void PopulateLobbyPlayerListbox(void)
 		for (auto kvPair :pRoomsInterface->GetMembersListForCurrentRoom())
 		{
 			NetworkRoomMember& netRoomMember = kvPair.second;
-
 
 			// TODO_NGMP: Add a batched request
 			// TODO_NGMP: Add a timeout to this where we just add the person with no stats
@@ -834,7 +856,44 @@ void PopulateLobbyPlayerListbox(void)
 						pi.m_preorder = 0;
 					}
 
-					insertPlayerInListbox(pi, GameSpyColor[GSCOLOR_PLAYER_NORMAL]);
+					// restore top visible entry
+					GadgetListBoxSetTopVisibleEntry(listboxLobbyPlayers, previousTopIndex);
+
+					Int index = insertPlayerInListbox(pi, GameSpyColor[GSCOLOR_PLAYER_NORMAL]);
+
+					// TODO_NGMP: Use int for user ID like gamespy did, or move everything to uint64
+					std::set<Int> indicesToSelect;
+					std::set<int>::const_iterator selIt = selectedUserIDs.find(netRoomMember.user_id);
+					if (selIt != selectedUserIDs.end())
+					{
+						DEBUG_LOG(("Marking index %d (%s) to re-select", index, info.m_name.str()));
+						indicesToSelect.insert(index);
+					}
+
+					// restore selection
+					if (indicesToSelect.size())
+					{
+						std::set<Int>::const_iterator indexIt = indicesToSelect.begin();
+						const size_t count = indicesToSelect.size();
+						size_t index = 0;
+						Int* newIndices = NEW Int[count];
+						while (index < count)
+						{
+							newIndices[index] = *indexIt;
+							DEBUG_LOG(("Queueing up index %d to re-select", *indexIt));
+							++index;
+							++indexIt;
+						}
+						GadgetListBoxSetSelected(listboxLobbyPlayers, newIndices, count);
+						delete[] newIndices;
+					}
+
+					if (indicesToSelect.size() != numSelected)
+					{
+						TheWindowManager->winSetLoneWindow(NULL);
+					}
+
+					// TODO_NGMP: We should wait until the entire fresh / stats retrieval is done before restoring selections etc
 				}, EStatsRequestPolicy::RESPECT_CACHE_ALLOW_REQUEST);
 
 			// TODO_NGMP: Support ignored again

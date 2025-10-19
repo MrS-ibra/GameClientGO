@@ -987,9 +987,6 @@ void RefreshGameListBox( GameWindow *win, Bool showMap )
 	}
 	int prevPos = GadgetListBoxGetTopVisibleEntry( win );
 
-	// empty listbox
-	GadgetListBoxReset(win);
-
 	pLobbyInterface->SearchForLobbies(
 		[=]()
 		{
@@ -998,6 +995,9 @@ void RefreshGameListBox( GameWindow *win, Bool showMap )
 		},
 		[=](std::vector<LobbyEntry> vecLobbies)
 		{
+			// empty listbox
+			GadgetListBoxReset(win);
+
 			size_t numResults = vecLobbies.size();
 
 			GadgetListBoxReset(win);
