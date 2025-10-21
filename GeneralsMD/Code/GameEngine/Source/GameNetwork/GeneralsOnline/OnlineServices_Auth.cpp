@@ -16,7 +16,7 @@
 
 #if defined(USE_TEST_ENV)
 #define CREDENTIALS_FILENAME "credentials_env_test.json"
-#elif !defined(DEBUG)
+#elif !defined(DEBUG) || defined(USE_DEBUG_ON_LIVE_SERVER)
 #define CREDENTIALS_FILENAME "credentials.json"
 #endif
 
@@ -52,7 +52,7 @@ struct MOTDResponse
 
 std::string GenerateGamecode()
 {
-#if defined(_DEBUG) && !defined(USE_TEST_ENV)
+#if defined(_DEBUG) && !defined(USE_TEST_ENV) && !defined(USE_DEBUG_ON_LIVE_SERVER)
 	return "ILOVECODE";
 #else
 	std::string result;
@@ -221,7 +221,7 @@ void NGMP_OnlineServices_AuthInterface::BeginLogin()
 		ClearGSMessageBoxes();
 		GSMessageBoxNoButtons(UnicodeString(L"Logging In"), UnicodeString(L"Please continue in your web browser"), true);
 
-#if !defined(_DEBUG) || defined(USE_TEST_ENV)
+#if !defined(_DEBUG) || defined(USE_TEST_ENV) || defined(USE_DEBUG_ON_LIVE_SERVER)
 		ShellExecuteA(NULL, "open", strURI.c_str(), NULL, NULL, SW_SHOWNORMAL);
 #endif
 			
@@ -247,7 +247,7 @@ void NGMP_OnlineServices_AuthInterface::DoReAuth()
 	std::string strURI = std::format("http://www.playgenerals.online/login/?gamecode={}", m_strCode.c_str());
 #endif
 
-#if !defined(_DEBUG) || defined(USE_TEST_ENV)
+#if !defined(_DEBUG) || defined(USE_TEST_ENV) || defined(USE_DEBUG_ON_LIVE_SERVER)
 	ShellExecuteA(NULL, "open", strURI.c_str(), NULL, NULL, SW_SHOWNORMAL);
 #endif
 }
@@ -398,7 +398,7 @@ void NGMP_OnlineServices_AuthInterface::SaveCredentials(const char* szRefreshTok
 
 bool NGMP_OnlineServices_AuthInterface::GetCredentials(std::string& strRefreshToken)
 {
-#if defined(_DEBUG) && !defined(USE_TEST_ENV)
+#if defined(_DEBUG) && !defined(USE_TEST_ENV) && !defined(USE_DEBUG_ON_LIVE_SERVER)
 	return false;
 #endif
 	std::vector<uint8_t> vecBytes;
@@ -475,7 +475,7 @@ bool NGMP_OnlineServices_AuthInterface::GetCredentials(std::string& strRefreshTo
 std::string NGMP_OnlineServices_AuthInterface::GetCredentialsFilePath()
 {
 	// debug supports multi inst, so needs seperate tokens
-#if defined(_DEBUG) && !defined(USE_TEST_ENV)
+#if defined(_DEBUG) && !defined(USE_TEST_ENV) && !defined(USE_DEBUG_ON_LIVE_SERVER)
 	std::string strCredsPath = std::format("{}/GeneralsOnlineData/credentials_dev_env_{}.json", TheGlobalData->getPath_UserData().str(), rts::ClientInstance::getInstanceIndex());
 #else
 	std::string strCredsPath = std::format("{}/GeneralsOnlineData/{}", TheGlobalData->getPath_UserData().str(), CREDENTIALS_FILENAME);

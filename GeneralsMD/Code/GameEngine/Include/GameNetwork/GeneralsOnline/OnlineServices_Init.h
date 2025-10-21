@@ -301,6 +301,9 @@ public:
 #if defined(USE_TEST_ENV)
 	const static EEnvironment g_Environment = EEnvironment::TEST;
 	#pragma message ("Building for TEST environment")
+#elif defined(USE_DEBUG_ON_LIVE_SERVER)
+	const static EEnvironment g_Environment = EEnvironment::PROD;
+#pragma message ("Building for PROD environment (Debug Client)")
 #else
 	#if defined(_DEBUG)
 		const static EEnvironment g_Environment = EEnvironment::DEV;

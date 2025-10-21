@@ -82,10 +82,7 @@ void WebSocket::Connect(const char* url)
 		{
 			m_bConnected = false;
 			m_vecWSPartialBuffer.clear();
-			fprintf(stderr, "curl_easy_perform() failed: %s\n",
-				curl_easy_strerror(res));
-
-			NetworkLog(ELogVerbosity::LOG_RELEASE, "[WebSocket] Failed to connect");
+			NetworkLog(ELogVerbosity::LOG_RELEASE, "[WebSocket] Failed to connect (%d - %s)",res, curl_easy_strerror(res));
 		}
 		else
 		{
@@ -846,7 +843,7 @@ void WebSocket::Tick()
 	// time since last pong?
 	if (m_lastPong != -1 && (currTime - m_lastPong) >= m_timeForWSTimeout)
 	{
-		NetworkLog(ELogVerbosity::LOG_RELEASE, "Got websocket disconnect (Timeout), last pong was at %UI64d, current time is %UI64d", m_lastPong, currTime);
+		NetworkLog(ELogVerbosity::LOG_RELEASE, "Got websocket disconnect (Timeout), timeout is %lld, last pong was at %lld, current time is %lld", currTime - m_lastPong, m_lastPong, currTime);
 		NGMP_OnlineServicesManager::GetInstance()->SetPendingFullTeardown(EGOTearDownReason::LOST_CONNECTION);
 		m_bConnected = false;
 		m_vecWSPartialBuffer.clear();
