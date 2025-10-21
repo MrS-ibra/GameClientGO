@@ -2260,6 +2260,11 @@ WindowMsgHandledType WOLLobbyMenuSystem( GameWindow *window, UnsignedInt msg,
 						{
 							auto Lobby = pLobbyInterface->GetLobbyFromIndex(selected);
 
+							if (Lobby.lobbyID == -1) // -1 is invalid
+							{
+								break;
+							}
+
 							// CRC Check
 							if (Lobby.exe_crc != TheGlobalData->m_exeCRC || Lobby.ini_crc != TheGlobalData->m_iniCRC)
 							{
