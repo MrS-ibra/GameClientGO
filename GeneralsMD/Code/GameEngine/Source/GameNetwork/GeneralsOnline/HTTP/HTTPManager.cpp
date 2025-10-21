@@ -177,6 +177,8 @@ void HTTPManager::Tick()
 {
 	CHECK_MAIN_THREAD;
 
+	std::vector<HTTPRequest*> vecItemsToRemove = std::vector<HTTPRequest*>();
+
 	// start anything needing starting
 	for (HTTPRequest* pRequest : m_vecRequestsPendingStart)
 	{
@@ -190,10 +192,26 @@ void HTTPManager::Tick()
 	curl_multi_perform(m_pCurl, &numReqs);
 	curl_multi_poll(m_pCurl, NULL, 0, 0, NULL);
 
+#if defined(ARTIFICIAL_DELAY_HTTP_REQUESTS)
+	// tick delays
+	for (HTTPRequest* pRequest : m_vecRequestsInFlight)
+	{
+		if (pRequest->WaitingDelayAction())
+		{
+			bool bDone = pRequest->InvokeDelayAction();
+			if (bDone)
+			{
+				vecItemsToRemove.push_back(pRequest);
+			}
+		}
+		
+	}
+#endif
+
 	// are we done?
 	int msgq = 0;
 	CURLMsg* m = curl_multi_info_read(m_pCurl, &msgq);
-	std::vector<HTTPRequest*> vecItemsToRemove = std::vector<HTTPRequest*>();
+	
 	if (m != nullptr && m->msg == CURLMSG_DONE)
 	{
 		CURL* pCurlHandle = m->easy_handle;
@@ -205,8 +223,12 @@ void HTTPManager::Tick()
 			{
 				if (pRequest != nullptr && pRequest->EasyHandleMatches(pCurlHandle))
 				{
+#if defined(ARTIFICIAL_DELAY_HTTP_REQUESTS)
+					pRequest->SetWaitingDelay(m->data.result);
+#else
 					pRequest->Threaded_SetComplete(m->data.result);
 					vecItemsToRemove.push_back(pRequest);
+#endif
 				}
 			}
 		}

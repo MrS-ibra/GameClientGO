@@ -1375,6 +1375,7 @@ void WOLLobbyMenuShutdown( WindowLayout *layout, void *userData )
 		pLobbyInterface->DeregisterForJoinLobbyCallback();
 		pLobbyInterface->DeregisterForChatCallback();
 		pLobbyInterface->DeregisterForRosterNeedsRefreshCallback();
+		pLobbyInterface->DeregisterForSearchForLobbiesCallback();
 	}
 
 	CustomMatchPreferences pref;

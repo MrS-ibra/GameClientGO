@@ -453,6 +453,8 @@ void NGMP_OnlineServices_LobbyInterface::SearchForLobbies(std::function<void()> 
 		return;
 	}
 
+	m_fnCallbackSearchForLobbiesComplete = onCompleteCallback;
+
 	m_bSearchInProgress = true;
 	m_vecLobbies.clear();
 
@@ -523,7 +525,10 @@ void NGMP_OnlineServices_LobbyInterface::SearchForLobbies(std::function<void()> 
 
 		}
 
-		onCompleteCallback(m_vecLobbies);
+		if (m_fnCallbackSearchForLobbiesComplete != nullptr)
+		{
+			m_fnCallbackSearchForLobbiesComplete(m_vecLobbies);
+		}
 		m_bSearchInProgress = false;
 	});
 }

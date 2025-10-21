@@ -90,6 +90,11 @@ public:
 	NGMP_OnlineServices_LobbyInterface();
 
 	void SearchForLobbies(std::function<void()> onStartCallback, std::function<void(std::vector<LobbyEntry>)> onCompleteCallback);
+	void DeregisterForSearchForLobbiesCallback()
+	{
+		m_fnCallbackSearchForLobbiesComplete = nullptr;
+	}
+	std::function<void(std::vector<LobbyEntry>)> m_fnCallbackSearchForLobbiesComplete = nullptr;
 
 	std::function<void(std::string)> m_fnCallbackMatchmakingMessage = nullptr;
 	void RegisterForMatchmakingMessageCallback(std::function<void(std::string)> cb)

@@ -46,6 +46,11 @@ public:
 
 	void InvokeCallbackIfComplete();
 
+#if defined(ARTIFICIAL_DELAY_HTTP_REQUESTS)
+	void SetWaitingDelay(CURLcode result);
+	bool InvokeDelayAction();
+	bool WaitingDelayAction() const { return m_timeRequestComplete != -1; }
+#endif
 	void Threaded_SetComplete(CURLcode result);
 
 	// mainly used for downloads
@@ -75,6 +80,11 @@ private:
 
 	std::vector<uint8_t> m_vecBuffer;
 	size_t m_currentBufSize_Used = 0;
+
+#if defined(ARTIFICIAL_DELAY_HTTP_REQUESTS)
+	std::int64_t m_timeRequestComplete = -1;
+	CURLcode m_pendingCURLCode = CURL_LAST;
+#endif
 
 	const size_t g_initialBufSize = (1024 * 4); // 4KB
 

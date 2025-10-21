@@ -109,6 +109,30 @@ void HTTPRequest::InvokeCallbackIfComplete()
 	}
 }
 
+#if defined(ARTIFICIAL_DELAY_HTTP_REQUESTS)
+void HTTPRequest::SetWaitingDelay(CURLcode result)
+{
+	m_timeRequestComplete = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::utc_clock::now().time_since_epoch()).count();
+	m_pendingCURLCode = result;
+}
+
+bool HTTPRequest::InvokeDelayAction()
+{
+	if (m_timeRequestComplete != -1)
+	{
+		int64_t currTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::utc_clock::now().time_since_epoch()).count();
+		if (currTime - m_timeRequestComplete > 2000)
+		{
+			Threaded_SetComplete(m_pendingCURLCode);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+#endif
+
 void HTTPRequest::Threaded_SetComplete(CURLcode result)
 {
 	// store response code

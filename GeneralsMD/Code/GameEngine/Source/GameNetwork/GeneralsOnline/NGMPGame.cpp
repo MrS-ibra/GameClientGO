@@ -379,8 +379,8 @@ void NGMPGame::launchGame(void)
 	TheWritableGlobalData->m_showMetrics = true;
 #endif
 
-	TheWritableGlobalData->m_networkPlayerTimeoutTime = 10000;
-	TheWritableGlobalData->m_networkDisconnectScreenNotifyTime = 2500;
+	//TheWritableGlobalData->m_networkPlayerTimeoutTime = 10000;
+	//TheWritableGlobalData->m_networkDisconnectScreenNotifyTime = 2500;
 
 	// process service config
 	NGMP_OnlineServicesManager* pOnlineServicesMgr = NGMP_OnlineServicesManager::GetInstance();

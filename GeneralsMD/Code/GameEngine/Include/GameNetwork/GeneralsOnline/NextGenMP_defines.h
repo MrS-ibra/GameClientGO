@@ -9,6 +9,10 @@
 #define GENERALS_ONLINE_LOBBY_MAX_PASSWORD_LENGTH 16
 
 #if defined(_DEBUG)
+//#define ARTIFICIAL_DELAY_HTTP_REQUESTS 1
+#endif
+
+#if defined(_DEBUG)
 #define USE_DEBUG_ON_LIVE_SERVER 1
 #endif
 
