@@ -129,36 +129,45 @@ void NGMP_OnlineServicesManager::CaptureScreenshotToDisk()
 
 void NGMP_OnlineServicesManager::CaptureScreenshotForProbe(EScreenshotType screenshotType)
 {
-	CHECK_MAIN_THREAD;
-
-	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
-	if (pLobbyInterface != nullptr)
+	NGMP_OnlineServicesManager* pOnlineServicesMgr = NGMP_OnlineServicesManager::GetInstance();
+	if (pOnlineServicesMgr != nullptr)
 	{
-		uint64_t currentMatchID = pLobbyInterface->GetCurrentMatchID();
+		ServiceConfig& serviceConf = pOnlineServicesMgr->GetServiceConfig();
 
-		NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshot(true, [currentMatchID, screenshotType](std::vector<unsigned char> vecData)
+		if (serviceConf.do_probes)
 		{
-			CHECK_WORKER_THREAD;
+			CHECK_MAIN_THREAD;
 
-			if (vecData.empty())
+			NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+			if (pLobbyInterface != nullptr)
 			{
-				NetworkLog(ELogVerbosity::LOG_DEBUG, "Screenshot capture failed, no data");
-				return;
+				uint64_t currentMatchID = pLobbyInterface->GetCurrentMatchID();
+
+				NGMP_OnlineServicesManager::GetInstance()->CaptureScreenshot(true, [currentMatchID, screenshotType](std::vector<unsigned char> vecData)
+					{
+						CHECK_WORKER_THREAD;
+
+						if (vecData.empty())
+						{
+							NetworkLog(ELogVerbosity::LOG_DEBUG, "Screenshot capture failed, no data");
+							return;
+						}
+
+						nlohmann::json j;
+						j["img"] = nullptr;
+						j["imgtype"] = (int)screenshotType;
+						j["match_id"] = currentMatchID;
+
+						// encode body
+						j["img"] = Base64Encode(vecData);
+
+						std::string strPostData = j.dump();
+
+						std::scoped_lock<std::mutex> ssLock(m_ScreenshotMutex);
+						m_vecGuardedSSData.push_back(strPostData);
+					});
 			}
-
-			nlohmann::json j;
-			j["img"] = nullptr;
-			j["imgtype"] = (int)screenshotType;
-			j["match_id"] = currentMatchID;
-
-			// encode body
-			j["img"] = Base64Encode(vecData);
-
-			std::string strPostData = j.dump();
-
-			std::scoped_lock<std::mutex> ssLock(m_ScreenshotMutex);
-			m_vecGuardedSSData.push_back(strPostData);
-		});
+		}
 	}
 }
 
@@ -206,43 +215,52 @@ std::string NGMP_OnlineServicesManager::GetAPIEndpoint(const char* szEndpoint)
 
 void NGMP_OnlineServicesManager::CommitReplay(AsciiString absoluteReplayPath)
 {
-	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
-	if (pLobbyInterface == nullptr)
+	NGMP_OnlineServicesManager* pOnlineServicesMgr = NGMP_OnlineServicesManager::GetInstance();
+	if (pOnlineServicesMgr != nullptr)
 	{
-		return;
-	}
+		ServiceConfig& serviceConf = pOnlineServicesMgr->GetServiceConfig();
 
-	uint64_t currentMatchID = pLobbyInterface->GetCurrentMatchID();
-
-	FILE* pFile = fopen(absoluteReplayPath.str(), "rb");
-
-	std::vector<unsigned char> replayData;
-	if (pFile)
-	{
-		fseek(pFile, 0, SEEK_END);
-		long fileSize = ftell(pFile);
-		fseek(pFile, 0, SEEK_SET);
-		if (fileSize > 0)
+		if (serviceConf.do_replay_upload)
 		{
-			replayData.resize(fileSize);
-			fread(replayData.data(), 1, fileSize, pFile);
+			NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+			if (pLobbyInterface == nullptr)
+			{
+				return;
+			}
+
+			uint64_t currentMatchID = pLobbyInterface->GetCurrentMatchID();
+
+			FILE* pFile = fopen(absoluteReplayPath.str(), "rb");
+
+			std::vector<unsigned char> replayData;
+			if (pFile)
+			{
+				fseek(pFile, 0, SEEK_END);
+				long fileSize = ftell(pFile);
+				fseek(pFile, 0, SEEK_SET);
+				if (fileSize > 0)
+				{
+					replayData.resize(fileSize);
+					fread(replayData.data(), 1, fileSize, pFile);
+				}
+				fclose(pFile);
+			}
+
+			std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("MatchReplay");
+			std::map<std::string, std::string> mapHeaders;
+
+			nlohmann::json j;
+			j["replaydata"] = Base64Encode(replayData);
+			j["match_id"] = currentMatchID;
+
+			std::string strPostData = j.dump();
+
+			NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPUTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, strPostData.c_str(), [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
+				{
+
+				}, nullptr, HTTP_UPLOAD_TIMEOUT);
 		}
-		fclose(pFile);
 	}
-
-	std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("MatchReplay");
-	std::map<std::string, std::string> mapHeaders;
-
-	nlohmann::json j;
-	j["replaydata"] = Base64Encode(replayData);
-	j["match_id"] = currentMatchID;
-
-	std::string strPostData = j.dump();
-
-	NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPUTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, strPostData.c_str(), [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
-		{
-
-		}, nullptr, HTTP_UPLOAD_TIMEOUT);
 }
 
 void NGMP_OnlineServicesManager::WaitForScreenshotThreads()
