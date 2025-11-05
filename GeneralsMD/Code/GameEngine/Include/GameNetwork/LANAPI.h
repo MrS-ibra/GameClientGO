@@ -293,7 +293,14 @@ struct LANMessage
 	enum											///< What kind of message are we?
 	{
 		// Locating everybody
+
+		// NGMP: On GO, we don't want retail compatibility for LAN, so the easiest way to break that, given there are no CRC checks, is to change the message IDs so they cant communicate
+#if defined(GENERALS_ONLINE)
+		MSG_REQUEST_LOCATIONS = 32,	///< Hey, where is everybody?
+#else
 		MSG_REQUEST_LOCATIONS,	///< Hey, where is everybody?
+#endif
+
 		MSG_GAME_ANNOUNCE,			///< Here I am, and here's my game info!
 		MSG_LOBBY_ANNOUNCE,			///< Hey, I'm in the lobby!
 

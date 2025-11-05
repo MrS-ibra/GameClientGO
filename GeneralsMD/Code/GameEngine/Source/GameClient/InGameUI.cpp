@@ -6217,6 +6217,10 @@ void InGameUI::drawGameTime()
 					SteamNetConnectionRealTimeLaneStatus_t laneStatus[k_nLanes];
 					EResult res = SteamNetworkingSockets()->GetConnectionRealTimeStatus(connection.second.m_hSteamConnection, &status, k_nLanes, laneStatus);
 
+					if (res == k_EResultNoConnection || lobbyMember.display_name.empty())
+					{
+						continue;
+					}
 					
 					int avgFPS = TheNetwork->getSlotAverageFPS(lobbyMember.m_SlotIndex);
 

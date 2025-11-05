@@ -529,6 +529,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 		case WM_RBUTTONDBLCLK:
 		{
 
+			if (message == WM_LBUTTONDOWN)
+			{
+				if (TheWin32Mouse)
+				{
+					TheWin32Mouse->SetDragging(true);
+				}
+			}
+			else if (message == WM_LBUTTONUP)
+			{
+				if (TheWin32Mouse)
+				{
+					TheWin32Mouse->SetDragging(false);
+				}
+			}
+
 			if (TheWin32Mouse)
 				TheWin32Mouse->addWin32Event(message, wParam, lParam, TheMessageTime);
 
@@ -554,7 +569,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 			return 0;
 
 		}
+		case WM_MOVING:
+		{
+			if (TheWin32Mouse)
+			{
+				TheWin32Mouse->SetDragging(true);
+			}
+				
+			break;
+		}
 
+		case WM_EXITSIZEMOVE:
+		{
+			if (TheWin32Mouse)
+			{
+
+				TheWin32Mouse->SetDragging(false);
+			}
+			break;
+		}
 
 		//-------------------------------------------------------------------------
 		case WM_MOUSEMOVE:

@@ -51,16 +51,6 @@ Bool NextGenTransport::update(void)
 		retval = FALSE;
 	}
 
-	// flush
-	NetworkMesh* pMesh = NGMP_OnlineServicesManager::GetNetworkMesh();
-	if (pMesh != nullptr)
-	{
-		pMesh->Flush();
-	}
-	else
-	{
-		retval = FALSE;
-	}
 
 	return retval;
 }
@@ -88,7 +78,7 @@ Bool NextGenTransport::doRecv(void)
 
 				for (int i = 0; i < numPackets; ++i)
 				{
-					NetworkLog(ELogVerbosity::LOG_DEBUG, "[GAME PACKET] Received message of size %d\n", pMsg[i]->m_cbSize);
+					NetworkLog(ELogVerbosity::LOG_DEBUG, "[GAME PACKET] Received message of size %d from user %lld\n", pMsg[i]->m_cbSize, kvPair.second.m_userID);
 
 					uint32_t numBytes = pMsg[i]->m_cbSize;
 

@@ -590,6 +590,7 @@ void NGMP_OnlineServices_LobbyInterface::Tick()
 
 	if (m_pLobbyMesh != nullptr)
 	{
+		m_pLobbyMesh->Flush();
 		m_pLobbyMesh->Tick();
 	}
 

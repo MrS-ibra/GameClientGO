@@ -108,6 +108,7 @@ void Win32Mouse::translateEvent(UnsignedInt eventIndex, MouseIO* result)
 	switch (msg)
 	{
 
+		
 		// ------------------------------------------------------------------------
 	case WM_LBUTTONDOWN:
 	{
@@ -453,6 +454,10 @@ void Win32Mouse::setCursor(MouseCursor cursor)
 //-------------------------------------------------------------------------------------------------
 void Win32Mouse::capture(void)
 {
+	if (m_bIsDragging)
+	{
+		return;
+	}
 
 	RECT rect;
 	::GetClientRect(ApplicationHWnd, &rect);
@@ -472,6 +477,7 @@ void Win32Mouse::capture(void)
 	rect.top = leftTop.y;
 	rect.right = rightBottom.x;
 	rect.bottom = rightBottom.y;
+
 
 	if (::ClipCursor(&rect))
 	{

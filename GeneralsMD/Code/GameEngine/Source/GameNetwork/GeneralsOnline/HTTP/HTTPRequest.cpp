@@ -13,7 +13,7 @@ size_t WriteMemoryCallback(void* contents, size_t sizePerByte, size_t numBytes, 
 }
 
 HTTPRequest::HTTPRequest(EHTTPVerb httpVerb, EIPProtocolVersion protover, const char* szURI, std::map<std::string, std::string>& inHeaders, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback,
-	std::function<void(size_t bytesReceived)> progressCallback /*= nullptr*/, int timeoutMS/*= -1*/) noexcept
+	std::function<void(size_t bytesReceived)> progressCallback /*= nullptr*/, int timeoutMS/*= -1*/, bool bApplyRestrictiveCountryOverride/* = false*/) noexcept
 {	
 	m_pCURL = curl_easy_init();
 
@@ -31,6 +31,8 @@ HTTPRequest::HTTPRequest(EHTTPVerb httpVerb, EIPProtocolVersion protover, const 
 	m_mapHeaders = inHeaders;
 
 	m_progressCallback = progressCallback;
+
+	m_bApplyRestrictiveCountryOverride = bApplyRestrictiveCountryOverride;
 }
 
 HTTPRequest::~HTTPRequest()
@@ -55,7 +57,7 @@ void HTTPRequest::SetPostData(const char* szPostData)
 	// TODO_HTTP: Error if verb isnt post
 	m_strPostData = std::string(szPostData);
 
-	NetworkLog(ELogVerbosity::LOG_DEBUG, "[%p|%s] Transfer is created: Body is %s", this, m_strURI.c_str(), szPostData);
+	NetworkLog(ELogVerbosity::LOG_DEBUG, "[%p|%s|Verb %d] Transfer is created: Body is %s", this, m_strURI.c_str(), m_httpVerb, szPostData);
 }
 
 void HTTPRequest::StartRequest()
@@ -67,7 +69,7 @@ void HTTPRequest::StartRequest()
 
 	m_currentBufSize_Used = 0;
 
-	NetworkLog(ELogVerbosity::LOG_DEBUG, "[%p|%s] Transfer is starting: Body is %s", this, m_strURI.c_str(), m_strPostData.c_str());
+	NetworkLog(ELogVerbosity::LOG_DEBUG, "[%p|%s|Verb %d] Transfer is starting: Body is %s", this, m_strURI.c_str(), m_httpVerb, m_strPostData.c_str());
 	PlatformStartRequest();
 }
 
@@ -156,7 +158,7 @@ void HTTPRequest::Threaded_SetComplete(CURLcode result)
 #endif
 
 	std::string strResponse = std::string(reinterpret_cast<const char*>(m_vecBuffer.data()), m_currentBufSize_Used);
-	NetworkLog(ELogVerbosity::LOG_RELEASE, "[%p|%s] Transfer is complete: %d bytes total! Curl result is %d", this, strURIRedacted.c_str(), m_currentBufSize_Used, result);
+	NetworkLog(ELogVerbosity::LOG_RELEASE, "[%p|%s|Verb %d] Transfer is complete: %d bytes total! Curl result is %d", this, strURIRedacted.c_str(), m_httpVerb, m_currentBufSize_Used, result);
 
 	// if we got an error, set the response code to 0
 
@@ -169,7 +171,7 @@ void HTTPRequest::Threaded_SetComplete(CURLcode result)
 	}
 #endif
 
-	NetworkLog(ELogVerbosity::LOG_RELEASE, "[%p|%s] Response was %d - %s!", this, strURIRedacted.c_str(), m_responseCode, strResponse.c_str());
+	NetworkLog(ELogVerbosity::LOG_RELEASE, "[%p|%s|Verb %d] Response was %d - %s!", this, strURIRedacted.c_str(), m_httpVerb, m_responseCode, strResponse.c_str());
 
 	// trigger callback
 	InvokeCallbackIfComplete();
@@ -254,5 +256,25 @@ void HTTPRequest::PlatformStartRequest()
 		curl_easy_setopt(m_pCURL, CURLOPT_SSL_VERIFYPEER, 0);
 		curl_easy_setopt(m_pCURL, CURLOPT_SSL_VERIFYHOST, 0);
 #endif
+
+		ServiceCountryConfig& countryConfig = NGMP_OnlineServicesManager::GetInstance()->GetServiceCountryConfig();
+		if (m_bApplyRestrictiveCountryOverride) // NOTE: This is used because the first call to determine country settings, needs to be complete-able from anywhere
+		{
+			NetworkLog(ELogVerbosity::LOG_RELEASE, "[%p|%s|Verb %d] Applying Restrictive Country Override!", this, m_strURI.c_str(), m_httpVerb);
+			curl_easy_setopt(m_pCURL, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
+			curl_easy_setopt(m_pCURL, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_TLSv1_2);
+		}
+		else if (countryConfig.apply_restrictive_country_tls_settings)
+		{
+			NetworkLog(ELogVerbosity::LOG_RELEASE, "[%p|%s|Verb %d] Applying Restrictive Country per service country config!", this, m_strURI.c_str(), m_httpVerb);
+			curl_easy_setopt(m_pCURL, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
+			curl_easy_setopt(m_pCURL, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_TLSv1_2);
+		}
+		else
+		{
+			NetworkLog(ELogVerbosity::LOG_RELEASE, "[%p|%s|Verb %d] Applying Latest TLS standard!", this, m_strURI.c_str(), m_httpVerb);
+			curl_easy_setopt(m_pCURL, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
+			curl_easy_setopt(m_pCURL, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_TLSv1_3);
+		}
 	}
 }

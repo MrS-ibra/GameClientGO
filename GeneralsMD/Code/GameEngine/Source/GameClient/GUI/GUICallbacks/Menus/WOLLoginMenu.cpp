@@ -463,8 +463,13 @@ void WOLLoginMenuInit( WindowLayout *layout, void *userData )
 		return;
 	}
 
-	pAuthInterface->RegisterForLoginCallback(NGMP_WOLLoginMenu_LoginCallback);
-	pAuthInterface->BeginLogin();
+	// get country config first, we need it before we can do anything else
+	NGMP_OnlineServicesManager::GetInstance()->GetAndParseServiceCountryConfig([=]()
+		{
+			// Now we can begin login
+			pAuthInterface->RegisterForLoginCallback(NGMP_WOLLoginMenu_LoginCallback);
+			pAuthInterface->BeginLogin();
+		});
 
 
 	/*

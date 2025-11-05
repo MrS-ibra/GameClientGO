@@ -59,6 +59,7 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 		);
 
 		// Close our end
+		NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Closing in callback");
 		SteamNetworkingSockets()->CloseConnection(pInfo->m_hConn, 0, nullptr, false);
 
 		if (pPlayerConnection != nullptr && pInfo != nullptr)
@@ -67,6 +68,8 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 			{
 				TheNetwork->GetConnectionManager()->disconnectPlayer(pPlayerConnection->m_userID);
 			}
+
+			NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Closing connection %lld", pPlayerConnection->m_userID);
 
 			ServiceConfig& serviceConf = NGMP_OnlineServicesManager::GetInstance()->GetServiceConfig();
 			const int numSignallingAttempts = 3;
@@ -141,7 +144,7 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 		else
 		{
 			// Why are we hearing about any another connection?
-			assert(false);
+			//assert(false);
 		}
 
 		break;
@@ -169,6 +172,8 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 			if (pPlayerConnection != nullptr && pInfo != nullptr)
 			{
 				pPlayerConnection->UpdateState(EConnectionState::CONNECTING_DIRECT, pMesh);
+				NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM CONNECTION] Updating connection from %u to %u on user %lld", pPlayerConnection->m_hSteamConnection, pInfo->m_hConn, pPlayerConnection->m_userID);
+				SteamNetworkingSockets()->SetConnectionName(pInfo->m_hConn, std::format("Steam Connection User{}", pPlayerConnection->m_userID).c_str());
 				pPlayerConnection->m_hSteamConnection = pInfo->m_hConn;
 			}
 
@@ -177,6 +182,8 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 			if (pLobbyInterface == nullptr)
 			{
 				NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Rejecting - Lobby interface is null\n", pInfo->m_info.m_szConnectionDescription);
+
+				NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Closing connection 2 %lld", pPlayerConnection->m_userID);
 				SteamNetworkingSockets()->CloseConnection(pInfo->m_hConn, 1000, "Lobby interface is null (Rejected)", false);
 
 				if (TheNetwork != nullptr)
@@ -207,6 +214,8 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 			else
 			{
 				NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Rejecting - Player is not in lobby\n", pInfo->m_info.m_szConnectionDescription);
+
+				NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Closing connection not in lobby %lld", pPlayerConnection->m_userID);
 				SteamNetworkingSockets()->CloseConnection(pInfo->m_hConn, 1000, "Player is not in lobby (Rejected)", false);
 
 				if (TheNetwork != nullptr)
@@ -829,11 +838,18 @@ void NetworkMesh::StartConnectionSignalling(int64_t remoteUserID, uint16_t prefe
 
 void NetworkMesh::DisconnectUser(int64_t remoteUserID)
 {
+	NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Dumping all Steam connections");
+	for (auto& kvPair : m_mapConnections)
+	{
+		NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Dumped steam connection, Handle %u User %lld (%lld)", kvPair.second.m_hSteamConnection, kvPair.second.m_userID, kvPair.first);
+	}
+
 	if (m_mapConnections.find(remoteUserID) != m_mapConnections.end())
 	{
 		if (m_mapConnections[remoteUserID].m_hSteamConnection != k_HSteamNetConnection_Invalid)
 		{
 			NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Closing connection %lld", remoteUserID);
+			NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Steam connection handle is %u", m_mapConnections[remoteUserID].m_hSteamConnection);
 
 			SteamNetworkingSockets()->CloseConnection(m_mapConnections[remoteUserID].m_hSteamConnection, 0, "Client Disconnecting Gracefully (Got EWebSocketMessageID::NETWORK_CONNECTION_DISCONNECT_PLAYER from service)", false);
 			if (TheNetwork != nullptr)
@@ -842,8 +858,19 @@ void NetworkMesh::DisconnectUser(int64_t remoteUserID)
 			}
 		}
 
-		NetworkLog(ELogVerbosity::LOG_RELEASE, "[ERASE 1] Removing user %lld", m_mapConnections[remoteUserID].m_userID);
-		m_mapConnections.erase(remoteUserID);
+
+		if (TheNGMPGame && !TheNGMPGame->isGameInProgress())
+		{
+			for (auto& kvPair : m_mapConnections)
+			{
+				if (kvPair.second.m_userID == remoteUserID)
+				{
+					NetworkLog(ELogVerbosity::LOG_RELEASE, "[ERASE] Removing user %lld", kvPair.second.m_userID);
+					m_mapConnections.erase(kvPair.first);
+					break;
+				}
+			}
+		}
 	}
 }
 
@@ -852,12 +879,15 @@ void NetworkMesh::Disconnect()
 	// close every connection
 	for (auto& connectionData : m_mapConnections)
 	{
+		//NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] FullMesh");
 		SteamNetworkingSockets()->CloseConnection(connectionData.second.m_hSteamConnection, 0, "Client Disconnecting Gracefully", false);
 		if (TheNetwork != nullptr)
 		{
 			TheNetwork->GetConnectionManager()->disconnectPlayer(connectionData.first);
 		}
 	}
+
+	SteamNetworkingSockets()->CloseListenSocket(m_hListenSock);
 
 	// invalidate socket
 	m_hListenSock = k_HSteamNetConnection_Invalid;
@@ -898,6 +928,9 @@ PlayerConnection::PlayerConnection(int64_t userID, HSteamNetConnection hSteamCon
 	
 	// no connection yet
 	m_hSteamConnection = hSteamConnection;
+	NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM CONNECTION] Attaching connection %u to user %lld", hSteamConnection, userID);
+
+	SteamNetworkingSockets()->SetConnectionName(hSteamConnection, std::format("Steam Connection User{}", userID).c_str());
 
 	NetworkMesh* pMesh = NGMP_OnlineServicesManager::GetNetworkMesh();
 	if (pMesh != nullptr)
@@ -937,7 +970,7 @@ int PlayerConnection::SendGamePacket(void* pBuffer, uint32_t totalDataSize)
 		}
 	}
 
-	NetworkLog(ELogVerbosity::LOG_DEBUG, "[GAME PACKET] Sending msg of size %ld\n", totalDataSize);
+	NetworkLog(ELogVerbosity::LOG_DEBUG, "[GAME PACKET] Sending msg of size %ld to user %lld\n", totalDataSize, m_userID);
 	EResult r = SteamNetworkingSockets()->SendMessageToConnection(
 		m_hSteamConnection, pBuffer, (int)totalDataSize, sendFlags, nullptr);
 
@@ -981,6 +1014,11 @@ int PlayerConnection::Recv(SteamNetworkingMessage_t** pMsg)
 	if (m_hSteamConnection != k_HSteamNetConnection_Invalid)
 	{
 		r = SteamNetworkingSockets()->ReceiveMessagesOnConnection(m_hSteamConnection, pMsg, 255);
+		NetworkLog(ELogVerbosity::LOG_RELEASE, "[DISC] Recv Result %d from user %lld", r, m_userID);
+	}
+	else
+	{
+		NetworkLog(ELogVerbosity::LOG_RELEASE, "[DISC] Recv Failed 1 from user %lld", m_userID);
 	}
 
 	return r;
@@ -1056,6 +1094,9 @@ void PlayerConnection::SetDisconnected(bool bWasError, NetworkMesh* pOwningMesh,
 	{
 		UpdateState(m_State, pOwningMesh);
 	}
+
+	NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM CONNECTION] Setting connection %u to disconnected/invalid on user %lld", m_hSteamConnection, m_userID);
+	SteamNetworkingSockets()->SetConnectionName(m_hSteamConnection, std::format("Steam Connection User{}", m_userID).c_str());
 
 	m_hSteamConnection = k_HSteamNetConnection_Invalid; // invalidate connection handle
 }

@@ -37,6 +37,42 @@ std::vector<std::string> NGMP_OnlineServicesManager::m_vecGuardedSSData;
 
 bool NGMP_OnlineServicesManager::g_bAdvancedNetworkStats;
 
+
+void NGMP_OnlineServicesManager::GetAndParseServiceCountryConfig(std::function<void(void)> cbOnDone)
+{
+	std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("ServiceCountryConfig");
+	std::map<std::string, std::string> mapHeaders;
+	NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendGETRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
+		{
+			try
+			{
+				if (bSuccess && statusCode == 200)
+				{
+					nlohmann::json jsonObject = nlohmann::json::parse(strBody);
+					m_ServiceCountryConfig = jsonObject.get<ServiceCountryConfig>();
+				}
+				else
+				{
+					// It's OK to fail, we'll just use the sensible defaults
+					NetworkLog(ELogVerbosity::LOG_RELEASE, "[NGMP] Failed to get service country config, using defaults. Status code: %d", statusCode);
+					m_ServiceCountryConfig = ServiceCountryConfig();
+				}
+
+			}
+			catch (...)
+			{
+				// It's OK to fail, we'll just use the sensible defaults
+				NetworkLog(ELogVerbosity::LOG_RELEASE, "[NGMP] Failed to get service country config, using defaults. Exception.");
+				m_ServiceCountryConfig = ServiceCountryConfig();
+			}
+
+			if (cbOnDone != nullptr)
+			{
+				cbOnDone();
+			}
+		}, nullptr, -1, true); // NOTE: First call to determine the country config must use settings that supports restrictive countries
+}
+
 NetworkMesh* NGMP_OnlineServicesManager::GetNetworkMesh()
 {
 	if (m_pOnlineServicesManager != nullptr)
@@ -361,7 +397,7 @@ void NGMP_OnlineServicesManager::StartVersionCheck(std::function<void(bool bSucc
 				NetworkLog(ELogVerbosity::LOG_RELEASE, "VERSION CHECK: Failed to parse response");
 				fnCallback(false, false);
 			}
-		});
+		}, nullptr, -1, true);
 }
 
 void NGMP_OnlineServicesManager::ContinueUpdate()
@@ -845,7 +881,7 @@ void NGMP_OnlineServicesManager::InitSentry()
 
 	sentry_options_set_dsn(options, "https://61750bebd112d279bcc286d617819269@o4509316925554688.ingest.us.sentry.io/4509316927586304");
 	sentry_options_set_database_path(options, strDumpPath.c_str());
-	sentry_options_set_release(options, "generalsonline-client@101525_QFE5");
+	sentry_options_set_release(options, "generalsonline-client@101525_QFE7");
 
 
 #if _DEBUG

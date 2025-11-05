@@ -26,12 +26,6 @@ std::wstring from_utf8(const std::string& utf8_str)
 
 void NetworkLog(ELogVerbosity logVerbosity, const char* fmt, ...)
 {
-	// no logging during gameplay
-	if (TheNGMPGame && TheNGMPGame->isGameInProgress())
-	{
-		return;
-	}
-
 	if (!NGMP_OnlineServicesManager::Settings.Debug_VerboseLogging())
 	{
 		if (logVerbosity < g_LogVerbosity)
