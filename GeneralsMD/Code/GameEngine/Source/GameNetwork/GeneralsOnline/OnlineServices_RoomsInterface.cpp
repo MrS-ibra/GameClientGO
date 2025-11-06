@@ -59,19 +59,6 @@ void WebSocket::Connect(const char* url)
 		curl_easy_setopt(m_pCurl, CURLOPT_SSL_VERIFYHOST, 0);
 #endif
 
-		ServiceCountryConfig& countryConfig = NGMP_OnlineServicesManager::GetInstance()->GetServiceCountryConfig();
-		if (countryConfig.apply_restrictive_country_tls_settings)
-		{
-			NetworkLog(ELogVerbosity::LOG_RELEASE, "[WebSocket] Applying Restrictive Country per service country config!");
-			curl_easy_setopt(m_pCurl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
-			curl_easy_setopt(m_pCurl, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_TLSv1_2);
-		}
-		else
-		{
-			NetworkLog(ELogVerbosity::LOG_RELEASE, "[WebSocket] Applying Latest TLS standard!");
-			curl_easy_setopt(m_pCurl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
-			curl_easy_setopt(m_pCurl, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_TLSv1_3);
-		}
 
 		// ws needs auth
 		NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();

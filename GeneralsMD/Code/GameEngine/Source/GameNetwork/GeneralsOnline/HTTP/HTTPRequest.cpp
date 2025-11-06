@@ -257,24 +257,6 @@ void HTTPRequest::PlatformStartRequest()
 		curl_easy_setopt(m_pCURL, CURLOPT_SSL_VERIFYHOST, 0);
 #endif
 
-		ServiceCountryConfig& countryConfig = NGMP_OnlineServicesManager::GetInstance()->GetServiceCountryConfig();
-		if (m_bApplyRestrictiveCountryOverride) // NOTE: This is used because the first call to determine country settings, needs to be complete-able from anywhere
-		{
-			NetworkLog(ELogVerbosity::LOG_RELEASE, "[%p|%s|Verb %d] Applying Restrictive Country Override!", this, m_strURI.c_str(), m_httpVerb);
-			curl_easy_setopt(m_pCURL, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
-			curl_easy_setopt(m_pCURL, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_TLSv1_2);
-		}
-		else if (countryConfig.apply_restrictive_country_tls_settings)
-		{
-			NetworkLog(ELogVerbosity::LOG_RELEASE, "[%p|%s|Verb %d] Applying Restrictive Country per service country config!", this, m_strURI.c_str(), m_httpVerb);
-			curl_easy_setopt(m_pCURL, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
-			curl_easy_setopt(m_pCURL, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_TLSv1_2);
-		}
-		else
-		{
-			NetworkLog(ELogVerbosity::LOG_RELEASE, "[%p|%s|Verb %d] Applying Latest TLS standard!", this, m_strURI.c_str(), m_httpVerb);
-			curl_easy_setopt(m_pCURL, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
-			curl_easy_setopt(m_pCURL, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_TLSv1_3);
-		}
+		
 	}
 }

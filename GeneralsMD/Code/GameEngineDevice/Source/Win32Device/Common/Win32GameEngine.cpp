@@ -34,6 +34,7 @@
 #include "Common/PerfTimer.h"
 
 #include "GameNetwork/LANAPICallbacks.h"
+#include "../OnlineServices_Init.h"
 
 extern DWORD TheMessageTime;
 
@@ -102,6 +103,11 @@ void Win32GameEngine::update( void )
 				// people's messages who may not be alt-tabbed out like we are.
 				TheLAN->setIsActive(isActive());
 				TheLAN->update();
+			}
+
+			if (NGMP_OnlineServicesManager::GetInstance() != nullptr)
+			{
+				NGMP_OnlineServicesManager::GetInstance()->Tick();
 			}
 
 			// If we are running a multiplayer game, keep running the logic.
