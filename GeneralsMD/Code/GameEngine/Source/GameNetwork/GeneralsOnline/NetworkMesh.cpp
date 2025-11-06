@@ -1014,7 +1014,7 @@ int PlayerConnection::Recv(SteamNetworkingMessage_t** pMsg)
 	if (m_hSteamConnection != k_HSteamNetConnection_Invalid)
 	{
 		r = SteamNetworkingSockets()->ReceiveMessagesOnConnection(m_hSteamConnection, pMsg, 255);
-		NetworkLog(ELogVerbosity::LOG_RELEASE, "[DISC] Recv Result %d from user %lld", r, m_userID);
+		NetworkLog(ELogVerbosity::LOG_DEBUG, "[DISC] Recv Result %d from user %lld", r, m_userID);
 	}
 	else
 	{
