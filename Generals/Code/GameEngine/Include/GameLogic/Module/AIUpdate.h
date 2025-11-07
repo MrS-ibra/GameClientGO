@@ -28,9 +28,6 @@
 
 #pragma once
 
-#ifndef _AI_UPDATE_H_
-#define _AI_UPDATE_H_
-
 #include "GameLogic/Module/UpdateModule.h"
 #include "GameLogic/AI.h"
 #include "GameLogic/AIStateMachine.h"
@@ -59,6 +56,7 @@ class HackInternetAIInterface;
 class AssaultTransportAIInterface;
 
 enum AIStateType CPP_11(: Int);
+enum HordeActionType CPP_11(: Int);
 enum ObjectID CPP_11(: Int);
 
 
@@ -550,7 +548,11 @@ public:
 	void setAttitude( AttitudeType tude );	///< set the behavior modifier for this agent
 
 	// Common AI "status" effects -------------------------------------------------------------------
-	void evaluateMoraleBonus( void );
+	Bool hasNationalism() const;
+	Bool hasFanaticism() const;
+	void evaluateMoraleBonus( Bool inHorde, Bool allowNationalism, HordeActionType type );
+	void evaluateNationalismBonusClassic( Bool inHorde, Bool allowNationalism );
+	void evaluateNationalismBonus( Bool inHorde, Bool allowNationalism );
 
 #ifdef ALLOW_DEMORALIZE
 	// demoralization ... what a nifty word to write.
@@ -787,6 +789,3 @@ private:
 //------------------------------------------------------------------------------------------------------------
 // Inlines
 //
-
-#endif // _AI_UPDATE_H_
-

@@ -28,10 +28,6 @@
 
 #pragma once
 
-#ifndef _GAME_DISPLAY_H_
-#define _GAME_DISPLAY_H_
-
-#include <stdio.h>
 #include "Common/SubsystemInterface.h"
 #include "View.h"
 #include "GameClient/Color.h"
@@ -232,6 +228,3 @@ typedef struct _DisplaySettings
 	Int bitDepth; //Color Depth
 	Bool windowed; //Window mode TRUE: we're windowed, FALSE: we're not windowed
 } DisplaySettings;
-
-
-#endif // _GAME_DISPLAY_H_

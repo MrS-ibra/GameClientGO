@@ -30,7 +30,7 @@
 // SYSTEM INCLUDES ////////////////////////////////////////////////////////////
 
 // USER INCLUDES //////////////////////////////////////////////////////////////
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/GameEngine.h"
 #include "Common/MessageStream.h"
@@ -1005,9 +1005,11 @@ void Network::quitGame() {
 		m_conMgr->quitGame();
 	}
 
+#if !RTS_GENERALS || !RETAIL_COMPATIBLE_CRC
 	// Blow up / Transfer your units when you quit.  Like a normal quit menu quit.
 	GameMessage *msg = TheMessageStream->appendMessage(GameMessage::MSG_SELF_DESTRUCT);
 	msg->appendBooleanArgument(TRUE);
+#endif
 
 	TheMessageStream->appendMessage(GameMessage::MSG_CLEAR_GAME_DATA);
 	m_localStatus = NETLOCALSTATUS_POSTGAME;

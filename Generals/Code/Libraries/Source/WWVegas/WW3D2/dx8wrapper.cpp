@@ -41,7 +41,7 @@
 //#define CREATE_DX8_FPU_PRESERVE
 #define WW3D_DEVTYPE D3DDEVTYPE_HAL
 
-#if defined(_MSC_VER) && _MSC_VER < 1300
+#if !defined(WINVER) || WINVER < 0x0500
 #undef WINVER
 #define WINVER 0x0500 // Required to access GetMonitorInfo in VC6.
 #endif
@@ -71,7 +71,6 @@
 #include "textureloader.h"
 #include "missingtexture.h"
 #include "thread.h"
-#include <stdio.h>
 #include <d3dx8core.h>
 #include "pot.h"
 #include "wwprofile.h"
@@ -81,6 +80,7 @@
 #include "dx8texman.h"
 #include "bound.h"
 #include "dx8webbrowser.h"
+#include "DbgHelpGuard.h"
 
 
 const int DEFAULT_RESOLUTION_WIDTH = 640;
@@ -312,7 +312,13 @@ bool DX8Wrapper::Init(void * hwnd, bool lite)
 		** Create the D3D interface object
 		*/
 		WWDEBUG_SAY(("Create Direct3D8"));
-		D3DInterface = Direct3DCreate8Ptr(D3D_SDK_VERSION);		// TODO: handle failure cases...
+		{
+			// TheSuperHackers @bugfix xezon 13/06/2025 Front load the system dbghelp.dll to prevent
+			// the graphics driver from potentially loading the old game dbghelp.dll and then crashing the game process.
+			DbgHelpGuard dbgHelpGuard;
+
+			D3DInterface = Direct3DCreate8Ptr(D3D_SDK_VERSION);		// TODO: handle failure cases...
+		}
 		if (D3DInterface == NULL) {
 			return(false);
 		}
@@ -558,6 +564,10 @@ bool DX8Wrapper::Create_Device(void)
 	Vertex_Processing_Behavior|=D3DCREATE_FPU_PRESERVE;
 #endif
 
+	// TheSuperHackers @bugfix xezon 13/06/2025 Front load the system dbghelp.dll to prevent
+	// the graphics driver from potentially loading the old game dbghelp.dll and then crashing the game process.
+	DbgHelpGuard dbgHelpGuard;
+
 	HRESULT hr=D3DInterface->CreateDevice
 	(
 		CurRenderDevice,
@@ -572,6 +582,8 @@ bool DX8Wrapper::Create_Device(void)
 	{
 		return false;
 	}
+
+	dbgHelpGuard.deactivate();
 
 	/*
 	** Initialize all subsystems
@@ -2443,8 +2455,7 @@ IDirect3DSurface8 * DX8Wrapper::_Create_DX8_Surface(const char *filename_)
 			// If file not found, try the dds format
 			// else create a surface with missing texture in it
 			char compressed_name[200];
-			strncpy(compressed_name,filename_, ARRAY_SIZE(compressed_name));
-			compressed_name[ARRAY_SIZE(compressed_name)-1] = '\0';
+			strlcpy(compressed_name,filename_, sizeof(compressed_name));
 			char *ext = strstr(compressed_name, ".");
 			if ( ext && (strlen(ext)==4) &&
 				  ( (ext[1] == 't') || (ext[1] == 'T') ) &&

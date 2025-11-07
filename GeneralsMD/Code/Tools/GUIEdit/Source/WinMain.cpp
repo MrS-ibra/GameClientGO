@@ -50,8 +50,8 @@
 
 // USER INCLUDES //////////////////////////////////////////////////////////////
 #include "Common/Debug.h"
+#include "Common/FramePacer.h"
 #include "Common/GameMemory.h"
-#include "Common/GameEngine.h"
 #include "GameClient/GameWindowManager.h"
 #include "Win32Device/GameClient/Win32Mouse.h"
 #include "resource.h"
@@ -187,15 +187,9 @@ Int APIENTRY WinMain(HINSTANCE hInstance,
 	/// @todo remove this force set of working directory later
 	Char buffer[ _MAX_PATH ];
 	GetModuleFileName( NULL, buffer, sizeof( buffer ) );
-	Char *pEnd = buffer + strlen( buffer );
-	while( pEnd != buffer )
+	if (Char *pEnd = strrchr(buffer, '\\'))
 	{
-		if( *pEnd == '\\' )
-		{
-			*pEnd = 0;
-			break;
-		}
-		pEnd--;
+		*pEnd = 0;
 	}
 	::SetCurrentDirectory(buffer);
 
@@ -223,6 +217,8 @@ Int APIENTRY WinMain(HINSTANCE hInstance,
 	if( TheEditor == NULL )
 		return FALSE;
 	TheEditor->init();
+
+	TheFramePacer = new FramePacer();
 
 	//
 	// see if we have any messages to process, a NULL window handle tells the
@@ -262,7 +258,7 @@ Int APIENTRY WinMain(HINSTANCE hInstance,
 		else
 		{
 
-			// udpate our universe
+			// update our universe
 			TheEditor->update();
 			Sleep(1);
 
@@ -271,6 +267,9 @@ Int APIENTRY WinMain(HINSTANCE hInstance,
 	}
 
 	// shutdown GUIEdit data
+	delete TheFramePacer;
+	TheFramePacer = NULL;
+
 	delete TheEditor;
 	TheEditor = NULL;
 

@@ -27,12 +27,13 @@
 // Desc:   Update module to handle weapon firing of the SpectreGunship Generals special power.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #define DEFINE_DEATH_NAMES
 
 // INCLUDES ///////////////////////////////////////////////////////////////////////////////////////
 #include "Common/GameAudio.h"
+#include "Common/GameUtility.h"
 #include "Common/ThingTemplate.h"
 #include "Common/ThingFactory.h"
 #include "Common/Player.h"
@@ -45,7 +46,6 @@
 #include "GameClient/Drawable.h"
 #include "GameClient/ParticleSys.h"
 #include "GameClient/FXList.h"
-#include "GameClient/ParticleSys.h"
 
 #include "GameLogic/Locomotor.h"
 #include "GameLogic/GameLogic.h"
@@ -642,7 +642,7 @@ UpdateSleepTime SpectreGunshipUpdate::update()
             }
 
 
-			const Player *localPlayer = ThePlayerList->getLocalPlayer();
+			const Player *localPlayer = rts::getObservedOrLocalPlayer();
 
 			//Make sure the gunship is visible to the player before drawing effects.
 			if ( gunship->getShroudedStatus( localPlayer->getPlayerIndex() ) <= OBJECTSHROUD_PARTIAL_CLEAR )

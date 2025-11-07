@@ -3541,7 +3541,6 @@ void GUIEdit::stripNameDecorations( GameWindow *root )
 
 	if( !instData->m_decoratedNameString.isEmpty() )
 	{
-		char nameOnly[ MAX_WINDOW_NAME_LEN ];
 		const char *c;
 
 		// skip past the "filename.wnd:" to the name only
@@ -3552,11 +3551,8 @@ void GUIEdit::stripNameDecorations( GameWindow *root )
 			// skip beyong the scope resolution colon
 			c++;
 
-			// copy the name
-			strcpy( nameOnly, c );
-
 			// put the name only in the decoration field
-			instData->m_decoratedNameString = nameOnly;
+			instData->m_decoratedNameString = c;
 
 		}
 

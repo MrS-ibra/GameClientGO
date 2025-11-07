@@ -26,7 +26,7 @@
 // Ping thread
 // Author: Matthew D. Campbell, August 2002
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include <winsock.h>	// This one has to be here. Prevents collisions with winsock2.h
 
@@ -202,24 +202,6 @@ Bool GameResultsQueue::areGameResultsBeingSent( void )
 	return m_requestCount > 0;
 }
 
-
-//-------------------------------------------------------------------------
-// Wrap ladder results in HTTP POST
-static void WrapHTTP( const std::string& hostname, std::string& results )
-{
-	const char HEADER[] =
-		"PUT / HTTP/1.1\r\n"
-		"Connection: Close\r\n"
-		"Host: %s\r\n"
-		"Content-Length: %d\r\n"
-		"\r\n";
-
-	char szHdr[256];
-	snprintf( szHdr, 256, HEADER, hostname.c_str(), results.length() );
-	results = szHdr + results;
-}
-
-
 //-------------------------------------------------------------------------
 
 void GameResultsThreadClass::Thread_Function()
@@ -290,6 +272,7 @@ void GameResultsThreadClass::Thread_Function()
 
 //-------------------------------------------------------------------------
 
+#ifdef DEBUG_LOGGING
 #define CASE(x) case (x): return #x;
 
 static const char *getWSAErrorString( Int error )
@@ -355,6 +338,7 @@ static const char *getWSAErrorString( Int error )
 
 #undef CASE
 
+#endif
 //-------------------------------------------------------------------------
 
 Int GameResultsThreadClass::sendGameResults( UnsignedInt IP, UnsignedShort port, const std::string& results )

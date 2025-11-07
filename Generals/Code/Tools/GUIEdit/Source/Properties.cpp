@@ -50,7 +50,6 @@
 // SYSTEM INCLUDES ////////////////////////////////////////////////////////////
 #include <stdlib.h>
 #include <assert.h>
-#include <stdio.h>
 
 // USER INCLUDES //////////////////////////////////////////////////////////////
 #include "Common/Debug.h"
@@ -1177,9 +1176,7 @@ void LoadImageListComboBox( HWND comboBox )
 	SendMessage( comboBox, CB_RESETCONTENT, 0, 0 );
 
 	// load the combo box with string names from the GUI image collection
-	for( image = TheMappedImageCollection->firstImage();
-			 image;
-			 image = TheMappedImageCollection->nextImage( image ) )
+  for (unsigned index=0;(image=TheMappedImageCollection->Enum(index))!=NULL;index++)
 	{
 
 		SendMessage( comboBox, CB_ADDSTRING, 0, (LPARAM)image->getName().str() );

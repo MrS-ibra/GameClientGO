@@ -27,11 +27,12 @@
 // Desc:   Update module to handle building states and weapon firing of the particle uplink cannon.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #define DEFINE_DEATH_NAMES
 
 // INCLUDES ///////////////////////////////////////////////////////////////////////////////////////
+#include "Common/GameUtility.h"
 #include "Common/ThingTemplate.h"
 #include "Common/ThingFactory.h"
 #include "Common/Player.h"
@@ -788,7 +789,7 @@ UpdateSleepTime ParticleUplinkCannonUpdate::update()
 	}
 
 	//Handle shrouded status changes for the client player.
-	Player *localPlayer = ThePlayerList->getLocalPlayer();
+	Player *localPlayer = rts::getObservedOrLocalPlayer();
 	if( localPlayer )
 	{
 		Bool shrouded = me->getShroudedStatus( localPlayer->getPlayerIndex() ) != OBJECTSHROUD_CLEAR;

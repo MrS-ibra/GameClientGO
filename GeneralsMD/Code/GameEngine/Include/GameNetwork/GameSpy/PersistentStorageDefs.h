@@ -28,9 +28,6 @@
 
 #pragma once
 
-#ifndef __PERSISTENTSTORAGEDEFS_H__
-#define __PERSISTENTSTORAGEDEFS_H__
-
 enum LocaleType CPP_11(: Int)
 {
     LOC_UNKNOWN = 0,
@@ -47,5 +44,3 @@ void SetLookAtPlayer( int64_t id, UnicodeString nick );
 void SetLookAtPlayer(int64_t id, AsciiString nick);
 #endif
 void PopulatePlayerInfoWindows( AsciiString parentWindowName );
-
-#endif // __PERSISTENTSTORAGEDEFS_H__

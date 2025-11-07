@@ -29,7 +29,7 @@
  *                                                                                             *
  *                 Project Name : Command & Conquer                                            *
  *                                                                                             *
- *                     $Archive:: /RedAlert2/NAT.CPP                                          $*
+ *                     $Archive:: /RedAlert2/NAT.cpp                                          $*
  *                                                                                             *
  *                      $Author:: Steve_t                                                     $*
  *                                                                                             *
@@ -46,7 +46,7 @@
  * Functions:                                                                                  *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/crc.h"
 #include "Common/UserPreferences.h"
@@ -448,7 +448,6 @@ UnsignedShort FirewallHelperClass::getManglerResponse(UnsignedShort packetID, In
 			}
 			Int retval = m_spareSockets[i].udp->Read((unsigned char *)message, sizeof(ManglerData), &addr);
 			if (retval > 0) {
-
 				CRC crc;
 				crc.computeCRC((unsigned char *)(&(message->data.magic)), sizeof(ManglerData) - sizeof(unsigned int));
 				if (crc.get() != htonl(message->data.CRC)) {
@@ -680,9 +679,7 @@ Bool FirewallHelperClass::detectionBeginUpdate() {
 		/*
 		** Do the lookup.
 		*/
-		char temp_name[256];
-		strcpy(temp_name, mangler_name_ptr);
-		struct hostent *host_info = gethostbyname(temp_name);
+		struct hostent *host_info = gethostbyname(mangler_name_ptr);
 
 		if (!host_info) {
 			DEBUG_LOG(("gethostbyname failed! Error code %d", WSAGetLastError()));

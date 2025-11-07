@@ -26,7 +26,7 @@
 // game setup state info
 // Author: Matthew D. Campbell, December 2001
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/CRCDebug.h"
 #include "Common/file.h"
@@ -922,9 +922,14 @@ AsciiString GameInfoToAsciiString( const GameInfo *game )
 	}
 
 	AsciiString optionsString;
+#if RTS_GENERALS
+	optionsString.format("M=%2.2x%s;MC=%X;MS=%d;SD=%d;C=%d;", game->getMapContentsMask(), newMapName.str(),
+		game->getMapCRC(), game->getMapSize(), game->getSeed(), game->getCRCInterval());
+#else
 	optionsString.format("US=%d;M=%2.2x%s;MC=%X;MS=%d;SD=%d;C=%d;SR=%u;SC=%u;O=%c;", game->getUseStats(), game->getMapContentsMask(), newMapName.str(),
 		game->getMapCRC(), game->getMapSize(), game->getSeed(), game->getCRCInterval(), game->getSuperweaponRestriction(),
 		game->getStartingCash().countMoney(), game->oldFactionsOnly() ? 'Y' : 'N' );
+#endif
 
 	//add player info for each slot
 	optionsString.concat(slotListID);
@@ -1018,8 +1023,15 @@ Bool ParseAsciiStringToGameInfo(GameInfo *game, AsciiString options)
   Money startingCash = TheGlobalData->m_defaultStartingCash;
   UnsignedShort restriction = 0; // Always the default
 
-	Bool sawMap, sawMapCRC, sawMapSize, sawSeed, sawSlotlist, sawUseStats, sawSuperweaponRestriction, sawStartingCash, sawOldFactions;
-	sawMap = sawMapCRC = sawMapSize = sawSeed = sawSlotlist = sawUseStats = sawSuperweaponRestriction = sawStartingCash = sawOldFactions = FALSE;
+	Bool sawMap = FALSE;
+	Bool sawMapCRC = FALSE;
+	Bool sawMapSize = FALSE;
+	Bool sawSeed = FALSE;
+	Bool sawSlotlist = FALSE;
+	Bool sawUseStats = FALSE;
+	Bool sawSuperweaponRestriction = FALSE;
+	Bool sawStartingCash = FALSE;
+	Bool sawOldFactions = FALSE;
 
 	//DEBUG_LOG(("Saw options of %s", options.str()));
 	DEBUG_LOG(("ParseAsciiStringToGameInfo - parsing [%s]", options.str()));
@@ -1121,7 +1133,7 @@ Bool ParseAsciiStringToGameInfo(GameInfo *game, AsciiString options)
     {
       UnsignedInt startingCashAmount = strtoul( val.str(), NULL, 10 );
       startingCash.init();
-      startingCash.deposit( startingCashAmount, FALSE );
+      startingCash.deposit( startingCashAmount, FALSE, FALSE );
       sawStartingCash = TRUE;
     }
     else if (key.compare("O") == 0 )
@@ -1467,8 +1479,14 @@ Bool ParseAsciiStringToGameInfo(GameInfo *game, AsciiString options)
 
 	free(buf);
 
-	//DEBUG_LOG(("Options were ok == %d", optionsOk));
-	if (optionsOk && sawMap && sawMapCRC && sawMapSize && sawSeed && sawSlotlist && sawCRC && sawUseStats && sawSuperweaponRestriction && sawStartingCash && sawOldFactions )
+	// TheSuperHackers @tweak The following settings are no longer
+	// a strict requirement in the Zero Hour Replay file:
+	//  * UseStats
+	//  * SuperweaponRestriction
+	//  * StartingCash
+	//  * OldFactionsOnly
+	// In Generals they never were.
+	if (optionsOk && sawMap && sawMapCRC && sawMapSize && sawSeed && sawSlotlist && sawCRC)
 	{
 		// We were setting the Global Data directly here, but Instead, I'm now
 		// first setting the data in game.  We'll set the global data when
@@ -1488,9 +1506,9 @@ Bool ParseAsciiStringToGameInfo(GameInfo *game, AsciiString options)
 		game->setSeed(seed);
 		game->setCRCInterval(crc);
 		game->setUseStats(useStats);
-    game->setSuperweaponRestriction(restriction);
-    game->setStartingCash( startingCash );
-    game->setOldFactionsOnly( oldFactionsOnly );
+		game->setSuperweaponRestriction(restriction);
+		game->setStartingCash(startingCash);
+		game->setOldFactionsOnly(oldFactionsOnly);
 
 		return true;
 	}
@@ -1517,7 +1535,11 @@ void SkirmishGameInfo::crc( Xfer *xfer )
 // ------------------------------------------------------------------------------------------------
 void SkirmishGameInfo::xfer( Xfer *xfer )
 {
+#if RTS_GENERALS
+	const XferVersion currentVersion = 2;
+#else
 	const XferVersion currentVersion = 4;
+#endif
 	XferVersion version = currentVersion;
 	xfer->xferVersion( &version, currentVersion );
 

@@ -34,16 +34,11 @@
  * Functions:                                                                                  *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#if defined(_MSC_VER)
 #pragma once
-#endif
 
-#ifndef RENDER2DSENTENCE_H
-#define RENDER2DSENTENCE_H
-
+#include "always.h"
 #include "render2d.h"
-#include "refcount.h"
-#include "Vector.H"
+#include "Vector.h"
 #include "vector2i.h"
 #include "wwstring.h"
 #include "win.h"
@@ -272,5 +267,3 @@ private:
 	TextureClass *							CurTexture;
 	ShaderClass									Shader;
 };
-
-#endif	// RENDER2DSENTENCE_H

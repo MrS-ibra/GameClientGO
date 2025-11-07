@@ -26,8 +26,9 @@
 // Translate raw input events into camera movement commands
 // Author: Michael S. Booth, April 2001
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
+#include "Common/FramePacer.h"
 #include "Common/GameType.h"
 #include "Common/MessageStream.h"
 #include "Common/Player.h"
@@ -408,7 +409,7 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 			{
 
 				// TheSuperHackers @bugfix Mauller 07/06/2025 The camera scrolling is now decoupled from the render update.
-				const Real fpsRatio = (Real)BaseFps / TheGameEngine->getUpdateFps();
+				const Real fpsRatio = TheFramePacer->getBaseOverUpdateFpsRatio();
 				// TheSuperHackers @bugfix Mauller 07/06/2025 Adjust the viewport scrolling so it is independent of GameClient FPS
 				// The scaling is based on the current logic rate, this provides a consistent scroll speed at all GameClient FPS
 				// This also fixes scrolling within replays when fast forwarding due to the uncapped FPS

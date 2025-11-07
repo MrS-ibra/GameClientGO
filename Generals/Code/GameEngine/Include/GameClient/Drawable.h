@@ -27,8 +27,6 @@
 // Author: Michael S. Booth, March 2001
 
 #pragma once
-#ifndef _DRAWABLE_H_
-#define _DRAWABLE_H_
 
 #include "Common/AudioEventRTS.h"
 #include "Common/GameType.h"
@@ -263,12 +261,23 @@ enum TerrainDecalType CPP_11(: Int)
 	TERRAIN_DECAL_HORDE_VEHICLE,
 	TERRAIN_DECAL_HORDE_WITH_NATIONALISM_UPGRADE_VEHICLE,
 	TERRAIN_DECAL_CRATE,
+#if RTS_GENERALS && RETAIL_COMPATIBLE_XFER_SAVE
 	TERRAIN_DECAL_NONE,
+	TERRAIN_DECAL_HORDE_WITH_FANATICISM_UPGRADE,
+	TERRAIN_DECAL_CHEMSUIT,
+#else
+	TERRAIN_DECAL_HORDE_WITH_FANATICISM_UPGRADE,
+	TERRAIN_DECAL_CHEMSUIT,
+	TERRAIN_DECAL_NONE,
+#endif
+	TERRAIN_DECAL_SHADOW_TEXTURE,	//use the shadow texture as the terrain decal.
 
 	TERRAIN_DECAL_MAX
 };
 
 //-----------------------------------------------------------------------------
+
+constexpr const UnsignedInt InvalidShroudClearFrame = ~0u;
 
 const Int DRAWABLE_FRAMES_PER_FLASH = LOGICFRAMES_PER_SECOND / 2;
 
@@ -601,6 +610,8 @@ protected:
 	virtual void reactToTransformChange(const Matrix3D* oldMtx, const Coord3D* oldPos, Real oldAngle);
 	void updateHiddenStatus();
 
+	void replaceModelConditionStateInDrawable();
+
 private:
 
 	// note, these are lazily allocated!
@@ -680,7 +691,7 @@ private:
 	Bool m_instanceIsIdentity;	///< If true, instance matrix can be skipped
 	Bool m_drawableFullyObscuredByShroud;	///<drawable is hidden by shroud/fog
 #ifdef DIRTY_CONDITION_FLAGS
-	mutable Bool m_isModelDirty;				///< if true, must call replaceModelConditionState() before drawing or accessing drawmodule info
+	Bool m_isModelDirty;				///< if true, must call replaceModelConditionState() before drawing or accessing drawmodule info
 #endif
 
 	//*******************************************
@@ -752,5 +763,3 @@ public:
 	}
 };
 #endif
-
-#endif // _DRAWABLE_H_

@@ -28,11 +28,7 @@
 
 #pragma once
 
-// NGMP NOTE: We have multiple transports now, so UDPTransport is what Transport was. It's the legacy, direct connection transport the original game used. Transport is now a base class.
-
-#ifndef _TRANSPORT_H_
-#define _TRANSPORT_H_
-
+// NGMP NOTE: We have multiple transports now, so UDPTransport is what Transport was. It's the legacy, direct connection transport the original game used. Transport is now a base class.#include "GameNetwork/udp.h"
 #include "GameNetwork/NetworkDefs.h"
 
 class Transport //: public MemoryPoolObject
@@ -92,5 +88,3 @@ protected:
 
 	Bool isGeneralsPacket( TransportMessage *msg );
 };
-
-#endif // _TRANSPORT_H_

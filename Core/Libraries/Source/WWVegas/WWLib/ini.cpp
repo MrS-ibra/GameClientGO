@@ -88,25 +88,24 @@
 #include	"b64pipe.h"
 #include	"b64straw.h"
 #include	"cstraw.h"
-#include	"INI.H"
+#include "INI.h"
 #include	"readline.h"
 #include	"trim.h"
 #include	"win.h"
-#include	"XPIPE.H"
-#include	"XSTRAW.H"
-#include	<Utility/stdio_adapter.h>
+#include "XPIPE.h"
+#include "XSTRAW.h"
 #include <malloc.h>
 #ifdef _UNIX
 #include <ctype.h>
 #endif
-#include "RAWFILE.H"
+#include "RAWFILE.h"
 #include "ffactory.h"
 
 // recently transferred from ini.h
 #include "inisup.h"
 #include	"trect.h"
-#include	"WWFILE.H"
-#include	"PIPE.H"
+#include "WWFILE.h"
+#include "PIPE.h"
 #include	"wwstring.h"
 #include "widestring.h"
 #include "nstrdup.h"
@@ -1150,8 +1149,7 @@ bool INIClass::Put_TextBlock(char const * section, char const * text)
 
 		char buffer[128];
 
-		strncpy(buffer, text, 75);
-		buffer[75] = '\0';
+		strlcpy(buffer, text, 76);
 
 		char b[32];
 		sprintf(b, "%d", index);
@@ -1724,8 +1722,7 @@ int INIClass::Get_String(char const * section, char const * entry, char const * 
 		buffer[0] = '\0';
 		return(0);
 	} else {
-		strncpy(buffer, defvalue, size);
-		buffer[size-1] = '\0';
+		strlcpy(buffer, defvalue, size);
 		strtrim(buffer);
 		return(strlen(buffer));
 	}
@@ -2287,7 +2284,7 @@ void INIClass::DuplicateCRCError(const char *message, const char *section, const
 	OutputDebugString(buffer);
 	assert(0);
 
-#ifdef NDEBUG
+#ifdef RTS_RELEASE
 #ifdef _WINDOWS
 	MessageBox(0, buffer, "Duplicate CRC in INI file.", MB_ICONSTOP | MB_OK);
 #endif

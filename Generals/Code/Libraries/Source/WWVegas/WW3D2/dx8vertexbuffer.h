@@ -36,16 +36,10 @@
  * Functions:                                                                                  *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#if defined(_MSC_VER)
 #pragma once
-#endif
-
-#ifndef DX8VERTEXBUFFER_H
-#define DX8VERTEXBUFFER_H
 
 #include "always.h"
 #include "wwdebug.h"
-#include "refcount.h"
 #include "dx8fvf.h"
 
 const unsigned dynamic_fvf_type=D3DFVF_XYZ|D3DFVF_NORMAL|D3DFVF_TEX2|D3DFVF_DIFFUSE;
@@ -259,6 +253,3 @@ protected:
 public:
 	SortingVertexBufferClass(unsigned short VertexCount);
 };
-
-
-#endif //DX8VERTEXBUFFER_H

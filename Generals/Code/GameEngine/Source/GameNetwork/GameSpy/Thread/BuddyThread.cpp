@@ -29,7 +29,7 @@
 // the game.
 // Author: Matthew D. Campbell, June 2002
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "GameNetwork/GameSpy/BuddyThread.h"
 #include "GameNetwork/GameSpy/PeerThread.h"
@@ -263,7 +263,12 @@ void BuddyThreadClass::Thread_Function()
 	_set_se_translator( DumpExceptionInfo ); // Hook that allows stack trace.
 	GPConnection gpCon;
 	GPConnection *con = &gpCon;
-	gpInitialize( con, 675, 0, GP_PARTNERID_GAMESPY );
+#if RTS_GENERALS
+	const int productID = 675;
+#elif RTS_ZEROHOUR
+	const int productID = 823;
+#endif
+	gpInitialize( con, productID, 0, GP_PARTNERID_GAMESPY );
 	m_isConnected = m_isConnecting = false;
 
 	gpSetCallback( con, GP_ERROR,								callbackWrapper,	(void *)CALLBACK_ERROR );
@@ -486,8 +491,7 @@ void BuddyThreadClass::errorCallback( GPConnection *con, GPErrorArg *arg )
 		errorResponse.result = arg->result;
 		errorResponse.arg.error.errorCode = arg->errorCode;
 		errorResponse.arg.error.fatal = arg->fatal;
-		strncpy(errorResponse.arg.error.errorString, arg->errorString, MAX_BUDDY_CHAT_LEN);
-		errorResponse.arg.error.errorString[MAX_BUDDY_CHAT_LEN-1] = 0;
+		strlcpy(errorResponse.arg.error.errorString, arg->errorString, MAX_BUDDY_CHAT_LEN);
 		m_isConnecting = m_isConnected = false;
 		TheGameSpyBuddyMessageQueue->addResponse( errorResponse );
 		if (m_isdeleting)
@@ -503,6 +507,7 @@ void BuddyThreadClass::errorCallback( GPConnection *con, GPErrorArg *arg )
 static void getNickForMessage( GPConnection *con, GPGetInfoResponseArg *arg, void *param )
 {
 	BuddyResponse *resp = (BuddyResponse *)param;
+	static_assert(ARRAY_SIZE(resp->arg.message.nick) >= ARRAY_SIZE(arg->nick), "Incorrect array size");
 	strcpy(resp->arg.message.nick, arg->nick);
 }
 
@@ -516,8 +521,7 @@ void BuddyThreadClass::messageCallback( GPConnection *con, GPRecvBuddyMessageArg
 	gpGetInfo( con, arg->profile, GP_CHECK_CACHE, GP_BLOCKING, (GPCallback)getNickForMessage, &messageResponse);
 
 	std::wstring s = MultiByteToWideCharSingleLine( arg->message );
-	wcsncpy(messageResponse.arg.message.text, s.c_str(), MAX_BUDDY_CHAT_LEN);
-	messageResponse.arg.message.text[MAX_BUDDY_CHAT_LEN-1] = 0;
+	wcslcpy(messageResponse.arg.message.text, s.c_str(), MAX_BUDDY_CHAT_LEN);
 	messageResponse.arg.message.date = arg->date;
 	DEBUG_LOG(("Got a buddy message from %d [%ls]", arg->profile, s.c_str()));
 	TheGameSpyBuddyMessageQueue->addResponse( messageResponse );
@@ -618,6 +622,9 @@ static void getInfoResponseForRequest( GPConnection *con, GPGetInfoResponseArg *
 {
 	BuddyResponse *resp = (BuddyResponse *)param;
 	resp->profile = arg->profile;
+	static_assert(ARRAY_SIZE(resp->arg.request.nick) >= ARRAY_SIZE(arg->nick), "Incorrect array size");
+	static_assert(ARRAY_SIZE(resp->arg.request.email) >= ARRAY_SIZE(arg->email), "Incorrect array size");
+	static_assert(ARRAY_SIZE(resp->arg.request.countrycode) >= ARRAY_SIZE(arg->countrycode), "Incorrect array size");
 	strcpy(resp->arg.request.nick, arg->nick);
 	strcpy(resp->arg.request.email, arg->email);
 	strcpy(resp->arg.request.countrycode, arg->countrycode);
@@ -633,8 +640,7 @@ void BuddyThreadClass::requestCallback( GPConnection *con, GPRecvBuddyRequestArg
 	gpGetInfo( con, arg->profile, GP_CHECK_CACHE, GP_BLOCKING, (GPCallback)getInfoResponseForRequest, &response);
 
 	std::wstring s = MultiByteToWideCharSingleLine( arg->reason );
-	wcsncpy(response.arg.request.text, s.c_str(), GP_REASON_LEN);
-	response.arg.request.text[GP_REASON_LEN-1] = 0;
+	wcslcpy(response.arg.request.text, s.c_str(), GP_REASON_LEN);
 
 	TheGameSpyBuddyMessageQueue->addResponse( response );
 }
@@ -645,6 +651,9 @@ static void getInfoResponseForStatus(GPConnection * connection, GPGetInfoRespons
 {
 	BuddyResponse *resp = (BuddyResponse *)param;
 	resp->profile = arg->profile;
+	static_assert(ARRAY_SIZE(resp->arg.status.nick) >= ARRAY_SIZE(arg->nick), "Incorrect array size");
+	static_assert(ARRAY_SIZE(resp->arg.status.email) >= ARRAY_SIZE(arg->email), "Incorrect array size");
+	static_assert(ARRAY_SIZE(resp->arg.status.countrycode) >= ARRAY_SIZE(arg->countrycode), "Incorrect array size");
 	strcpy(resp->arg.status.nick, arg->nick);
 	strcpy(resp->arg.status.email, arg->email);
 	strcpy(resp->arg.status.countrycode, arg->countrycode);
@@ -661,6 +670,8 @@ void BuddyThreadClass::statusCallback( GPConnection *con, GPRecvBuddyStatusArg *
 	// get user's status
 	GPBuddyStatus status;
 	gpGetBuddyStatus( con, arg->index, &status );
+	static_assert(ARRAY_SIZE(response.arg.status.location) >= ARRAY_SIZE(status.locationString), "Incorrect array size");
+	static_assert(ARRAY_SIZE(response.arg.status.statusString) >= ARRAY_SIZE(status.statusString), "Incorrect array size");
 	strcpy(response.arg.status.location, status.locationString);
 	strcpy(response.arg.status.statusString, status.statusString);
 	response.arg.status.status = status.status;

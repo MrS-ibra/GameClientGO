@@ -28,7 +28,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // INCLUDES ///////////////////////////////////////////////////////////////////////////////////////
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 #define DEFINE_WEAPONCONDITIONMAP
 #include "Common/BitFlagsIO.h"
 #include "Common/BuildAssistant.h"
@@ -729,6 +729,18 @@ Int Object::getTransportSlotCount() const
 		}
 	}
 	return count;
+}
+
+Object* Object::getEnclosingContainedBy()
+{
+	for (Object* child = this, *container = getContainedBy(); container; child = container, container = container->getContainedBy())
+	{
+		ContainModuleInterface* containModule = container->getContain();
+		if (containModule && containModule->isEnclosingContainerFor(child))
+			return container;
+	}
+
+	return NULL;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -4749,6 +4761,15 @@ void Object::adjustModelConditionForWeaponStatus()
 			}
 		}
 	}
+}
+
+//-------------------------------------------------------------------------------------------------
+Bool Object::hasGhostObject() const
+{
+	if (m_partitionData == NULL)
+		return false;
+
+	return m_partitionData->getGhostObject() != NULL;
 }
 
 //-------------------------------------------------------------------------------------------------

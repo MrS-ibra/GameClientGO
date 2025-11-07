@@ -28,7 +28,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // INCLUDES ///////////////////////////////////////////////////////////////////////////////////////
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 
 #include "Lib/BaseType.h"
@@ -45,9 +45,15 @@
 #include "GameClient/GameWindowManager.h"
 #include "GameClient/MessageBox.h"
 #include "GameClient/MapUtil.h"
+#include "GameClient/Mouse.h"
 #include "GameClient/GameText.h"
 #include "GameClient/GameWindowTransitions.h"
 
+typedef UnicodeString ReplayName;
+typedef UnicodeString TooltipString;
+typedef std::map<ReplayName, TooltipString> ReplayTooltipMap;
+
+static ReplayTooltipMap replayTooltipCache;
 
 // window ids -------------------------------------------------------------------------------------
 static NameKeyType parentReplayMenuID = NAMEKEY_INVALID;
@@ -167,14 +173,74 @@ static UnicodeString createMapName(const AsciiString& filename, const ReplayGame
 }
 
 //-------------------------------------------------------------------------------------------------
+// TheSuperHackers @feature Stubbjax 21/10/2025 Show extra info tooltip when hovering over a replay.
+
+static void showReplayTooltip(GameWindow* window, WinInstanceData* instData, UnsignedInt mouse)
+{
+	Int x, y, row, col;
+	x = LOLONGTOSHORT(mouse);
+	y = HILONGTOSHORT(mouse);
+
+	GadgetListBoxGetEntryBasedOnXY(window, x, y, row, col);
+
+	if (row == -1 || col == -1)
+	{
+		TheMouse->setCursorTooltip(UnicodeString::TheEmptyString);
+		return;
+	}
+
+	UnicodeString replayFileName = GetReplayFilenameFromListbox(window, row);
+
+	ReplayTooltipMap::const_iterator it = replayTooltipCache.find(replayFileName);
+	if (it != replayTooltipCache.end())
+		TheMouse->setCursorTooltip(it->second, -1, NULL, 1.5f);
+	else
+		TheMouse->setCursorTooltip(UnicodeString::TheEmptyString);
+}
+
+static UnicodeString buildReplayTooltip(RecorderClass::ReplayHeader header, ReplayGameInfo info)
+{
+	UnicodeString tooltipStr;
+
+	if (header.endTime < header.startTime)
+		header.startTime = header.endTime;
+
+	time_t totalSeconds = header.endTime - header.startTime;
+	UnsignedInt hours = totalSeconds / 3600;
+	UnsignedInt mins = (totalSeconds % 3600) / 60;
+	UnsignedInt secs = totalSeconds % 60;
+	Real fps = totalSeconds > 0 ? header.frameCount / totalSeconds : 0;
+	tooltipStr.format(L"%02u:%02u:%02u (%g fps)", hours, mins, secs, fps);
+
+	if (header.localPlayerIndex >= 0)
+	{
+		// MP game
+		for (Int i = 0; i < MAX_SLOTS; ++i)
+		{
+			const GameSlot* slot = info.getConstSlot(i);
+			if (slot && slot->isHuman())
+			{
+				tooltipStr.concat(L"\n");
+				tooltipStr.concat(info.getConstSlot(i)->getName());
+			}
+		}
+	}
+
+	return tooltipStr;
+}
+
+//-------------------------------------------------------------------------------------------------
 /** Populate the listbox with the names of the available replay files */
 //-------------------------------------------------------------------------------------------------
 void PopulateReplayFileListbox(GameWindow *listbox)
 {
+	replayTooltipCache.clear();
+
 	if (!TheMapCache)
 		return;
 
 	GadgetListBoxReset(listbox);
+	const Int listboxLength = GadgetListBoxGetListLength(listbox);
 
 	// TheSuperHackers @tweak xezon 08/06/2025 Now shows missing maps in red color.
 	enum {
@@ -208,7 +274,6 @@ void PopulateReplayFileListbox(GameWindow *listbox)
 
 	TheMapCache->updateCache();
 
-
 	for (it = replayFilenames.begin(); it != replayFilenames.end(); ++it)
 	{
 		// just want the filename
@@ -234,39 +299,12 @@ void PopulateReplayFileListbox(GameWindow *listbox)
 			// map
 			UnicodeString mapStr = createMapName(asciistr, info, mapData);
 
-//			// extra
-//			UnicodeString extraStr;
-//			if (header.localPlayerIndex >= 0)
-//			{
-//				// MP game
-//				time_t totalSeconds = header.endTime - header.startTime;
-//				Int mins = totalSeconds/60;
-//				Int secs = totalSeconds%60;
-//				Real fps = header.frameCount/totalSeconds;
-//				extraStr.format(L"%d:%d (%g fps) %hs", mins, secs, fps, header.desyncGame?"OOS ":"");
-//
-//				for (Int i=0; i<MAX_SLOTS; ++i)
-//				{
-//					const GameSlot *slot = info.getConstSlot(i);
-//					if (slot && slot->isHuman())
-//					{
-//						if (i)
-//							extraStr.concat(L", ");
-//						if (header.playerDiscons[i])
-//							extraStr.concat(L'*');
-//						extraStr.concat(info.getConstSlot(i)->getName());
-//					}
-//				}
-//			}
-//			else
-//			{
-//				// solo game
-//				time_t totalSeconds = header.endTime - header.startTime;
-//				Int mins = totalSeconds/60;
-//				Int secs = totalSeconds%60;
-//				Real fps = header.frameCount/totalSeconds;
-//				extraStr.format(L"%d:%d (%g fps)", mins, secs, fps);
-//			}
+			// tooltip
+			UnicodeString tooltipStr = buildReplayTooltip(header, info);
+
+			UnicodeString key;
+			key.translate(asciistr);
+			replayTooltipCache[key] = tooltipStr;
 
 			// pick a color
 			Color color;
@@ -274,11 +312,7 @@ void PopulateReplayFileListbox(GameWindow *listbox)
 
 			const Bool hasMap = mapData != NULL;
 
-			const Bool isCrcCompatible =
-				   header.versionString == TheVersion->getUnicodeVersion()
-				&& header.versionNumber == TheVersion->getVersionNumber()
-				&& header.exeCRC == TheGlobalData->m_exeCRC
-				&& header.iniCRC == TheGlobalData->m_iniCRC;
+			const Bool isCrcCompatible = RecorderClass::replayMatchesGameVersion(header);
 
 			if (isCrcCompatible)
 			{
@@ -317,11 +351,15 @@ void PopulateReplayFileListbox(GameWindow *listbox)
 					mapColor = colors[COLOR_MISSING_MAP_CRC_MISMATCH];
 			}
 
-			Int insertionIndex = GadgetListBoxAddEntryText(listbox, replayNameToShow, color, -1, 0);
+			const Int insertionIndex = GadgetListBoxAddEntryText(listbox, replayNameToShow, color, -1, 0);
+			DEBUG_ASSERTCRASH(insertionIndex >= 0, ("Expects valid index"));
 			GadgetListBoxAddEntryText(listbox, displayTimeBuffer, color, insertionIndex, 1);
 			GadgetListBoxAddEntryText(listbox, header.versionString, color, insertionIndex, 2);
 			GadgetListBoxAddEntryText(listbox, mapStr, mapColor, insertionIndex, 3);
-			//GadgetListBoxAddEntryText(listbox, extraStr, color, insertionIndex, 4);
+
+			// TheSuperHackers @performance Now stops processing when the list is full.
+			if (insertionIndex == listboxLength - 1)
+				break;
 		}
 	}
 	GadgetListBoxSetSelected(listbox, 0);
@@ -346,6 +384,7 @@ void ReplayMenuInit( WindowLayout *layout, void *userData )
 	buttonLoad = TheWindowManager->winGetWindowFromId( parentReplayMenu, buttonLoadID );
 	buttonBack = TheWindowManager->winGetWindowFromId( parentReplayMenu, buttonBackID );
 	listboxReplayFiles = TheWindowManager->winGetWindowFromId( parentReplayMenu, listboxReplayFilesID );
+	listboxReplayFiles->winSetTooltipFunc(showReplayTooltip);
 	buttonDelete = TheWindowManager->winGetWindowFromId( parentReplayMenu, buttonDeleteID );
 	buttonCopy = TheWindowManager->winGetWindowFromId( parentReplayMenu, buttonCopyID );
 

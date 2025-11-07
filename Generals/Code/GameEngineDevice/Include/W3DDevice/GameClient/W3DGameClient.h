@@ -34,9 +34,6 @@
 
 #pragma once
 
-#ifndef __W3DGAMEINTERFACE_H_
-#define __W3DGAMEINTERFACE_H_
-
 // SYSTEM INCLUDES ////////////////////////////////////////////////////////////
 
 // USER INCLUDES //////////////////////////////////////////////////////////////
@@ -88,7 +85,7 @@ public:
 
 	//---------------------------------------------------------------------------
 	virtual void setTeamColor( Int red, Int green, Int blue );  ///< @todo superhack for demo, remove!!!
-	virtual void adjustLOD( Int adj ); ///< @todo hack for evaluation, remove.
+	virtual void setTextureLOD( Int level );
 
 protected:
 
@@ -126,5 +123,3 @@ inline Mouse *W3DGameClient::createMouse( void )
 	TheWin32Mouse = mouse;   ///< global cheat for the WndProc()
 	return mouse;
 }
-
-#endif  // end __W3DGAMEINTERFACE_H_

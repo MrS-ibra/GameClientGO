@@ -44,9 +44,6 @@
 
 #pragma once
 
-#ifndef _MONEY_H_
-#define _MONEY_H_
-
 #include "Lib/BaseType.h"
 #include "Common/Debug.h"
 #include "Common/Snapshot.h"
@@ -64,13 +61,14 @@ class Money : public Snapshot
 
 public:
 
-	inline Money() : m_money(0), m_playerIndex(0)
+	inline Money() : m_playerIndex(0)
 	{
+		init();
 	}
 
 	void init()
 	{
-		m_money = 0;
+		setStartingCash(0);
 	}
 
 	inline UnsignedInt countMoney() const
@@ -80,7 +78,11 @@ public:
 
 	/// returns the actual amount withdrawn, which may be less than you want. (sorry, can't go into debt...)
 	UnsignedInt withdraw(UnsignedInt amountToWithdraw, Bool playSound = TRUE);
-	void deposit(UnsignedInt amountToDeposit, Bool playSound = TRUE);
+	void deposit(UnsignedInt amountToDeposit, Bool playSound = TRUE, Bool trackIncome = TRUE);
+
+	void setStartingCash(UnsignedInt amount);
+	void updateIncomeBucket();
+	UnsignedInt getCashPerMinute() const;
 
 	void setPlayerIndex(Int ndx) { m_playerIndex = ndx; }
 
@@ -105,7 +107,7 @@ private:
 
 	UnsignedInt m_money;	///< amount of money
 	Int m_playerIndex;	///< what is my player index?
+	UnsignedInt m_incomeBuckets[60];	///< circular buffer of 60 seconds for income tracking
+	UnsignedInt m_currentBucket;
+	UnsignedInt m_cashPerMinute;
 };
-
-#endif // _MONEY_H_
-

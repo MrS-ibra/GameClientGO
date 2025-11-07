@@ -36,9 +36,8 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 
-#include "hmdldef.H"
+#include "hmdldef.h"
 #include <assert.h>
-#include <string.h>
 #include "w3d_file.h"
 #include "chunkio.h"
 #include "snapPts.h"
@@ -149,10 +148,8 @@ int HModelDefClass::Load_W3D(ChunkLoadClass & cload)
 	/*
 	** process the header info
 	*/
-	strncpy(ModelName,header.Name,W3D_NAME_LEN);
-	ModelName[W3D_NAME_LEN - 1] = 0;
-	strncpy(BasePoseName,header.HierarchyName,W3D_NAME_LEN);
-	BasePoseName[W3D_NAME_LEN-1] = 0;
+	strlcpy(ModelName,header.Name,W3D_NAME_LEN);
+	strlcpy(BasePoseName,header.HierarchyName,W3D_NAME_LEN);
 	strcpy(Name,ModelName);
 
 	/*
@@ -236,8 +233,8 @@ bool HModelDefClass::read_connection(ChunkLoadClass & cload,HmdlNodeDefStruct * 
 	}
 
 	strcpy(node->RenderObjName,ModelName);
-	strcat(node->RenderObjName,".");
-	strcat(node->RenderObjName,con.RenderObjName);
+	strlcat(node->RenderObjName, ".", ARRAY_SIZE(node->RenderObjName));
+	strlcat(node->RenderObjName, con.RenderObjName, ARRAY_SIZE(node->RenderObjName));
 
 	if (pre30) {
 		if (con.PivotIdx == 65535) {

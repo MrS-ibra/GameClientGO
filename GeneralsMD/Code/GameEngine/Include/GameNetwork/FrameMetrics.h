@@ -26,9 +26,6 @@
 
 #pragma once
 
-#ifndef __FRAMEMETRICS_H
-#define __FRAMEMETRICS_H
-
 #include "Lib/BaseType.h"
 #include "GameNetwork/NetworkDefs.h"
 
@@ -72,5 +69,3 @@ protected:
 	UnsignedInt m_cushionIndex;															///< The next index to use for the cushion list.
 	Int m_minimumCushion;																			///< The average cushion for the history.
 };
-
-#endif // __FRAMEMETRICS_H

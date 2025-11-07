@@ -26,7 +26,7 @@
 // Author:
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/PerfTimer.h"
 
@@ -353,7 +353,7 @@ void PerfGather::reset()
 
 	char tmp[256];
 	strcpy(tmp, s_buf);
-	strcat(tmp, ".csv");
+	strlcat(tmp, ".csv", ARRAY_SIZE(tmp));
 
 	s_perfStatsFile = fopen(tmp, "w");
 	s_perfDumpOptions = options;

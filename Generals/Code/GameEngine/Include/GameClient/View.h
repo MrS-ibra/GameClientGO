@@ -29,9 +29,6 @@
 
 #pragma once
 
-#ifndef _VIEW_H_
-#define _VIEW_H_
-
 // INCLUDES ///////////////////////////////////////////////////////////////////////////////////////
 #include "Common/GameType.h"
 #include "Common/Snapshot.h"
@@ -332,5 +329,3 @@ class ViewLocation
 
 // EXTERNALS //////////////////////////////////////////////////////////////////////////////////////
 extern View *TheTacticalView;		///< the main tactical interface to the game world
-
-#endif // _VIEW_H_

@@ -33,7 +33,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // INCLUDES ///////////////////////////////////////////////////////////////////////////////////////
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/ActionManager.h"
 #include "Common/GlobalData.h"
@@ -1427,6 +1427,13 @@ Bool ActionManager::canSnipeVehicle( const Object *obj, const Object *objectToSn
 
 		//Make sure the vehicle is manned!
 		if( objectToSnipe->isDisabledByType( DISABLED_UNMANNED ) )
+		{
+			return FALSE;
+		}
+
+		// TheSuperHackers @bugfix Caball009 04/09/2025 Disabled bikes may not have a rider to snipe.
+		ContainModuleInterface* contain = objectToSnipe->getContain();
+		if ( contain && contain->isRiderChangeContain() && contain->getContainedItemsList()->empty() )
 		{
 			return FALSE;
 		}

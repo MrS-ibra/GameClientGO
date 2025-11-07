@@ -28,16 +28,11 @@
 
 #pragma once
 
-#ifndef _STATE_MACHINE_H_
-#define _STATE_MACHINE_H_
-
 #include "Common/GameMemory.h"
 #include "Common/GameType.h"
 #include "Common/ModelState.h"
 #include "Common/Snapshot.h"
 #include "Common/Xfer.h"
-
-#include "refcount.h"
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -485,6 +480,3 @@ inline void deleteInstance(StateMachine* machine)
 {
 	machine->Release_Ref();
 }
-
-
-#endif // _STATE_MACHINE_H_

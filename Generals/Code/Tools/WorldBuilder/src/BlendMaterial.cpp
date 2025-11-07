@@ -207,10 +207,6 @@ void BlendMaterial::addTerrain(const char *pPath, Int terrainNdx, HTREEITEM pare
 //	Int availableTiles = 4 * tilesPerRow * tilesPerRow;
 //	Int percent = (WorldHeightMapEdit::getTexClassNumTiles(terrainNdx)*100 + availableTiles/2) / availableTiles;
 
-	char label[_MAX_PATH];
-	sprintf(label, "%s", buffer);
-
-
 	if( doAdd )
 	{
 		TVINSERTSTRUCT ins;
@@ -220,8 +216,8 @@ void BlendMaterial::addTerrain(const char *pPath, Int terrainNdx, HTREEITEM pare
 		ins.hInsertAfter = TVI_LAST;
 		ins.item.mask = TVIF_PARAM|TVIF_TEXT;
 		ins.item.lParam = terrainNdx;
-		ins.item.pszText = label;
-		ins.item.cchTextMax = strlen(label)+2;
+		ins.item.pszText = buffer;
+		ins.item.cchTextMax = strlen(buffer)+2;
 		m_terrainTreeView.InsertItem(&ins);
 	}
 
@@ -239,7 +235,7 @@ void BlendMaterial::updateTextures(void)
 	for (i=WorldHeightMapEdit::getNumTexClasses()-1; i>=0; i--) {
 		char path[_MAX_PATH];
 		AsciiString uiName = WorldHeightMapEdit::getTexClassUiName(i);
-		strncpy(path, uiName.str(), _MAX_PATH-2);
+		strlcpy(path, uiName.str(), _MAX_PATH);
 		addTerrain(path, i, TVI_ROOT);
 	}
 	m_updating = false;

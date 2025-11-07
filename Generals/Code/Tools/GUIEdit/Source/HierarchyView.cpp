@@ -46,7 +46,6 @@
 // SYSTEM INCLUDES ////////////////////////////////////////////////////////////
 #include <windows.h>
 #include <commctrl.h>
-#include <string.h>
 
 // USER INCLUDES //////////////////////////////////////////////////////////////
 #include "Common/Debug.h"
@@ -877,8 +876,8 @@ char *HierarchyView::getWindowTreeName( GameWindow *window )
 	if( !instData->m_decoratedNameString.isEmpty() )
 	{
 
-		strcat( buffer, ": " );
-		strcat( buffer, instData->m_decoratedNameString.str() );
+		strlcat(buffer, ": ", ARRAY_SIZE(buffer));
+		strlcat(buffer, instData->m_decoratedNameString.str(), ARRAY_SIZE(buffer));
 
 	}
 

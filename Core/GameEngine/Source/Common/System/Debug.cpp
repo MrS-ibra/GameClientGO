@@ -43,7 +43,7 @@
 // ----------------------------------------------------------------------------
 
 // SYSTEM INCLUDES
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 
 // USER INCLUDES
@@ -376,36 +376,30 @@ void DebugInit(int flags)
 
 		char dirbuf[ _MAX_PATH ];
 		::GetModuleFileName( NULL, dirbuf, sizeof( dirbuf ) );
-		char *pEnd = dirbuf + strlen( dirbuf );
-		while( pEnd != dirbuf )
+		if (char *pEnd = strrchr(dirbuf, '\\'))
 		{
-			if( *pEnd == '\\' )
-			{
-				*(pEnd + 1) = 0;
-				break;
-			}
-			pEnd--;
+			*(pEnd + 1) = 0;
 		}
 
 		strcpy(theLogFileNamePrev, dirbuf);
-		strcat(theLogFileNamePrev, gAppPrefix);
-		strcat(theLogFileNamePrev, DEBUG_FILE_NAME_PREV);
+		strlcat(theLogFileNamePrev, gAppPrefix, ARRAY_SIZE(theLogFileNamePrev));
+		strlcat(theLogFileNamePrev, DEBUG_FILE_NAME_PREV, ARRAY_SIZE(theLogFileNamePrev));
 		if (rts::ClientInstance::getInstanceId() > 1u)
 		{
 			size_t offset = strlen(theLogFileNamePrev);
 			snprintf(theLogFileNamePrev + offset, ARRAY_SIZE(theLogFileNamePrev) - offset, "_Instance%.2u", rts::ClientInstance::getInstanceId());
 		}
-		strcat(theLogFileNamePrev, ".txt");
+		strlcat(theLogFileNamePrev, ".txt", ARRAY_SIZE(theLogFileNamePrev));
 
 		strcpy(theLogFileName, dirbuf);
-		strcat(theLogFileName, gAppPrefix);
-		strcat(theLogFileName, DEBUG_FILE_NAME);
+		strlcat(theLogFileName, gAppPrefix, ARRAY_SIZE(theLogFileNamePrev));
+		strlcat(theLogFileName, DEBUG_FILE_NAME, ARRAY_SIZE(theLogFileNamePrev));
 		if (rts::ClientInstance::getInstanceId() > 1u)
 		{
 			size_t offset = strlen(theLogFileName);
 			snprintf(theLogFileName + offset, ARRAY_SIZE(theLogFileName) - offset, "_Instance%.2u", rts::ClientInstance::getInstanceId());
 		}
-		strcat(theLogFileName, ".txt");
+		strlcat(theLogFileName, ".txt", ARRAY_SIZE(theLogFileNamePrev));
 
 		remove(theLogFileNamePrev);
 		rename(theLogFileName, theLogFileNamePrev);
@@ -512,7 +506,7 @@ void DebugCrash(const char *format, ...)
 	char theCrashBuffer[ LARGE_BUFFER ];
 
 	prepBuffer(theCrashBuffer);
-	strcat(theCrashBuffer, "ASSERTION FAILURE: ");
+	strlcat(theCrashBuffer, "ASSERTION FAILURE: ", ARRAY_SIZE(theCrashBuffer));
 
 	va_list arg;
 	va_start(arg, format);
@@ -541,7 +535,7 @@ void DebugCrash(const char *format, ...)
 #endif
 	}
 
-	strcat(theCrashBuffer, "\n\nAbort->exception; Retry->debugger; Ignore->continue");
+	strlcat(theCrashBuffer, "\n\nAbort->exception; Retry->debugger; Ignore->continue", ARRAY_SIZE(theCrashBuffer));
 
 	const int result = doCrashBox(theCrashBuffer, useLogging);
 
@@ -740,9 +734,9 @@ void ReleaseCrash(const char *reason)
 	}
 
 	strcpy(prevbuf, TheGlobalData->getPath_UserData().str());
-	strcat(prevbuf, RELEASECRASH_FILE_NAME_PREV);
+	strlcat(prevbuf, RELEASECRASH_FILE_NAME_PREV, ARRAY_SIZE(prevbuf));
 	strcpy(curbuf, TheGlobalData->getPath_UserData().str());
-	strcat(curbuf, RELEASECRASH_FILE_NAME);
+	strlcat(curbuf, RELEASECRASH_FILE_NAME, ARRAY_SIZE(curbuf));
 
  	remove(prevbuf);
 	rename(curbuf, prevbuf);
@@ -829,9 +823,9 @@ void ReleaseCrashLocalized(const AsciiString& p, const AsciiString& m)
 	char curbuf[ _MAX_PATH ];
 
 	strcpy(prevbuf, TheGlobalData->getPath_UserData().str());
-	strcat(prevbuf, RELEASECRASH_FILE_NAME_PREV);
+	strlcat(prevbuf, RELEASECRASH_FILE_NAME_PREV, ARRAY_SIZE(prevbuf));
 	strcpy(curbuf, TheGlobalData->getPath_UserData().str());
-	strcat(curbuf, RELEASECRASH_FILE_NAME);
+	strlcat(curbuf, RELEASECRASH_FILE_NAME, ARRAY_SIZE(curbuf));
 
  	remove(prevbuf);
 	rename(curbuf, prevbuf);

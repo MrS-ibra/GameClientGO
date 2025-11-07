@@ -28,7 +28,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // INCLUDES ///////////////////////////////////////////////////////////////////////////////////////
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Lib/BaseType.h"
 #include "Common/INI.h"
@@ -139,8 +139,9 @@ void INI::parseMapCacheDefinition( INI* ini )
 
 	md.m_waypoints[TheNameKeyGenerator->keyToName(TheKey_InitialCameraPosition)] = mdr.m_initialCameraPosition;
 
-//	md.m_displayName = QuotedPrintableToUnicodeString(mdr.m_asciiDisplayName);
-// this string is never to be used, but we'll leave it in to allow people with an old mapcache.ini to parse it
+#if RTS_GENERALS
+	md.m_displayName = QuotedPrintableToUnicodeString(mdr.m_asciiDisplayName);
+#else
 	md.m_nameLookupTag = QuotedPrintableToAsciiString(mdr.m_asciiNameLookupTag);
 
 	if (md.m_nameLookupTag.isEmpty())
@@ -167,6 +168,7 @@ void INI::parseMapCacheDefinition( INI* ini )
 			md.m_displayName.concat(extension);
 		}
 	}
+#endif
 
 	AsciiString startingCamName;
 	for (Int i=0; i<md.m_numPlayers; ++i)

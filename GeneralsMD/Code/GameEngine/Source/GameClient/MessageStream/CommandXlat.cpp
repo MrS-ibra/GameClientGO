@@ -26,16 +26,17 @@
 // Translate raw input events into tactical commands
 // Author: Michael S. Booth, February 2001
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "stdlib.h"				// VC++ wants this here, or gives compile error...
 
 #include "Common/AudioAffect.h"
 #include "Common/ActionManager.h"
-#include "Common/FrameRateLimit.h"
+#include "Common/FramePacer.h"
 #include "Common/GameAudio.h"
 #include "Common/GameEngine.h"
 #include "Common/GameType.h"
+#include "Common/GameUtility.h"
 #include "Common/GlobalData.h"
 #include "Common/MessageStream.h"
 #include "Common/MiscAudio.h"
@@ -87,9 +88,9 @@
 #include "GameNetwork/GameInfo.h"
 #include "GameNetwork/GameSpyOverlay.h"
 #include "GameNetwork/GameSpy/BuddyThread.h"
+
+#include "ww3d.h"
 #include "../OnlineServices_Init.h"
-
-
 
 
 #define dont_ALLOW_ALT_F4
@@ -199,10 +200,10 @@ bool changeMaxRenderFps(FpsValueChange change)
 		return false;
 	}
 
-	UnsignedInt maxRenderFps = TheGameEngine->getFramesPerSecondLimit();
+	UnsignedInt maxRenderFps = TheFramePacer->getFramesPerSecondLimit();
 	maxRenderFps = RenderFpsPreset::changeFpsValue(maxRenderFps, change);
 
-	TheGameEngine->setFramesPerSecondLimit(maxRenderFps);
+	TheFramePacer->setFramesPerSecondLimit(maxRenderFps);
 	TheWritableGlobalData->m_useFpsLimit = (maxRenderFps != RenderFpsPreset::UncappedFpsValue);
 
 #if defined(GENERALS_ONLINE)
@@ -232,16 +233,16 @@ bool changeLogicTimeScale(FpsValueChange change)
 	if (TheNetwork != NULL)
 		return false;
 
-	const UnsignedInt maxRenderFps = TheGameEngine->getFramesPerSecondLimit();
+	const UnsignedInt maxRenderFps = TheFramePacer->getFramesPerSecondLimit();
 	UnsignedInt maxRenderRemainder = LogicTimeScaleFpsPreset::StepFpsValue;
 	maxRenderRemainder -= maxRenderFps % LogicTimeScaleFpsPreset::StepFpsValue;
 	maxRenderRemainder %= LogicTimeScaleFpsPreset::StepFpsValue;
 
-	UnsignedInt logicTimeScaleFps = TheGameEngine->getLogicTimeScaleFps();
+	UnsignedInt logicTimeScaleFps = TheFramePacer->getLogicTimeScaleFps();
 	// Set the value to the max render fps value plus a bit when time scale is
 	// disabled. This ensures that the time scale does not re-enable with a
 	// 'surprise' value.
-	if (!TheGameEngine->isLogicTimeScaleEnabled())
+	if (!TheFramePacer->isLogicTimeScaleEnabled())
 	{
 		logicTimeScaleFps = maxRenderFps + maxRenderRemainder;
 	}
@@ -252,26 +253,26 @@ bool changeLogicTimeScale(FpsValueChange change)
 	logicTimeScaleFps = LogicTimeScaleFpsPreset::changeFpsValue(logicTimeScaleFps, change);
 
 	// Set value before potentially disabling it.
-	if (TheGameEngine->isLogicTimeScaleEnabled())
+	if (TheFramePacer->isLogicTimeScaleEnabled())
 	{
-		TheGameEngine->setLogicTimeScaleFps(logicTimeScaleFps);
+		TheFramePacer->setLogicTimeScaleFps(logicTimeScaleFps);
 	}
 
-	TheGameEngine->enableLogicTimeScale(logicTimeScaleFps < maxRenderFps);
+	TheFramePacer->enableLogicTimeScale(logicTimeScaleFps < maxRenderFps);
 
 	// Set value after potentially enabling it.
-	if (TheGameEngine->isLogicTimeScaleEnabled())
+	if (TheFramePacer->isLogicTimeScaleEnabled())
 	{
-		TheGameEngine->setLogicTimeScaleFps(logicTimeScaleFps);
+		TheFramePacer->setLogicTimeScaleFps(logicTimeScaleFps);
 	}
 
-	logicTimeScaleFps = TheGameEngine->getLogicTimeScaleFps();
-	const UnsignedInt actualLogicTimeScaleFps = TheGameEngine->getActualLogicTimeScaleFps();
-	const Real actualLogicTimeScaleRatio = TheGameEngine->getActualLogicTimeScaleRatio();
+	logicTimeScaleFps = TheFramePacer->getLogicTimeScaleFps();
+	const UnsignedInt actualLogicTimeScaleFps = TheFramePacer->getActualLogicTimeScaleFps();
+	const Real actualLogicTimeScaleRatio = TheFramePacer->getActualLogicTimeScaleRatio();
 
 	UnicodeString message;
 
-	if (TheGameEngine->isLogicTimeScaleEnabled())
+	if (TheFramePacer->isLogicTimeScaleEnabled())
 	{
 		message = TheGameText->FETCH_OR_SUBSTITUTE_FORMAT("GUI:SetLogicTimeScaleFps", L"Logic Time Scale FPS is %u (actual %u, ratio %.02f)",
 			logicTimeScaleFps, actualLogicTimeScaleFps, actualLogicTimeScaleRatio);
@@ -3042,18 +3043,11 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 		//-----------------------------------------------------------------------------------------
 	case GameMessage::MSG_META_VIEW_LAST_RADAR_EVENT:
 	{
-		//			Player *player = ThePlayerList->getLocalPlayer();
+		// You don't need radar for the space bar. That's silly.
+		Coord3D lastEvent;
 
-					// if the local player has a radar, center on last event (if any)
-					// Excuse me?  You don't need radar for the spacebar.  That's silly.
-		//			if( TheRadar->isRadarForced() || ( TheRadar->isRadarHidden() == false && player->hasRadar() ) )
-		{
-			Coord3D lastEvent;
-
-			if (TheRadar->getLastEventLoc(&lastEvent))
-				TheTacticalView->lookAt(&lastEvent);
-
-		}
+		if (TheRadar->getLastEventLoc(&lastEvent))
+			TheTacticalView->lookAt(&lastEvent);
 
 		disp = DESTROY_MESSAGE;
 		break;
@@ -3409,6 +3403,28 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 	}
 
 	//-----------------------------------------------------------------------------------------
+	case GameMessage::MSG_META_TOGGLE_PLAYER_OBSERVER:
+	{
+		if (Player* lookAtPlayer = TheControlBar->getObserverLookAtPlayer())
+		{
+			if (Player* observedPlayer = TheControlBar->getObservedPlayer())
+			{
+				// Set no observed player.
+				rts::changeObservedPlayer(NULL);
+				// But keep the look-at player.
+				TheControlBar->setObserverLookAtPlayer(lookAtPlayer);
+			}
+			else
+			{
+				// Set observed player to look-at player.
+				rts::changeObservedPlayer(lookAtPlayer);
+			}
+			disp = DESTROY_MESSAGE;
+		}
+		break;
+	}
+
+	//-----------------------------------------------------------------------------------------
 	case GameMessage::MSG_META_TOGGLE_ATTACKMOVE:
 		TheInGameUI->toggleAttackMoveToMode();
 		break;
@@ -3579,15 +3595,8 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 
 				} while (ThePlayerList->getNthPlayer(idx) == ThePlayerList->getNeutralPlayer());
 
-				ThePlayerList->setLocalPlayer(ThePlayerList->getNthPlayer(idx));
-				TheInGameUI->deselectAllDrawables();
-#ifdef DEBUG_FOG_MEMORY
-				TheGhostObjectManager->setLocalPlayerIndex(idx);
-#endif
-				ThePartitionManager->refreshShroudForLocalPlayer();
-				TheControlBar->initSpecialPowershortcutBar(ThePlayerList->getLocalPlayer());
-				TheControlBar->setControlBarSchemeByPlayer(ThePlayerList->getLocalPlayer());
-				TheGameClient->updateFakeDrawables();
+				Player* player = ThePlayerList->getNthPlayer(idx);
+				rts::changeLocalPlayer(player);
 			}
 			disp = DESTROY_MESSAGE;
 		}
@@ -4167,14 +4176,8 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 
 			} while (ThePlayerList->getNthPlayer(idx) == ThePlayerList->getNeutralPlayer());
 
-			ThePlayerList->setLocalPlayer(ThePlayerList->getNthPlayer(idx));
-			TheInGameUI->deselectAllDrawables();
-#ifdef DEBUG_FOG_MEMORY
-			TheGhostObjectManager->setLocalPlayerIndex(idx);
-#endif
-			ThePartitionManager->refreshShroudForLocalPlayer();
-			TheControlBar->initSpecialPowershortcutBar(ThePlayerList->getLocalPlayer());
-			TheControlBar->setControlBarSchemeByPlayer(ThePlayerList->getLocalPlayer());
+			Player* player = ThePlayerList->getNthPlayer(idx);
+			rts::changeLocalPlayer(player);
 		}
 		disp = DESTROY_MESSAGE;
 		break;
@@ -4195,11 +4198,7 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 				Player* pt = ThePlayerList->getNthPlayer(i);
 				if (pt->getSide().compareNoCase("China") == 0)
 				{
-					ThePlayerList->setLocalPlayer(pt);
-					TheInGameUI->deselectAllDrawables();
-					ThePartitionManager->refreshShroudForLocalPlayer();
-					TheControlBar->setControlBarSchemeByPlayer(ThePlayerList->getLocalPlayer());
-
+					rts::changeLocalPlayer(pt);
 					break;
 				}
 			}
@@ -4212,10 +4211,7 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 				Player* pt = ThePlayerList->getNthPlayer(i);
 				if (pt->getSide().compareNoCase("America") == 0)
 				{
-					ThePlayerList->setLocalPlayer(pt);
-					TheInGameUI->deselectAllDrawables();
-					ThePartitionManager->refreshShroudForLocalPlayer();
-					TheControlBar->setControlBarSchemeByPlayer(ThePlayerList->getLocalPlayer());
+					rts::changeLocalPlayer(pt);
 					break;
 				}
 			}
@@ -4229,7 +4225,8 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 	//-----------------------------------------------------------------------------------------
 	case GameMessage::MSG_META_DEMO_LOD_DECREASE:
 	{
-		TheGameClient->adjustLOD(-1);
+		const Int level = clamp(0, WW3D::Get_Texture_Reduction() - 1, 4);
+		TheGameClient->setTextureLOD(level);
 		TheInGameUI->messageNoFormat(TheGameText->FETCH_OR_SUBSTITUTE_FORMAT("GUI:DebugDecreaseLOD", L"Decrease LOD"));
 		disp = DESTROY_MESSAGE;
 		break;
@@ -4239,7 +4236,8 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 	//-----------------------------------------------------------------------------------------
 	case GameMessage::MSG_META_DEMO_LOD_INCREASE:
 	{
-		TheGameClient->adjustLOD(1);
+		const Int level = clamp(0, WW3D::Get_Texture_Reduction() + 1, 4);
+		TheGameClient->setTextureLOD(level);
 		TheInGameUI->messageNoFormat(TheGameText->FETCH_OR_SUBSTITUTE_FORMAT("GUI:DebugIncreaseLOD", L"Increase LOD"));
 		disp = DESTROY_MESSAGE;
 		break;

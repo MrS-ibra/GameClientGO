@@ -29,9 +29,6 @@
 
 #pragma once
 
-#ifndef TUNNEL_TRACKER_H
-#define TUNNEL_TRACKER_H
-
 #include "Common/GameType.h"
 #include "Common/GameMemory.h"
 #include "Common/Snapshot.h"
@@ -62,7 +59,7 @@ public:
 	static void destroyObject( Object *obj, void *userData ); ///< Callback for Iterate Contained system
 	static void healObject( Object *obj, void *frames ); ///< Callback for Iterate Contained system
 
-#if RETAIL_COMPATIBLE_CRC
+#if RETAIL_COMPATIBLE_BUG || RETAIL_COMPATIBLE_CRC
 	void healObjects(Real frames);	///< heal all objects within the tunnel
 #else
 	void healObjects();	///< heal all objects within the tunnel
@@ -95,5 +92,3 @@ private:
 	ObjectID		m_curNemesisID;							///< If we have team(s) guarding a tunnel network system, this is one of the current targets.
 	UnsignedInt m_nemesisTimestamp;					///< We only keep nemesis for a couple of seconds.
 };
-
-#endif

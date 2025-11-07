@@ -26,7 +26,7 @@
 // Implementation of the message stream
 // Author: Michael S. Booth, February 2001
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/MessageStream.h"
 #include "Common/Player.h"
@@ -348,6 +348,7 @@ const char *GameMessage::getCommandTypeAsString(GameMessage::Type t)
 
 	CASE_LABEL(MSG_META_TOGGLE_LOWER_DETAILS)
 	CASE_LABEL(MSG_META_TOGGLE_CONTROL_BAR)
+	CASE_LABEL(MSG_META_TOGGLE_PLAYER_OBSERVER)
 	CASE_LABEL(MSG_META_BEGIN_PATH_BUILD)
 	CASE_LABEL(MSG_META_END_PATH_BUILD)
 	CASE_LABEL(MSG_META_BEGIN_FORCEATTACK)

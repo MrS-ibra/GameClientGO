@@ -23,7 +23,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Compression.h"
 #include "strtok_r.h"
@@ -1788,6 +1788,7 @@ void ConnectionManager::quitGame() {
 
 	disconnectMsg->detach();
 
+#if RTS_GENERALS
 	// if we get here, we hit Quit on the disconnect screen.  Mark everyone as having disconnected from us
 	// so the online stats can give us appropriate feedback.
 	if (TheGameInfo)
@@ -1801,6 +1802,7 @@ void ConnectionManager::quitGame() {
 			}
 		}
 	}
+#endif
 
 	disconnectLocalPlayer();
 }

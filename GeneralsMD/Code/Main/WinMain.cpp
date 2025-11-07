@@ -837,17 +837,11 @@ Int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		initMemoryManager();
 
 		/// @todo remove this force set of working directory later
-		Char buffer[_MAX_PATH];
-		GetModuleFileName(NULL, buffer, sizeof(buffer));
-		Char* pEnd = buffer + strlen(buffer);
-		while (pEnd != buffer)
+		Char buffer[ _MAX_PATH ];
+		GetModuleFileName( NULL, buffer, sizeof( buffer ) );
+		if (Char *pEnd = strrchr(buffer, '\\'))
 		{
-			if (*pEnd == '\\')
-			{
-				*pEnd = 0;
-				break;
-			}
-			pEnd--;
+			*pEnd = 0;
 		}
 		::SetCurrentDirectory(buffer);
 
@@ -879,7 +873,7 @@ Int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 #endif
 		static const char *localizedPathFormat = "Data/%s/";
 		sprintf(filePath,localizedPathFormat, GetRegistryLanguage().str());
-		strcat( filePath, fileName );
+		strlcat(filePath, fileName, ARRAY_SIZE(filePath));
 		FILE *fileImage = fopen(filePath, "r");
 		if (fileImage) {
 			fclose(fileImage);

@@ -99,15 +99,9 @@ LogClass::LogClass(const char *fname)
 {
 	char buffer[ _MAX_PATH ];
 	GetModuleFileName( NULL, buffer, sizeof( buffer ) );
-	char *pEnd = buffer + strlen( buffer );
-	while( pEnd != buffer )
+	if (char *pEnd = strrchr(buffer, '\\'))
 	{
-		if( *pEnd == '\\' )
-		{
-			*pEnd = 0;
-			break;
-		}
-		pEnd--;
+		*pEnd = 0;
 	}
 	// TheSuperHackers @fix Caball009 03/06/2025 Don't use AsciiString here anymore because its memory allocator may not have been initialized yet.
 	const std::string fullPath = std::string(buffer) + "\\" + fname;
@@ -284,9 +278,15 @@ static const char *TerrainDecalTextureName[TERRAIN_DECAL_MAX]=
 	"EXHordeB",//enthusiastic vehicle
 	"EXHordeB_UP", //enthusiastic vehicle with nationalism
 	"EXJunkCrate",//Marks a crate as special
+#if RTS_GENERALS && RETAIL_COMPATIBLE_XFER_SAVE
+	"", //dummy entry for TERRAIN_DECAL_NONE
 	"EXHordeC_UP", //enthusiastic with fanaticism
 	"EXChemSuit", //Marks a unit as having chemical suit on
-	"",	//dummy entry for TERRAIN_DECAL_NONE
+#else
+	"EXHordeC_UP", //enthusiastic with fanaticism
+	"EXChemSuit", //Marks a unit as having chemical suit on
+	"", //dummy entry for TERRAIN_DECAL_NONE
+#endif
 	"" //dummy entry for TERRAIN_DECAL_SHADOW_TEXTURE
 };
 
@@ -3140,8 +3140,6 @@ void W3DModelDraw::setModelState(const ModelConditionInfo* newState)
 
 			// tie in our drawable as the user data pointer in the render object
 			m_renderObject->Set_User_Data(draw->getDrawableInfo());
-
-			setTerrainDecal(draw->getTerrainDecalType());
 
 			//We created a new render object so we need to preserve the visibility state
 			//of the previous render object.

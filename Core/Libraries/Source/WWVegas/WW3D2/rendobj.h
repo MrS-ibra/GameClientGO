@@ -38,16 +38,9 @@
  * Functions:                                                                                  *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-
-#if defined(_MSC_VER)
 #pragma once
-#endif
-
-#ifndef RENDOBJ_H
-#define RENDOBJ_H
 
 #include "always.h"
-#include "refcount.h"
 #include "sphere.h"
 #include "coltype.h"
 #include "aabox.h"
@@ -265,7 +258,7 @@ public:
 	// as small as possible
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	virtual void					Add(SceneClass * scene);
-	virtual void					Remove(void);
+	virtual bool					Remove(void);
 	virtual SceneClass *			Get_Scene(void);
 	virtual SceneClass *			Peek_Scene(void)																{ return Scene; }
 	virtual void					Set_Container(RenderObjClass * con);
@@ -653,7 +646,4 @@ static const char* const TheAnimModeNames[] =
 	NULL
 };
 static_assert(ARRAY_SIZE(TheAnimModeNames) == RenderObjClass::ANIM_MODE_COUNT + 1, "Incorrect array size");
-#endif
-
-
 #endif

@@ -28,7 +28,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // INCLUDES ///////////////////////////////////////////////////////////////////////////////////////
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "gamespy/ghttp/ghttp.h"
 
@@ -38,12 +38,14 @@
 #include "Common/GameEngine.h"
 #include "Common/UserPreferences.h"
 #include "Common/GameLOD.h"
+#include "Common/Recorder.h"
 #include "Common/Registry.h"
 #include "Common/version.h"
 
 #include "GameClient/ClientInstance.h"
 #include "GameClient/GameClient.h"
 #include "GameClient/InGameUI.h"
+#include "GameClient/LookAtXlat.h"
 #include "GameClient/WindowLayout.h"
 #include "GameClient/Gadget.h"
 #include "GameClient/GadgetCheckBox.h"
@@ -73,7 +75,8 @@
 //added by saad
 //used to access a messagebox that does "ok" and "cancel"
 #include "GameClient/MessageBox.h"
-#include "GameClient/LookAtXlat.h"
+
+#include "ww3d.h"
 
 // This is for non-RC builds only!!!
 #define VERBOSE_VERSION L"Release"
@@ -217,14 +220,6 @@ extern void DoResolutionDialog();
 static Bool ignoreSelected = FALSE;
 WindowLayout *OptionsLayout = NULL;
 
-enum Detail CPP_11(: Int)
-{
-	HIGHDETAIL = 0,
-	MEDIUMDETAIL,
-	LOWDETAIL,
-	CUSTOMDETAIL,
-};
-
 
 OptionPreferences::OptionPreferences( void )
 {
@@ -323,6 +318,18 @@ void OptionPreferences::setOnlineIPAddress( UnsignedInt IP )
 	AsciiString tmp;
 	tmp.format("%d.%d.%d.%d", PRINTF_IP_AS_4_INTS(IP));
 	(*this)["GameSpyIPAddress"] = tmp;
+}
+
+Bool OptionPreferences::getArchiveReplaysEnabled() const
+{
+	OptionPreferences::const_iterator it = find("ArchiveReplays");
+	if (it == end())
+		return FALSE;
+
+	if (stricmp(it->second.str(), "yes") == 0) {
+		return TRUE;
+	}
+	return FALSE;
 }
 
 Bool OptionPreferences::getAlternateMouseModeEnabled(void)
@@ -527,6 +534,18 @@ Bool OptionPreferences::useCameraInReplays(void)
 	if (stricmp(it->second.str(), "yes") == 0) {
 		return TRUE;
 	}
+	return FALSE;
+}
+
+Bool OptionPreferences::getPlayerObserverEnabled() const
+{
+	OptionPreferences::const_iterator it = find("PlayerObserverEnabled");
+	if (it == end())
+		return TRUE;
+
+	if (stricmp(it->second.str(), "yes") == 0)
+		return TRUE;
+
 	return FALSE;
 }
 
@@ -968,10 +987,25 @@ Real OptionPreferences::getResolutionFontAdjustment(void)
 	return fontScale;
 }
 
+Bool OptionPreferences::getShowMoneyPerMinute(void) const
+{
+	OptionPreferences::const_iterator it = find("ShowMoneyPerMinute");
+	if (it == end())
+		return TheGlobalData->m_showMoneyPerMinute;
+
+	if (stricmp(it->second.str(), "yes") == 0)
+	{
+		return TRUE;
+	}
+	return FALSE;
+}
+
 static OptionPreferences *pref = NULL;
 
 static void setDefaults( void )
 {
+	constexpr const Bool ModifyDisplaySettings = FALSE;
+
 	//-------------------------------------------------------------------------------------------------
 	// provider type
 //	GadgetCheckBoxSetChecked(checkAudioHardware, FALSE);
@@ -988,27 +1022,13 @@ static void setDefaults( void )
 	// send Delay
 	GadgetCheckBoxSetChecked(checkSendDelay, FALSE);
 
+	if constexpr (ModifyDisplaySettings)
+	{
 	//-------------------------------------------------------------------------------------------------
 	// LOD
-	if ((TheGameLogic->isInGame() == FALSE) || (TheGameLogic->isInShellGame() == TRUE)) {
-		StaticGameLODLevel level=TheGameLODManager->findStaticLODLevel();
-		switch (level)
-		{
-		case STATIC_GAME_LOD_LOW:
-			GadgetComboBoxSetSelectedPos(comboBoxDetail, LOWDETAIL);
-			break;
-		case STATIC_GAME_LOD_MEDIUM:
-			GadgetComboBoxSetSelectedPos(comboBoxDetail, MEDIUMDETAIL);
-			break;
-		case STATIC_GAME_LOD_HIGH:
-			GadgetComboBoxSetSelectedPos(comboBoxDetail, HIGHDETAIL);
-			break;
-		case STATIC_GAME_LOD_CUSTOM:
-			GadgetComboBoxSetSelectedPos(comboBoxDetail, CUSTOMDETAIL);
-			break;
-		default:
-			DEBUG_ASSERTCRASH(FALSE,("Tried to set comboBoxDetail to a value of %d ", TheGameLODManager->getStaticLODLevel()) );
-		};
+	if ((TheGameLogic->isInGame() == FALSE) || (TheGameLogic->isInShellGame() == TRUE))
+	{
+		GadgetComboBoxSetSelectedPos(comboBoxDetail, (Int)TheGameLODManager->getRecommendedStaticLODLevel());
 	}
 
 	//-------------------------------------------------------------------------------------------------
@@ -1020,14 +1040,14 @@ static void setDefaults( void )
 		for( Int i = 0; i < numResolutions; ++i )
 		{	Int xres,yres,bitDepth;
 			TheDisplay->getDisplayModeDescription(i,&xres,&yres,&bitDepth);
-			if (xres == 800 && yres == 600)	//keep track of default mode in case we need it.
+			if (xres == DEFAULT_DISPLAY_WIDTH && yres == DEFAULT_DISPLAY_HEIGHT)	//keep track of default mode in case we need it.
 			{	defaultResIndex=i;
 				break;
 			}
 		}
 		GadgetComboBoxSetSelectedPos( comboBoxResolution, defaultResIndex );	//should be 800x600 (our lowest supported mode)
 	}
-
+	}
 
 	//-------------------------------------------------------------------------------------------------
 	// Mouse Mode
@@ -1064,12 +1084,13 @@ static void setDefaults( void )
  	GadgetSliderGetMinMax(sliderGamma,&valMin, &valMax);
  	GadgetSliderSetPosition(sliderGamma, ((valMax - valMin) / 2 + valMin));
 
-	//-------------------------------------------------------------------------------------------------
- 	// Texture resolution slider
-	//
-
+	if constexpr (ModifyDisplaySettings)
+	{
 	if ((TheGameLogic->isInGame() == FALSE) || (TheGameLogic->isInShellGame() == TRUE))
 	{
+		//-------------------------------------------------------------------------------------------------
+		// Texture resolution slider
+		//
 		Int	txtFact=TheGameLODManager->getRecommendedTextureReduction();
 
 		GadgetSliderSetPosition( sliderTextureResolution, 2-txtFact);
@@ -1134,9 +1155,10 @@ static void setDefaults( void )
 		//
 		GadgetCheckBoxSetChecked( checkProps, TheGlobalData->m_useTrees);
 	}
+	}
 }
 
-static void saveOptions(void)
+static void saveOptions( void )
 {
 	Int index;
 	Int val;
@@ -1154,17 +1176,17 @@ static void saveOptions(void)
 	//
 	//-------------------------------------------------------------------------------------------------
 	// language filter
-	if (GadgetCheckBoxIsChecked(checkLanguageFilter))
+	if( GadgetCheckBoxIsChecked( checkLanguageFilter ) )
 	{
-		//GadgetCheckBoxSetChecked( checkLanguageFilter, true);
-		TheWritableGlobalData->m_languageFilterPref = true;
-		(*pref)["LanguageFilter"] = "true";
+			//GadgetCheckBoxSetChecked( checkLanguageFilter, true);
+			TheWritableGlobalData->m_languageFilterPref = true;
+			(*pref)["LanguageFilter"] = "true";
 	}
 	else
 	{
-		//GadgetCheckBoxSetChecked( checkLanguageFilter, false);
-		TheWritableGlobalData->m_languageFilterPref = false;
-		(*pref)["LanguageFilter"] = "false";
+			//GadgetCheckBoxSetChecked( checkLanguageFilter, false);
+			TheWritableGlobalData->m_languageFilterPref = false;
+			(*pref)["LanguageFilter"] = "false";
 	}
 
 	//-------------------------------------------------------------------------------------------------
@@ -1174,80 +1196,75 @@ static void saveOptions(void)
 		TheWritableGlobalData->m_firewallSendDelay = GadgetCheckBoxIsChecked(checkSendDelay);
 		if (TheGlobalData->m_firewallSendDelay) {
 			(*pref)["SendDelay"] = AsciiString("yes");
-		}
-		else {
+		} else {
 			(*pref)["SendDelay"] = AsciiString("no");
 		}
 	}
 
 	//-------------------------------------------------------------------------------------------------
 	// Custom game detail settings.
-	GadgetComboBoxGetSelectedPos(comboBoxDetail, &index);
-	if (index == CUSTOMDETAIL)
+	GadgetComboBoxGetSelectedPos( comboBoxDetail, &index );
+	if (index == STATIC_GAME_LOD_CUSTOM)
 	{
-		//-------------------------------------------------------------------------------------------------
-		// Texture resolution slider
+ 		//-------------------------------------------------------------------------------------------------
+ 		// Texture resolution slider
 		{
-			AsciiString prefString;
+		 		val = 2 - GadgetSliderGetPosition(sliderTextureResolution);
 
-			val = GadgetSliderGetPosition(sliderTextureResolution);
-			val = 2 - val;
+				AsciiString prefString;
+				prefString.format("%d",val);
+				(*pref)["TextureReduction"] = prefString;
 
-			prefString.format("%d", val);
-			(*pref)["TextureReduction"] = prefString;
-
-			if (TheGlobalData->m_textureReductionFactor != val)
-			{
-				TheGameClient->adjustLOD(val - TheGlobalData->m_textureReductionFactor);	//apply the new setting
-			}
+				TheWritableGlobalData->m_textureReductionFactor = val;
+				TheGameClient->setTextureLOD(val);
 		}
 
-		TheWritableGlobalData->m_useShadowVolumes = GadgetCheckBoxIsChecked(check3DShadows);
+		TheWritableGlobalData->m_useShadowVolumes = GadgetCheckBoxIsChecked( check3DShadows );
 		(*pref)["UseShadowVolumes"] = TheWritableGlobalData->m_useShadowVolumes ? AsciiString("yes") : AsciiString("no");
 
-		TheWritableGlobalData->m_useShadowDecals = GadgetCheckBoxIsChecked(check2DShadows);
+		TheWritableGlobalData->m_useShadowDecals = GadgetCheckBoxIsChecked( check2DShadows );
 		(*pref)["UseShadowDecals"] = TheWritableGlobalData->m_useShadowDecals ? AsciiString("yes") : AsciiString("no");
 
-		TheWritableGlobalData->m_useCloudMap = GadgetCheckBoxIsChecked(checkCloudShadows);
+		TheWritableGlobalData->m_useCloudMap = GadgetCheckBoxIsChecked( checkCloudShadows );
 		(*pref)["UseCloudMap"] = TheGlobalData->m_useCloudMap ? AsciiString("yes") : AsciiString("no");
 
-		TheWritableGlobalData->m_useLightMap = GadgetCheckBoxIsChecked(checkGroundLighting);
+		TheWritableGlobalData->m_useLightMap = GadgetCheckBoxIsChecked( checkGroundLighting );
 		(*pref)["UseLightMap"] = TheGlobalData->m_useLightMap ? AsciiString("yes") : AsciiString("no");
 
-		TheWritableGlobalData->m_showSoftWaterEdge = GadgetCheckBoxIsChecked(checkSmoothWater);
+		TheWritableGlobalData->m_showSoftWaterEdge = GadgetCheckBoxIsChecked( checkSmoothWater );
 		(*pref)["ShowSoftWaterEdge"] = TheGlobalData->m_showSoftWaterEdge ? AsciiString("yes") : AsciiString("no");
 
-		TheWritableGlobalData->m_useDrawModuleLOD = !GadgetCheckBoxIsChecked(checkExtraAnimations);
+		TheWritableGlobalData->m_useDrawModuleLOD = !GadgetCheckBoxIsChecked( checkExtraAnimations );
 		TheWritableGlobalData->m_useTreeSway = !TheWritableGlobalData->m_useDrawModuleLOD;	//borrow same setting.
 		(*pref)["ExtraAnimations"] = TheGlobalData->m_useDrawModuleLOD ? AsciiString("no") : AsciiString("yes");
 
-		TheWritableGlobalData->m_enableDynamicLOD = !GadgetCheckBoxIsChecked(checkNoDynamicLod);
+		TheWritableGlobalData->m_enableDynamicLOD = !GadgetCheckBoxIsChecked( checkNoDynamicLod );
 		(*pref)["DynamicLOD"] = TheGlobalData->m_enableDynamicLOD ? AsciiString("yes") : AsciiString("no");
 
-		TheWritableGlobalData->m_useHeatEffects = GadgetCheckBoxIsChecked(checkHeatEffects);
+		TheWritableGlobalData->m_useHeatEffects = GadgetCheckBoxIsChecked( checkHeatEffects );
 		(*pref)["HeatEffects"] = TheGlobalData->m_useHeatEffects ? AsciiString("yes") : AsciiString("no");
 
 		// Never write this out
 		//TheWritableGlobalData->m_useFpsLimit = !GadgetCheckBoxIsChecked( checkUnlockFps );
 		//(*pref)["FPSLimit"] = TheGlobalData->m_useFpsLimit ? AsciiString("yes") : AsciiString("no");
 
-		TheWritableGlobalData->m_enableBehindBuildingMarkers = GadgetCheckBoxIsChecked(checkBuildingOcclusion);
+		TheWritableGlobalData->m_enableBehindBuildingMarkers = GadgetCheckBoxIsChecked( checkBuildingOcclusion );
 		(*pref)["BuildingOcclusion"] = TheWritableGlobalData->m_enableBehindBuildingMarkers ? AsciiString("yes") : AsciiString("no");
 
-		TheWritableGlobalData->m_useTrees = GadgetCheckBoxIsChecked(checkProps);
+		TheWritableGlobalData->m_useTrees = GadgetCheckBoxIsChecked( checkProps);
 		(*pref)["ShowTrees"] = TheWritableGlobalData->m_useTrees ? AsciiString("yes") : AsciiString("no");
 
-		//-------------------------------------------------------------------------------------------------
+ 		//-------------------------------------------------------------------------------------------------
 		// Particle Cap slider
 		{
-			AsciiString prefString;
+				AsciiString prefString;
 
-			val = GadgetSliderGetPosition(sliderParticleCap);
+		 		val = GadgetSliderGetPosition(sliderParticleCap);
 
-			prefString.format("%d", val);
-			(*pref)["MaxParticleCount"] = prefString;
+				prefString.format("%d",val);
+				(*pref)["MaxParticleCount"] = prefString;
 
-			TheWritableGlobalData->m_maxParticleCount = val;
+				TheWritableGlobalData->m_maxParticleCount = val;
 		}
 	}
 
@@ -1255,27 +1272,8 @@ static void saveOptions(void)
 	// LOD
 	if (comboBoxDetail && comboBoxDetail->winGetEnabled())
 	{
-		Bool levelChanged = FALSE;
-		GadgetComboBoxGetSelectedPos(comboBoxDetail, &index);
-
-		//The levels stored by the LOD Manager are inverted compared to GUI so find correct one:
-		switch (index) {
-		case HIGHDETAIL:
-			levelChanged = TheGameLODManager->setStaticLODLevel(STATIC_GAME_LOD_HIGH);
-			break;
-		case MEDIUMDETAIL:
-			levelChanged = TheGameLODManager->setStaticLODLevel(STATIC_GAME_LOD_MEDIUM);
-			break;
-		case LOWDETAIL:
-			levelChanged = TheGameLODManager->setStaticLODLevel(STATIC_GAME_LOD_LOW);
-			break;
-		case CUSTOMDETAIL:
-			levelChanged = TheGameLODManager->setStaticLODLevel(STATIC_GAME_LOD_CUSTOM);
-			break;
-		default:
-			DEBUG_ASSERTCRASH(FALSE, ("LOD passed in was %d, %d is not a supported LOD", index, index));
-			break;
-		}
+		GadgetComboBoxGetSelectedPos( comboBoxDetail, &index );
+		const Bool levelChanged = TheGameLODManager->setStaticLODLevel((StaticGameLODLevel)index);
 
 		if (levelChanged)
 			(*pref)["StaticGameLOD"] = TheGameLODManager->getStaticGameLODLevelName(TheGameLODManager->getStaticLODLevel());
@@ -1287,7 +1285,7 @@ static void saveOptions(void)
 	{
 		UnsignedInt ip;
 		GadgetComboBoxGetSelectedPos(comboBoxLANIP, &index);
-		if (index >= 0 && TheGlobalData)
+		if (index>=0 && TheGlobalData)
 		{
 			ip = (UnsignedInt)GadgetComboBoxGetItemData(comboBoxLANIP, index);
 			TheWritableGlobalData->m_defaultIP = ip;
@@ -1299,7 +1297,7 @@ static void saveOptions(void)
 	{
 		UnsignedInt ip;
 		GadgetComboBoxGetSelectedPos(comboBoxOnlineIP, &index);
-		if (index >= 0)
+		if (index>=0)
 		{
 			ip = (UnsignedInt)GadgetComboBoxGetItemData(comboBoxOnlineIP, index);
 			pref->setOnlineIPAddress(ip);
@@ -1308,7 +1306,7 @@ static void saveOptions(void)
 
 	//-------------------------------------------------------------------------------------------------
 	// HTTP Proxy
-	GameWindow* textEntryHTTPProxy = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("OptionsMenu.wnd:TextEntryHTTPProxy"));
+	GameWindow *textEntryHTTPProxy = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("OptionsMenu.wnd:TextEntryHTTPProxy"));
 	if (textEntryHTTPProxy && textEntryHTTPProxy->winGetEnabled())
 	{
 		UnicodeString uStr = GadgetTextEntryGetText(textEntryHTTPProxy);
@@ -1320,7 +1318,7 @@ static void saveOptions(void)
 
 	//-------------------------------------------------------------------------------------------------
 	// Firewall Port Override
-	GameWindow* textEntryFirewallPortOverride = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("OptionsMenu.wnd:TextEntryFirewallPortOverride"));
+	GameWindow *textEntryFirewallPortOverride = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("OptionsMenu.wnd:TextEntryFirewallPortOverride"));
 	if (textEntryFirewallPortOverride && textEntryFirewallPortOverride->winGetEnabled())
 	{
 		UnicodeString uStr = GadgetTextEntryGetText(textEntryFirewallPortOverride);
@@ -1330,23 +1328,22 @@ static void saveOptions(void)
 		if (override < 0 || override > 65535)
 			override = 0;
 		if (TheGlobalData->m_firewallPortOverride != override)
-		{
-			TheWritableGlobalData->m_firewallPortOverride = override;
-			aStr.format("%d", override);
+		{	TheWritableGlobalData->m_firewallPortOverride = override;
+		    aStr.format("%d", override);
 			(*pref)["FirewallPortOverride"] = aStr;
 		}
 	}
 
 	//-------------------------------------------------------------------------------------------------
 	// antialiasing
-	GadgetComboBoxGetSelectedPos(comboBoxAntiAliasing, &index);
-	if (index >= 0 && TheGlobalData->m_antiAliasBoxValue != index)
-	{
-		TheWritableGlobalData->m_antiAliasBoxValue = index;
-		AsciiString prefString;
+  GadgetComboBoxGetSelectedPos(comboBoxAntiAliasing, &index);
+  if( index >= 0 && TheGlobalData->m_antiAliasBoxValue != index )
+  {
+    TheWritableGlobalData->m_antiAliasBoxValue = index;
+    AsciiString prefString;
 		prefString.format("%d", index);
 		(*pref)["AntiAliasing"] = prefString;
-	}
+  }
 
 
 	//-------------------------------------------------------------------------------------------------
@@ -1355,9 +1352,9 @@ static void saveOptions(void)
 	(*pref)["UseAlternateMouse"] = TheWritableGlobalData->m_useAlternateMouse ? AsciiString("yes") : AsciiString("no");
 
 	TheWritableGlobalData->m_clientRetaliationModeEnabled = GadgetCheckBoxIsChecked(checkRetaliation);
-	(*pref)["Retaliation"] = TheWritableGlobalData->m_clientRetaliationModeEnabled ? AsciiString("yes") : AsciiString("no");
+	(*pref)["Retaliation"] = TheWritableGlobalData->m_clientRetaliationModeEnabled? AsciiString("yes") : AsciiString("no");
 
-	TheWritableGlobalData->m_doubleClickAttackMove = GadgetCheckBoxIsChecked(checkDoubleClickAttackMove);
+	TheWritableGlobalData->m_doubleClickAttackMove = GadgetCheckBoxIsChecked( checkDoubleClickAttackMove );
 	(*pref)["UseDoubleClickAttackMove"] = TheWritableGlobalData->m_doubleClickAttackMove ? AsciiString("yes") : AsciiString("no");
 
 	// TheSuperHackers @todo Add combo box ?
@@ -1378,12 +1375,26 @@ static void saveOptions(void)
 		TheLookAtTranslator->setScreenEdgeScrollMode(mode);
 	}
 
+	// TheSuperHackers @todo Add checkbox ?
+	{
+		Bool enabled = pref->getPlayerObserverEnabled();
+		(*pref)["PlayerObserverEnabled"] = enabled ? "yes" : "no";
+		TheWritableGlobalData->m_enablePlayerObserver = enabled;
+	}
+
+	// TheSuperHackers @todo Add checkbox ?
+	{
+		Bool enabled = pref->getArchiveReplaysEnabled();
+		(*pref)["ArchiveReplays"] = enabled ? "yes" : "no";
+		TheRecorder->setArchiveEnabled(enabled);
+	}
+
 	//-------------------------------------------------------------------------------------------------
 	// scroll speed val
 	val = GadgetSliderGetPosition(sliderScrollSpeed);
-	if (val > 0)
+	if(val > 0)
 	{
-		TheWritableGlobalData->m_keyboardScrollFactor = val / 100.0f;
+		TheWritableGlobalData->m_keyboardScrollFactor = val/100.0f;
 		DEBUG_LOG(("Scroll Spped val %d, keyboard scroll factor %f", val, TheGlobalData->m_keyboardScrollFactor));
 		AsciiString prefString;
 		prefString.format("%d", val);
@@ -1393,213 +1404,232 @@ static void saveOptions(void)
 	//-------------------------------------------------------------------------------------------------
 	// draw scroll anchor
 	{
-		if (TheInGameUI->getDrawRMBScrollAnchor())
-			(*pref)["DrawScrollAnchor"] = "yes";
+		if( TheInGameUI->getDrawRMBScrollAnchor() )
+				(*pref)["DrawScrollAnchor"] = "yes";
 		else
-			(*pref)["DrawScrollAnchor"] = "no";
-		// slider music volume
-		val = GadgetSliderGetPosition(sliderMusicVolume);
-		if (val != -1)
-		{
-			AsciiString prefString;
-			prefString.format("%d", val);
-			(*pref)["MusicVolume"] = prefString;
-			TheAudio->setVolume(val / 100.0f, (AudioAffect)(AudioAffect_Music | AudioAffect_SystemSetting));
-		}
-
-		//-------------------------------------------------------------------------------------------------
-		// slider SFX volume
-		val = GadgetSliderGetPosition(sliderSFXVolume);
-		if (val != -1)
-		{
-			//Both 2D and 3D sound effects are sharing the same slider. However, there is a
-			//relative slider that gets applied to one of these values to lower that sound volume.
-			Real sound2DVolume = val / 100.0f;
-			Real sound3DVolume = val / 100.0f;
-			Real relative2DVolume = TheAudio->getAudioSettings()->m_relative2DVolume;
-			relative2DVolume = MIN(1.0f, MAX(-1.0, relative2DVolume));
-			if (relative2DVolume < 0.0f)
-			{
-				//Lower the 2D volume
-				sound2DVolume *= 1.0f + relative2DVolume;
-			}
-			else
-			{
-				//Lower the 3D volume
-				sound3DVolume *= 1.0f - relative2DVolume;
-			}
-
-			//Apply the sound volumes in the audio system now.
-			TheAudio->setVolume(sound2DVolume, (AudioAffect)(AudioAffect_Sound | AudioAffect_SystemSetting));
-			TheAudio->setVolume(sound3DVolume, (AudioAffect)(AudioAffect_Sound3D | AudioAffect_SystemSetting));
-
-			//Save the settings in the options.ini.
-			AsciiString prefString;
-			prefString.format("%d", REAL_TO_INT(sound2DVolume * 100.0f));
-			(*pref)["SFXVolume"] = prefString;
-			prefString.format("%d", REAL_TO_INT(sound3DVolume * 100.0f));
-			(*pref)["SFX3DVolume"] = prefString;
-		}
-
-		//-------------------------------------------------------------------------------------------------
-		// slider Voice volume
-		val = GadgetSliderGetPosition(sliderVoiceVolume);
-		if (val != -1)
-		{
-			AsciiString prefString;
-			prefString.format("%d", val);
-			(*pref)["VoiceVolume"] = prefString;
-			TheAudio->setVolume(val / 100.0f, (AudioAffect)(AudioAffect_Speech | AudioAffect_SystemSetting));
-		}
-
-		//-------------------------------------------------------------------------------------------------
-		// Money tick volume
-		// TheSuperHackers @todo Add options slider ?
-		{
-			val = pref->getMoneyTransactionVolume();
-			AsciiString prefString;
-			prefString.format("%d", val);
-			(*pref)["MoneyTransactionVolume"] = prefString;
-			TheAudio->friend_getAudioSettings()->m_preferredMoneyTransactionVolume = val / 100.0f;
-		}
-
-		//-------------------------------------------------------------------------------------------------
-		// slider Gamma
-		val = GadgetSliderGetPosition(sliderGamma);
-		if (val != -1)
-		{
-			Real gammaval = 1.0f;
-			//generate a value between 0.6 and 2.0.
-			if (val < 50)
-			{	//darker gamma
-				if (val <= 0)
-					gammaval = 0.6f;
-				else
-					gammaval = 1.0f - (0.4f) * (Real)(50 - val) / 50.0f;
-			}
-			else
-				if (val > 50)
-					gammaval = 1.0f + (1.0f) * (Real)(val - 50) / 50.0f;
-
-			AsciiString prefString;
-			prefString.format("%d", val);
-			(*pref)["Gamma"] = prefString;
-
-			if (TheGlobalData->m_displayGamma != gammaval)
-			{
-				TheWritableGlobalData->m_displayGamma = gammaval;
-				TheDisplay->setGamma(TheGlobalData->m_displayGamma, 0.0f, 1.0f, FALSE);
-			}
-		}
-
-		//-------------------------------------------------------------------------------------------------
-		// Set Network Latency Font Size
-		val = pref->getNetworkLatencyFontSize();
-		if (val >= 0)
-		{
-			AsciiString prefString;
-			prefString.format("%d", val);
-			(*pref)["NetworkLatencyFontSize"] = prefString;
-			TheInGameUI->refreshNetworkLatencyResources();
-		}
-
-		//-------------------------------------------------------------------------------------------------
-		// Set Render FPS Font Size
-		val = pref->getRenderFpsFontSize();
-		if (val >= 0)
-		{
-			AsciiString prefString;
-			prefString.format("%d", val);
-			(*pref)["RenderFpsFontSize"] = prefString;
-			TheInGameUI->refreshRenderFpsResources();
-		}
-
-		//-------------------------------------------------------------------------------------------------
-		// Set System Time Font Size
-		val = pref->getSystemTimeFontSize(); // TheSuperHackers @todo replace with options input when applicable
-		if (val >= 0)
-		{
-			AsciiString prefString;
-			prefString.format("%d", val);
-			(*pref)["SystemTimeFontSize"] = prefString;
-			TheInGameUI->refreshSystemTimeResources();
-		}
-
-		//-------------------------------------------------------------------------------------------------
-		// Set Game Time Font Size
-		val = pref->getGameTimeFontSize(); // TheSuperHackers @todo replace with options input when applicable
-		if (val >= 0)
-		{
-			AsciiString prefString;
-			prefString.format("%d", val);
-			(*pref)["GameTimeFontSize"] = prefString;
-			TheInGameUI->refreshGameTimeResources();
-		}
-
-		//-------------------------------------------------------------------------------------------------
-		// Set User Font Scaling Percentage
-		val = pref->getResolutionFontAdjustment() * 100.0f; // TheSuperHackers @todo replace with options input when applicable
-		if (val >= 0 || val == -100)
-		{
-			AsciiString prefString;
-			prefString.format("%d", REAL_TO_INT(val));
-			(*pref)["ResolutionFontAdjustment"] = prefString;
-			TheGlobalLanguageData->m_userResolutionFontSizeAdjustment = (Real)val / 100.0f;
-		}
-
-		//-------------------------------------------------------------------------------------------------
-		// Resolution
-		//
-		// TheSuperHackers @bugfix xezon 12/06/2025 Now performs the resolution change at the very end of
-		// processing all the options. This is necessary, because recreating the Shell will destroy the
-		// Options Menu and therefore prevent any further ui gadget interactions afterwards.
-
-		GadgetComboBoxGetSelectedPos(comboBoxResolution, &index);
-		Int xres, yres, bitDepth;
-
-		oldDispSettings.xRes = TheDisplay->getWidth();
-		oldDispSettings.yRes = TheDisplay->getHeight();
-		oldDispSettings.bitDepth = TheDisplay->getBitDepth();
-		oldDispSettings.windowed = TheDisplay->getWindowed();
-
-		if (comboBoxResolution && comboBoxResolution->winGetEnabled() && index < TheDisplay->getDisplayModeCount() && index >= 0)
-		{
-			TheDisplay->getDisplayModeDescription(index, &xres, &yres, &bitDepth);
-			if (TheGlobalData->m_xResolution != xres || TheGlobalData->m_yResolution != yres)
-			{
-				if (TheDisplay->setDisplayMode(xres, yres, bitDepth, TheDisplay->getWindowed()))
-				{
-					dispChanged = TRUE;
-					TheWritableGlobalData->m_xResolution = xres;
-					TheWritableGlobalData->m_yResolution = yres;
-
-					TheHeaderTemplateManager->headerNotifyResolutionChange();
-					TheMouse->mouseNotifyResolutionChange();
-
-					//Save new settings for a dialog box confirmation after options are accepted
-					newDispSettings.xRes = xres;
-					newDispSettings.yRes = yres;
-					newDispSettings.bitDepth = bitDepth;
-					newDispSettings.windowed = TheDisplay->getWindowed();
-
-					AsciiString prefString;
-					prefString.format("%d %d", xres, yres);
-					(*pref)["Resolution"] = prefString;
-
-					TheShell->recreateWindowLayouts();
-
-					TheInGameUI->recreateControlBar();
-					TheInGameUI->refreshCustomUiResources();
-				}
-			}
-		}
-
-		// MUST NEVER ADD ANOTHER OPTION HERE AT THE END !
+				(*pref)["DrawScrollAnchor"] = "no";
 	}
+
+	//-------------------------------------------------------------------------------------------------
+	// move scroll anchor
+	{
+		if( TheInGameUI->getMoveRMBScrollAnchor() )
+				(*pref)["MoveScrollAnchor"] = "yes";
+		else
+				(*pref)["MoveScrollAnchor"] = "no";
+	}
+
+	//-------------------------------------------------------------------------------------------------
+	// slider music volume
+	val = GadgetSliderGetPosition(sliderMusicVolume);
+	if(val != -1)
+	{
+    AsciiString prefString;
+    prefString.format("%d", val);
+    (*pref)["MusicVolume"] = prefString;
+    TheAudio->setVolume(val / 100.0f, (AudioAffect) (AudioAffect_Music | AudioAffect_SystemSetting));
+	}
+
+	//-------------------------------------------------------------------------------------------------
+	// slider SFX volume
+	val = GadgetSliderGetPosition(sliderSFXVolume);
+	if(val != -1)
+	{
+		//Both 2D and 3D sound effects are sharing the same slider. However, there is a
+		//relative slider that gets applied to one of these values to lower that sound volume.
+		Real sound2DVolume = val / 100.0f;
+		Real sound3DVolume = val / 100.0f;
+		Real relative2DVolume = TheAudio->getAudioSettings()->m_relative2DVolume;
+		relative2DVolume = MIN( 1.0f, MAX( -1.0, relative2DVolume ) );
+		if( relative2DVolume < 0.0f )
+		{
+			//Lower the 2D volume
+			sound2DVolume *= 1.0f + relative2DVolume;
+		}
+		else
+		{
+			//Lower the 3D volume
+			sound3DVolume *= 1.0f - relative2DVolume;
+		}
+
+		//Apply the sound volumes in the audio system now.
+    TheAudio->setVolume( sound2DVolume, (AudioAffect) (AudioAffect_Sound | AudioAffect_SystemSetting) );
+		TheAudio->setVolume( sound3DVolume, (AudioAffect) (AudioAffect_Sound3D | AudioAffect_SystemSetting) );
+
+		//Save the settings in the options.ini.
+    AsciiString prefString;
+    prefString.format("%d", REAL_TO_INT( sound2DVolume * 100.0f ) );
+    (*pref)["SFXVolume"] = prefString;
+    prefString.format("%d", REAL_TO_INT( sound3DVolume * 100.0f ) );
+		(*pref)["SFX3DVolume"] = prefString;
+	}
+
+	//-------------------------------------------------------------------------------------------------
+	// slider Voice volume
+	val = GadgetSliderGetPosition(sliderVoiceVolume);
+	if(val != -1)
+	{
+    AsciiString prefString;
+    prefString.format("%d", val);
+    (*pref)["VoiceVolume"] = prefString;
+    TheAudio->setVolume(val / 100.0f, (AudioAffect) (AudioAffect_Speech | AudioAffect_SystemSetting));
+	}
+
+	//-------------------------------------------------------------------------------------------------
+	// Money tick volume
+	// TheSuperHackers @todo Add options slider ?
+	{
+		val = pref->getMoneyTransactionVolume();
+		AsciiString prefString;
+		prefString.format("%d", val);
+		(*pref)["MoneyTransactionVolume"] = prefString;
+		TheAudio->friend_getAudioSettings()->m_preferredMoneyTransactionVolume = val / 100.0f;
+	}
+
+ 	//-------------------------------------------------------------------------------------------------
+ 	// slider Gamma
+ 	val = GadgetSliderGetPosition(sliderGamma);
+ 	if(val != -1)
+ 	{
+		Real gammaval=1.0f;
+		//generate a value between 0.6 and 2.0.
+		if (val < 50)
+		{	//darker gamma
+			if (val <= 0)
+				gammaval = 0.6f;
+			else
+				gammaval=1.0f-(0.4f) * (Real)(50-val)/50.0f;
+		}
+		else
+		if (val > 50)
+			gammaval=1.0f+(1.0f) * (Real)(val-50)/50.0f;
+
+ 		AsciiString prefString;
+ 		prefString.format("%d", val);
+ 		(*pref)["Gamma"] = prefString;
+
+		if (TheGlobalData->m_displayGamma != gammaval)
+		{	TheWritableGlobalData->m_displayGamma = gammaval;
+			TheDisplay->setGamma(TheGlobalData->m_displayGamma,0.0f, 1.0f, FALSE);
+		}
+ 	}
+
+	//-------------------------------------------------------------------------------------------------
+	// Set Network Latency Font Size
+	val = pref->getNetworkLatencyFontSize();
+	if (val >= 0)
+	{
+		AsciiString prefString;
+		prefString.format("%d", val);
+		(*pref)["NetworkLatencyFontSize"] = prefString;
+		TheInGameUI->refreshNetworkLatencyResources();
+	}
+
+	//-------------------------------------------------------------------------------------------------
+	// Set Render FPS Font Size
+	val = pref->getRenderFpsFontSize();
+	if (val >= 0)
+	{
+		AsciiString prefString;
+		prefString.format("%d", val);
+		(*pref)["RenderFpsFontSize"] = prefString;
+		TheInGameUI->refreshRenderFpsResources();
+	}
+
+	//-------------------------------------------------------------------------------------------------
+	// Set System Time Font Size
+	val = pref->getSystemTimeFontSize(); // TheSuperHackers @todo replace with options input when applicable
+	if (val >= 0)
+	{
+		AsciiString prefString;
+		prefString.format("%d", val);
+		(*pref)["SystemTimeFontSize"] = prefString;
+		TheInGameUI->refreshSystemTimeResources();
+	}
+
+	//-------------------------------------------------------------------------------------------------
+	// Set Game Time Font Size
+	val = pref->getGameTimeFontSize(); // TheSuperHackers @todo replace with options input when applicable
+	if (val >= 0)
+	{
+		AsciiString prefString;
+		prefString.format("%d", val);
+		(*pref)["GameTimeFontSize"] = prefString;
+		TheInGameUI->refreshGameTimeResources();
+	}
+
+	//-------------------------------------------------------------------------------------------------
+	// Set User Font Scaling Percentage
+	val = pref->getResolutionFontAdjustment() * 100.0f; // TheSuperHackers @todo replace with options input when applicable
+	if (val >= 0 || val == -100)
+	{
+		AsciiString prefString;
+		prefString.format("%d", REAL_TO_INT( val ) );
+		(*pref)["ResolutionFontAdjustment"] = prefString;
+		TheGlobalLanguageData->m_userResolutionFontSizeAdjustment = (Real)val / 100.0f;
+	}
+
+	//-------------------------------------------------------------------------------------------------
+	// Set Money Per Minute
+	{
+		Bool show = pref->getShowMoneyPerMinute();
+		AsciiString prefString;
+		prefString = show ? "yes" : "no";
+		(*pref)["ShowMoneyPerMinute"] = prefString;
+		TheWritableGlobalData->m_showMoneyPerMinute = show;
+	}
+
+	//-------------------------------------------------------------------------------------------------
+	// Resolution
+	//
+	// TheSuperHackers @bugfix xezon 12/06/2025 Now performs the resolution change at the very end of
+	// processing all the options. This is necessary, because recreating the Shell will destroy the
+	// Options Menu and therefore prevent any further ui gadget interactions afterwards.
+
+	GadgetComboBoxGetSelectedPos( comboBoxResolution, &index );
+	Int xres, yres, bitDepth;
+
+	oldDispSettings.xRes = TheDisplay->getWidth();
+	oldDispSettings.yRes = TheDisplay->getHeight();
+	oldDispSettings.bitDepth = TheDisplay->getBitDepth();
+	oldDispSettings.windowed = TheDisplay->getWindowed();
+
+	if (comboBoxResolution && comboBoxResolution->winGetEnabled() && index < TheDisplay->getDisplayModeCount() && index >= 0)
+	{
+		TheDisplay->getDisplayModeDescription(index,&xres,&yres,&bitDepth);
+		if (TheGlobalData->m_xResolution != xres || TheGlobalData->m_yResolution != yres)
+		{
+			if (TheDisplay->setDisplayMode(xres,yres,bitDepth,TheDisplay->getWindowed()))
+			{
+				dispChanged = TRUE;
+				TheWritableGlobalData->m_xResolution = xres;
+				TheWritableGlobalData->m_yResolution = yres;
+
+				TheHeaderTemplateManager->headerNotifyResolutionChange();
+				TheMouse->mouseNotifyResolutionChange();
+
+				//Save new settings for a dialog box confirmation after options are accepted
+				newDispSettings.xRes = xres;
+				newDispSettings.yRes = yres;
+				newDispSettings.bitDepth = bitDepth;
+				newDispSettings.windowed = TheDisplay->getWindowed();
+
+				AsciiString prefString;
+				prefString.format("%d %d", xres, yres );
+				(*pref)["Resolution"] = prefString;
+
+				TheShell->recreateWindowLayouts();
+
+				TheInGameUI->recreateControlBar();
+				TheInGameUI->refreshCustomUiResources();
+			}
+		}
+	}
+
+	// MUST NEVER ADD ANOTHER OPTION HERE AT THE END !
 }
 
-static void DestroyOptionsLayout()
-{
+static void DestroyOptionsLayout() {
 
 	SignalUIInteraction(SHELL_SCRIPT_HOOK_OPTIONS_CLOSED);
 
@@ -1620,23 +1650,7 @@ static void acceptAdvancedOptions()
 static void cancelAdvancedOptions()
 {
 	//restore the detail selection back to initial state
-	switch (TheGameLODManager->getStaticLODLevel())
-	{
-	case STATIC_GAME_LOD_LOW:
-		GadgetComboBoxSetSelectedPos(comboBoxDetail, LOWDETAIL);
-		break;
-	case STATIC_GAME_LOD_MEDIUM:
-		GadgetComboBoxSetSelectedPos(comboBoxDetail, MEDIUMDETAIL);
-		break;
-	case STATIC_GAME_LOD_HIGH:
-		GadgetComboBoxSetSelectedPos(comboBoxDetail, HIGHDETAIL);
-		break;
-	case STATIC_GAME_LOD_CUSTOM:
-		GadgetComboBoxSetSelectedPos(comboBoxDetail, CUSTOMDETAIL);
-		break;
-	default:
-		DEBUG_ASSERTCRASH(FALSE,("Tried to set comboBoxDetail to a value of %d ", TheGameLODManager->getStaticLODLevel()) );
-	};
+	GadgetComboBoxSetSelectedPos(comboBoxDetail, (Int)TheGameLODManager->getStaticLODLevel());
 
 	WinAdvancedDisplay->winHide(TRUE);
 }
@@ -1910,12 +1924,15 @@ void OptionsMenuInit( WindowLayout *layout, void *userData )
 
 	// get resolution from saved preferences file
 	AsciiString selectedResolution = (*pref) ["Resolution"];
-	Int selectedXRes=800,selectedYRes=600;
+	Int selectedXRes=DEFAULT_DISPLAY_WIDTH;
+	Int selectedYRes=DEFAULT_DISPLAY_HEIGHT;
 	Int selectedResIndex=-1;
 	if (!selectedResolution.isEmpty())
 	{	//try to parse 2 integers out of string
 		if (sscanf(selectedResolution.str(),"%d%d", &selectedXRes, &selectedYRes) != 2)
-		{	selectedXRes=800; selectedYRes=600;
+		{
+			selectedXRes=DEFAULT_DISPLAY_WIDTH;
+			selectedYRes=DEFAULT_DISPLAY_HEIGHT;
 		}
 	}
 
@@ -1951,37 +1968,29 @@ void OptionsMenuInit( WindowLayout *layout, void *userData )
 	GadgetComboBoxSetSelectedPos( comboBoxResolution, selectedResIndex );
 
 	// set the display detail
+	// TheSuperHackers @tweak xezon 24/09/2025 The Detail Combo Box now has the same value order as StaticGameLODLevel for simplicity.
+	// TheSuperHackers @feature xezon 24/09/2025 The Detail Combo Box now has a new options for "Very High".
 	GadgetComboBoxReset(comboBoxDetail);
-	GadgetComboBoxAddEntry(comboBoxDetail, TheGameText->fetch("GUI:High"), color);
-	GadgetComboBoxAddEntry(comboBoxDetail, TheGameText->fetch("GUI:Medium"), color);
+#if ENABLE_GUI_HACKS
+	// TheSuperHackers @tweak xezon 24/09/2025 Show max 4 rows because with the original layout it cannot possibly show 5.
+	GadgetComboBoxSetMaxDisplay(comboBoxDetail, 4);
+#endif
 	GadgetComboBoxAddEntry(comboBoxDetail, TheGameText->fetch("GUI:Low"), color);
+	GadgetComboBoxAddEntry(comboBoxDetail, TheGameText->fetch("GUI:Medium"), color);
+	GadgetComboBoxAddEntry(comboBoxDetail, TheGameText->fetch("GUI:High"), color);
+	GadgetComboBoxAddEntry(comboBoxDetail, TheGameText->FETCH_OR_SUBSTITUTE("GUI:VeryHigh", L"Very High"), color);
 	GadgetComboBoxAddEntry(comboBoxDetail, TheGameText->fetch("GUI:Custom"), color);
+	static_assert(STATIC_GAME_LOD_COUNT == 5, "Wrong combo box count");
 
 	//Check if level was never set and default to setting most suitable for system.
 	if (TheGameLODManager->getStaticLODLevel() == STATIC_GAME_LOD_UNKNOWN)
-		TheGameLODManager->setStaticLODLevel(TheGameLODManager->findStaticLODLevel());
-
-	switch (TheGameLODManager->getStaticLODLevel())
 	{
-	case STATIC_GAME_LOD_LOW:
-		GadgetComboBoxSetSelectedPos(comboBoxDetail, LOWDETAIL);
-		break;
-	case STATIC_GAME_LOD_MEDIUM:
-		GadgetComboBoxSetSelectedPos(comboBoxDetail, MEDIUMDETAIL);
-		break;
-	case STATIC_GAME_LOD_HIGH:
-		GadgetComboBoxSetSelectedPos(comboBoxDetail, HIGHDETAIL);
-		break;
-	case STATIC_GAME_LOD_CUSTOM:
-		GadgetComboBoxSetSelectedPos(comboBoxDetail, CUSTOMDETAIL);
-		break;
-	default:
-		DEBUG_ASSERTCRASH(FALSE,("Tried to set comboBoxDetail to a value of %d ", TheGameLODManager->getStaticLODLevel()) );
-	};
+		TheGameLODManager->setStaticLODLevel(TheGameLODManager->getRecommendedStaticLODLevel());
+	}
 
-	Int txtFact=TheGameLODManager->getCurrentTextureReduction();
+	GadgetComboBoxSetSelectedPos(comboBoxDetail, (Int)TheGameLODManager->getStaticLODLevel());
 
-	GadgetSliderSetPosition( sliderTextureResolution, 2-txtFact);
+	GadgetSliderSetPosition( sliderTextureResolution, 2-WW3D::Get_Texture_Reduction());
 
 	GadgetCheckBoxSetChecked( check3DShadows, TheGlobalData->m_useShadowVolumes);
 
@@ -2046,7 +2055,7 @@ void OptionsMenuInit( WindowLayout *layout, void *userData )
 	//set scroll options
 	AsciiString test = (*pref)["DrawScrollAnchor"];
 	DEBUG_LOG(("DrawScrollAnchor == [%s]", test.str()));
-	if (test == "Yes" || (test.isEmpty() && TheInGameUI->getDrawRMBScrollAnchor()))
+	if (test == "yes" || (test.isEmpty() && TheInGameUI->getDrawRMBScrollAnchor()))
 	{
 		GadgetCheckBoxSetChecked( checkDrawAnchor, true);
 		TheInGameUI->setDrawRMBScrollAnchor(true);
@@ -2058,7 +2067,7 @@ void OptionsMenuInit( WindowLayout *layout, void *userData )
 	}
 	test = (*pref)["MoveScrollAnchor"];
 	DEBUG_LOG(("MoveScrollAnchor == [%s]", test.str()));
-	if (test == "Yes" || (test.isEmpty() && TheInGameUI->getMoveRMBScrollAnchor()))
+	if (test == "yes" || (test.isEmpty() && TheInGameUI->getMoveRMBScrollAnchor()))
 	{
 		GadgetCheckBoxSetChecked( checkMoveAnchor, true);
 		TheInGameUI->setMoveRMBScrollAnchor(true);
@@ -2300,7 +2309,7 @@ WindowMsgHandledType OptionsMenuSystem( GameWindow *window, UnsignedInt msg,
 				{
 					Int index;
 					GadgetComboBoxGetSelectedPos( comboBoxDetail, &index );
-					if(index != CUSTOMDETAIL)
+					if(index != STATIC_GAME_LOD_CUSTOM)
 						break;
 
 					showAdvancedOptions();
@@ -2387,12 +2396,12 @@ WindowMsgHandledType OptionsMenuSystem( GameWindow *window, UnsignedInt msg,
         if( GadgetCheckBoxIsChecked( control ) )
         {
           	TheInGameUI->setDrawRMBScrollAnchor(true);
-          	(*pref)["DrawScrollAnchor"] = "Yes";
+          	(*pref)["DrawScrollAnchor"] = "yes";
         }
 				else
         {
           	TheInGameUI->setDrawRMBScrollAnchor(false);
-          	(*pref)["DrawScrollAnchor"] = "No";
+          	(*pref)["DrawScrollAnchor"] = "no";
         }
       }
 			else if(controlID == checkMoveAnchorID )
@@ -2400,12 +2409,12 @@ WindowMsgHandledType OptionsMenuSystem( GameWindow *window, UnsignedInt msg,
         if( GadgetCheckBoxIsChecked( control ) )
         {
           	TheInGameUI->setMoveRMBScrollAnchor(true);
-          	(*pref)["MoveScrollAnchor"] = "Yes";
+          	(*pref)["MoveScrollAnchor"] = "yes";
         }
 				else
         {
           	TheInGameUI->setMoveRMBScrollAnchor(false);
-          	(*pref)["MoveScrollAnchor"] = "No";
+          	(*pref)["MoveScrollAnchor"] = "no";
         }
       }
 			else if(controlID == checkSaveCameraID )

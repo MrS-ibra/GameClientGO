@@ -30,14 +30,12 @@
 
 #pragma once
 
-#ifndef __USERPREFERENCES_H__
-#define __USERPREFERENCES_H__
-
 //-----------------------------------------------------------------------------
 // USER INCLUDES //////////////////////////////////////////////////////////////
 //-----------------------------------------------------------------------------
 #include "Common/STLTypedefs.h"
 
+class Money;
 typedef UnsignedInt CursorCaptureMode;
 typedef UnsignedInt ScreenEdgeScrollMode;
 
@@ -91,6 +89,7 @@ public:
 	void setOnlineIPAddress(AsciiString IP);	// convenience function
 	void setLANIPAddress(UnsignedInt IP);			// convenience function
 	void setOnlineIPAddress(UnsignedInt IP);	// convenience function
+	Bool getArchiveReplaysEnabled() const;		// convenience function
 	Bool getAlternateMouseModeEnabled(void);	// convenience function
 	Real getScrollFactor(void);								// convenience function
 	Bool getDrawScrollAnchor(void);
@@ -118,6 +117,7 @@ public:
 	Real getMoneyTransactionVolume(void) const;
 	Bool saveCameraInReplays(void);
 	Bool useCameraInReplays(void);
+	Bool getPlayerObserverEnabled() const;
 	Int	 getStaticGameDetail(void);	// detail level selected by the user.
 	Int	 getIdealStaticGameDetail(void);	// detail level detected for user.
  	Real getGammaValue(void);
@@ -145,6 +145,8 @@ public:
 	Int getGameTimeFontSize(void);
 
 	Real getResolutionFontAdjustment(void);
+
+	Bool getShowMoneyPerMinute(void) const;
 };
 
 //-----------------------------------------------------------------------------
@@ -165,6 +167,9 @@ public:
 	Bool usesSystemMapDir(void);		// convenience function
 	Int getNumRemoteIPs(void);					// convenience function
 	UnicodeString getRemoteIPEntry(Int i);	// convenience function
-};
 
-#endif // __USERPREFERENCES_H__
+  Bool getSuperweaponRestricted(void) const;
+  Money getStartingCash(void) const;
+  void setSuperweaponRestricted( Bool superweaponRestricted);
+  void setStartingCash( const Money & startingCash );
+};

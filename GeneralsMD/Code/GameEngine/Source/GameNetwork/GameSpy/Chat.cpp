@@ -26,7 +26,7 @@
 // Generals GameSpy chat-related code
 // Author: Matthew D. Campbell, July 2002
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/AudioEventRTS.h"
 #include "Common/INI.h"
@@ -89,12 +89,20 @@ Color GameSpyColor[GSCOLOR_MAX] =
 	GameMakeColor(128,128,0,255),		// GSCOLOR_GAME
 	GameMakeColor(128,128,128,255),	// GSCOLOR_GAME_FULL
 	GameMakeColor(128,128,128,255),	// GSCOLOR_GAME_CRCMISMATCH
+#if RTS_GENERALS
+	GameMakeColor(255,  0,  0,255),	// GSCOLOR_PLAYER_NORMAL
+#else
 	GameMakeColor(255,255,255,255),	// GSCOLOR_PLAYER_NORMAL
+#endif
 	GameMakeColor(255,  0,255,255),	// GSCOLOR_PLAYER_OWNER
 	GameMakeColor(255,  0,128,255),	// GSCOLOR_PLAYER_BUDDY
 	GameMakeColor(255,  0,  0,255),	// GSCOLOR_PLAYER_SELF
 	GameMakeColor(128,128,128,255),	// GSCOLOR_PLAYER_IGNORED
+#if RTS_GENERALS
+	GameMakeColor(255,0,0,255),			// GSCOLOR_CHAT_NORMAL
+#else
 	GameMakeColor(255,255,255,255),		// GSCOLOR_CHAT_NORMAL
+#endif
 	GameMakeColor(255,128,0,255),		// GSCOLOR_CHAT_EMOTE,
 	GameMakeColor(255,255,0,255),		// GSCOLOR_CHAT_OWNER,
 	GameMakeColor(128,255,0,255),		// GSCOLOR_CHAT_OWNER_EMOTE,
@@ -140,7 +148,7 @@ Bool GameSpyInfo::sendChat( UnicodeString message, Bool isAction, GameWindow *pl
 		}
 
 		// Get the selections (is this a private message?)
-		Int maxSel = GadgetListBoxGetListLength(playerListbox);
+		Int maxSel = GadgetListBoxGetMaxSelectedLength(playerListbox);
 		Int *selections;
 		GadgetListBoxGetSelected(playerListbox, (Int *)&selections);
 

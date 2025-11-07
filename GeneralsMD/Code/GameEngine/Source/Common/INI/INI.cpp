@@ -28,7 +28,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // INCLUDES ///////////////////////////////////////////////////////////////////////////////////////
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 #define DEFINE_DEATH_NAMES
 
 #include "Common/INI.h"
@@ -790,8 +790,8 @@ AsciiString INI::getNextQuotedAsciiString()
 
 				if (strlen(token) > 1 && token[1] != '\t')
 				{
-					strcat(buff, " ");
-					strcat(buff, token);
+					strlcat(buff, " ", ARRAY_SIZE(buff));
+					strlcat(buff, token, ARRAY_SIZE(buff));
 				}
 				else
 				{
@@ -833,9 +833,9 @@ AsciiString INI::getNextAsciiString()
 			if (token) {
 				if (strlen(token) > 1 && token[1] != '\t')
 				{
-					strcat(buff, " ");
+					strlcat(buff, " ", ARRAY_SIZE(buff));
 				}
-				strcat(buff, token);
+				strlcat(buff, token, ARRAY_SIZE(buff));
 				result.set(buff);
 			}
 			else {

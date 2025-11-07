@@ -18,9 +18,12 @@
 
 #pragma once
 
-#include "../../GeneralsMD/Code/GameEngine/Include/GameNetwork/GeneralsOnline/NextGenMP_defines.h"
-
+#include "refcount.h"
 #include "STLUtils.h"
+#include "stringex.h"
+#include <Utility/stdio_adapter.h>
+
+#include "../../GeneralsMD/Code/GameEngine/Include/GameNetwork/GeneralsOnline/NextGenMP_defines.h"
 
 
 // This macro serves as a general way to determine the number of elements within an array.
@@ -32,12 +35,12 @@ enum
 {
 	// TheSuperHackers @info The original WWSync was 33 ms, ~30 fps, integer.
 	// Changing this will require tweaking all Drawable code that concerns the ww3d time step, including locomotion physics.
-
-#if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
-	WWSyncPerSecond = 60
+	#if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
+	WWSyncPerSecond = 60,
 #else
-	WWSyncPerSecond = 30
+	WWSyncPerSecond = 30,
 #endif
+	WWSyncMilliseconds = 1000 / WWSyncPerSecond,
 };
 
 #if defined(_MSC_VER) && _MSC_VER < 1300

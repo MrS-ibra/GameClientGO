@@ -28,9 +28,10 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // INCLUDES ///////////////////////////////////////////////////////////////////////////////////////
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/CRCDebug.h"
+#include "Common/FramePacer.h"
 #include "Common/GameAudio.h"
 #include "Common/GameEngine.h"
 #include "Common/GlobalData.h"
@@ -427,7 +428,7 @@ void GameLogic::logicMessageDispatcher( GameMessage *msg, void *userData )
 				if (maxFPS < 1 || maxFPS > 1000)
 					maxFPS = TheGlobalData->m_framesPerSecondLimit;
 				DEBUG_LOG(("Setting max FPS limit to %d FPS", maxFPS));
-				TheGameEngine->setFramesPerSecondLimit(maxFPS);
+				TheFramePacer->setFramesPerSecondLimit(maxFPS);
 				TheWritableGlobalData->m_useFpsLimit = true;
 			}
 
@@ -1479,7 +1480,7 @@ void GameLogic::logicMessageDispatcher( GameMessage *msg, void *userData )
 			{
 				Money *money = thisPlayer->getMoney();
 				UnsignedInt amount = building->getTemplate()->calcCostToBuild( thisPlayer );
-				money->deposit( amount );
+				money->deposit( amount, TRUE, FALSE );
 			}
 
 			//

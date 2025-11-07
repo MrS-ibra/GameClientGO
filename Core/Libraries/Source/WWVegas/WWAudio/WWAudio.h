@@ -34,19 +34,14 @@
  * Functions:                                                                                  *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#if defined(_MSC_VER)
 #pragma once
-#endif
-
-#ifndef __WWAUDIO_H
-#define __WWAUDIO_H
 
 #include "always.h"
 #pragma warning (push, 3)
 #include "mss.h"
 #pragma warning (pop)
 
-#include "Vector.H"
+#include "Vector.h"
 #include "SoundBuffer.h"
 #include "AudioEvents.h"
 #include "wwstring.h"
@@ -258,7 +253,7 @@ public:
 	//
 	float					Get_Effects_Level (void)	{ return m_EffectsLevel; }
 
-	//	See ENVIRONMENT_ defines in MSS.H for a list of possible values.
+	//	See ENVIRONMENT_ defines in MSS.h for a list of possible values.
 	int					Get_Reverb_Room_Type (void)		{ return m_ReverbRoomType; }
 	void					Set_Reverb_Room_Type (int type);
 
@@ -581,6 +576,3 @@ private:
 	float													m_EffectsLevel;
 	int													m_ReverbRoomType;
 };
-
-
-#endif //__WWAUDIO_H

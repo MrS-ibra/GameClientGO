@@ -23,18 +23,19 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // InGameUI.cpp ///////////////////////////////////////////////////////////////////////////////////
-// Implementation of in-game user interface singleton inteface
+// Implementation of in-game user interface singleton
 // Author: Michael S. Booth, March 2001
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #define DEFINE_SHADOW_NAMES
 
 #include "Common/ActionManager.h"
+#include "Common/FramePacer.h"
 #include "Common/GameAudio.h"
-#include "Common/GameEngine.h"
 #include "Common/GameType.h"
+#include "Common/GameUtility.h"
 #include "Common/MessageStream.h"
 #include "Common/PerfTimer.h"
 #include "Common/Player.h"
@@ -47,7 +48,6 @@
 #include "Common/Recorder.h"
 #include "Common/BuildAssistant.h"
 #include "Common/SpecialPower.h"
-#include "Common/FrameRateLimit.h"
 
 #include "GameClient/Anim2D.h"
 #include "GameClient/ControlBar.h"
@@ -94,6 +94,39 @@
 
 // ------------------------------------------------------------------------------------------------
 static const RGBColor IllegalBuildColor = { 1.0, 0.0, 0.0 };
+
+// ------------------------------------------------------------------------------------------------
+static UnicodeString formatMoneyValue(UnsignedInt amount)
+{
+	UnicodeString result;
+	if (amount >= 100000)
+	{
+		result.format(L"%uk", amount / 1000);
+	}
+	else
+	{
+		result.format(L"%u", amount);
+	}
+	return result;
+}
+
+static UnicodeString formatIncomeValue(UnsignedInt cashPerMin)
+{
+	UnicodeString result;
+	if (cashPerMin >= 10000)
+	{
+		result.format(L"%uk", cashPerMin / 1000);
+	}
+	else if (cashPerMin >= 1000)
+	{
+		result.format(L"%u", (cashPerMin / 100) * 100);
+	}
+	else
+	{
+		result.format(L"%u", (cashPerMin / 10) * 10);
+	}
+	return result;
+}
 
 //-------------------------------------------------------------------------------------------------
 /// The InGameUI singleton instance.
@@ -1356,13 +1389,7 @@ void InGameUI::handleRadiusCursor()
 		// from screen to world
 		// But only if the radar is on.
 		//
-		Bool radarOn = TheRadar->isRadarForced()
-									|| ( !TheRadar->isRadarHidden()
-												&& ThePlayerList->getLocalPlayer()
-												&& ThePlayerList->getLocalPlayer()->hasRadar()
-											);
-
-		if( !radarOn  ||  (TheRadar->screenPixelToWorld( &mouseIO->pos, &pos ) == FALSE) )// if radar off, or point not on radar
+		if( !rts::localPlayerHasRadar()  ||  (TheRadar->screenPixelToWorld( &mouseIO->pos, &pos ) == FALSE) )// if radar off, or point not on radar
 			TheTacticalView->screenToTerrain( &mouseIO->pos, &pos );
 
 		m_curRadiusCursor.setPosition(pos);	//world space position of center of decal
@@ -1829,7 +1856,8 @@ void InGameUI::update( void )
 
 	// update the player money window if the money amount has changed
 	// this seems like as good a place as any to do the power hide/show
-	static Int lastMoney = -1;
+	static UnsignedInt lastMoney = ~0u;
+	static UnsignedInt lastIncome = ~0u;
 	static NameKeyType moneyWindowKey = TheNameKeyGenerator->nameToKey( "ControlBar.wnd:MoneyDisplay" );
 	static NameKeyType powerWindowKey = TheNameKeyGenerator->nameToKey( "ControlBar.wnd:PowerWindow" );
 
@@ -1849,15 +1877,37 @@ void InGameUI::update( void )
 		moneyPlayer = ThePlayerList->getLocalPlayer();
 	if( moneyPlayer)
 	{
-		Int currentMoney = moneyPlayer->getMoney()->countMoney();
-		if( lastMoney != currentMoney )
+		Money *money = moneyPlayer->getMoney();
+		Bool showIncome = TheGlobalData->m_showMoneyPerMinute;
+		if (!showIncome)
 		{
-			UnicodeString buffer;
+			UnsignedInt currentMoney = money->countMoney();
+			if( lastMoney != currentMoney )
+			{
+				UnicodeString buffer;
 
-			buffer.format( TheGameText->fetch( "GUI:ControlBarMoneyDisplay" ), currentMoney );
-			GadgetStaticTextSetText( moneyWin, buffer );
-			lastMoney = currentMoney;
+				buffer.format(TheGameText->fetch( "GUI:ControlBarMoneyDisplay" ), currentMoney );
+				GadgetStaticTextSetText( moneyWin, buffer );
+				lastMoney = currentMoney;
 
+			}
+		}
+		else
+		{
+			// TheSuperHackers @feature L3-M 21/08/2025 player money per minute
+			UnsignedInt currentMoney = money->countMoney();
+			UnsignedInt cashPerMin = money->getCashPerMinute();
+			if ( lastMoney != currentMoney || lastIncome != cashPerMin )
+			{
+				UnicodeString buffer;
+				UnicodeString moneyStr = formatMoneyValue(currentMoney);
+				UnicodeString incomeStr = formatIncomeValue(cashPerMin);
+
+				buffer.format(TheGameText->FETCH_OR_SUBSTITUTE_FORMAT("GUI:ControlBarMoneyDisplayIncome", L"$ %ls +%ls/min", moneyStr.str(), incomeStr.str()));
+				GadgetStaticTextSetText(moneyWin, buffer);
+				lastMoney = currentMoney;
+				lastIncome = cashPerMin;
+			}
 		}
 		moneyWin->winHide(FALSE);
 		powerWin->winHide(FALSE);
@@ -1886,8 +1936,28 @@ void InGameUI::update( void )
 	//Handle keyboard camera rotations
 	if( m_cameraRotatingLeft && !m_cameraRotatingRight )
 	{
-		//Keyboard rotate left
-		TheTacticalView->setAngle( TheTacticalView->getAngle() - TheGlobalData->m_keyboardCameraRotateSpeed );
+		// TheSuperHackers @tweak The camera rotation and zoom are now decoupled from the render update.
+		const Real fpsRatio = TheFramePacer->getBaseOverUpdateFpsRatio();
+		const Real rotateAngle = TheGlobalData->m_keyboardCameraRotateSpeed * fpsRatio;
+		const Real zoomHeight = (Real)View::ZoomHeightPerSecond * fpsRatio;
+
+		if( m_cameraRotatingLeft && !m_cameraRotatingRight )
+		{
+			TheTacticalView->setAngle( TheTacticalView->getAngle() - rotateAngle );
+		}
+		else if( m_cameraRotatingRight && !m_cameraRotatingLeft )
+		{
+			TheTacticalView->setAngle( TheTacticalView->getAngle() + rotateAngle );
+		}
+
+		if( m_cameraZoomingIn && !m_cameraZoomingOut )
+		{
+			TheTacticalView->zoom( -zoomHeight );
+		}
+		else if( m_cameraZoomingOut && !m_cameraZoomingIn )
+		{
+			TheTacticalView->zoom( +zoomHeight );
+		}
 	}
 	if( m_cameraRotatingRight && !m_cameraRotatingLeft )
 	{
@@ -2512,7 +2582,7 @@ void InGameUI::createMouseoverHint( const GameMessage *msg )
 				else
 					tooltip = str;
 
-				Int localPlayerIndex = ThePlayerList ? ThePlayerList->getLocalPlayer()->getPlayerIndex() : 0;
+				const Int localPlayerIndex = rts::getObservedOrLocalPlayer()->getPlayerIndex();
 
 				Int x, y;
 				ThePartitionManager->worldToCell(obj->getPosition()->x, obj->getPosition()->y, &x, &y);
@@ -2614,7 +2684,7 @@ void InGameUI::createCommandHint( const GameMessage *msg )
 	if( draw && (t == GameMessage::MSG_DO_ATTACK_OBJECT_HINT || t == GameMessage::MSG_DO_ATTACK_OBJECT_AFTER_MOVING_HINT) )
 	{
 		const Object* obj = draw->getObject();
-		Int localPlayerIndex = ThePlayerList ? ThePlayerList->getLocalPlayer()->getPlayerIndex() : 0;
+		const Int localPlayerIndex = rts::getObservedOrLocalPlayer()->getPlayerIndex();
 #if ENABLE_CONFIGURABLE_SHROUD
 		ObjectShroudStatus ss = (!obj || !TheGlobalData->m_shroudOn) ? OBJECTSHROUD_CLEAR : obj->getShroudedStatus(localPlayerIndex);
 #else
@@ -2686,10 +2756,7 @@ void InGameUI::createCommandHint( const GameMessage *msg )
 							setMouseCursor( Mouse::GENERIC_INVALID );
 						else if( drawSelectable && obj->isLocallyControlled() && !obj->isKindOf(KINDOF_MINE))
 							setMouseCursor( Mouse::SELECTING );
-						else if( TheRadar->isRadarWindow( window ) &&
-										 TheRadar->isRadarForced() == FALSE &&
-										 (TheRadar->isRadarHidden() ||
-										 ThePlayerList->getLocalPlayer()->hasRadar() == FALSE) )
+						else if( TheRadar->isRadarWindow( window ) && !rts::localPlayerHasRadar() )
 							setMouseCursor( Mouse::ARROW );
 						else
 							setMouseCursor( Mouse::MOVETO );
@@ -5116,7 +5183,7 @@ void InGameUI::updateFloatingText( void )
 }
 
 //-------------------------------------------------------------------------------------------------
-/** Itterates through and draws each floating text */
+/** Iterates through and draws each floating text */
 //-------------------------------------------------------------------------------------------------
 void InGameUI::drawFloatingText( void )
 {
@@ -5126,8 +5193,7 @@ void InGameUI::drawFloatingText( void )
 	{
 		ftd = *it;
 		ICoord2D pos;
-		// get the local player's index
-		Int playerNdx = ThePlayerList->getLocalPlayer()->getPlayerIndex();
+		const Int playerIndex = rts::getObservedOrLocalPlayer()->getPlayerIndex();
 
 		// which PartitionManager cells are we looking at?
 		Int pCX, pCY;
@@ -5136,7 +5202,7 @@ void InGameUI::drawFloatingText( void )
 		// translate it's 3d pos into a 2d screen pos
 		if( TheTacticalView->worldToScreen(&ftd->m_pos3D, &pos)
 			&& ftd->m_dString
-			&& ThePartitionManager->getShroudStatusForPlayer(playerNdx, pCX, pCY) == CELLSHROUD_CLEAR )
+			&& ThePartitionManager->getShroudStatusForPlayer(playerIndex, pCX, pCY) == CELLSHROUD_CLEAR )
 		{
 			pos.y -= ftd->m_frameCount * m_floatingTextMoveUpSpeed;
 			Color dropColor;
@@ -5394,7 +5460,8 @@ void InGameUI::updateAndDrawWorldAnimations( void )
 		// don't bother going forward with the draw process if this location is shrouded for
 		// the local player
 		//
-		Int playerIndex = ThePlayerList->getLocalPlayer()->getPlayerIndex();
+		const Int playerIndex = rts::getObservedOrLocalPlayer()->getPlayerIndex();
+
 		if( ThePartitionManager->getShroudStatusForPlayer( playerIndex, &wad->m_worldPos ) != CELLSHROUD_CLEAR )
 		{
 
@@ -5712,7 +5779,6 @@ void InGameUI::refreshRenderFpsResources(void)
 		m_renderFpsString = TheDisplayStringManager->newDisplayString();
 		m_lastRenderFps = ~0u;
 		m_lastRenderFpsUpdateMs = 0u;
-		updateRenderFpsString();
 	}
 
 	if (!m_renderFpsLimitString)
@@ -5726,6 +5792,11 @@ void InGameUI::refreshRenderFpsResources(void)
 	GameFont *fpsFont = TheWindowManager->winFindFont(m_renderFpsFont, adjustedRenderFpsFontSize, m_renderFpsBold);
 	m_renderFpsString->setFont(fpsFont);
 	m_renderFpsLimitString->setFont(fpsFont);
+
+	if (m_renderFpsPointSize > 0)
+	{
+		updateRenderFpsString();
+	}
 }
 
 void InGameUI::refreshSystemTimeResources(void)
@@ -5871,7 +5942,7 @@ void InGameUI::drawRenderFps(Int &x, Int &y)
 	UnsignedInt renderFpsLimit = 0u;
 	if (TheGlobalData->m_useFpsLimit)
 	{
-		renderFpsLimit = (UnsignedInt)TheGameEngine->getFramesPerSecondLimit();
+		renderFpsLimit = (UnsignedInt)TheFramePacer->getFramesPerSecondLimit();
 		if (renderFpsLimit == RenderFpsPreset::UncappedFpsValue)
 		{
 			renderFpsLimit = 0u;

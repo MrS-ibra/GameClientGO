@@ -27,7 +27,7 @@
 // Desc:       Basic keyboard
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/Language.h"
 #include "Common/GameEngine.h"
@@ -927,7 +927,7 @@ WideChar Keyboard::translateKey( WideChar keyCode )
 				return( m_keyNames[ ubKeyCode ].shifted2 );
 			}
 
-			if( isShift() || getCapsState() && GameIsAlpha( m_keyNames[ ubKeyCode ].stdKey ) )
+			if( isShift() || getCapsState() && iswalpha( m_keyNames[ ubKeyCode ].stdKey ) )
 			{
 				return( m_keyNames[ ubKeyCode ].shifted );
 			}

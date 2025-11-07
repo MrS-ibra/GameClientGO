@@ -26,7 +26,7 @@
 // Generals GameSpy GameInfo-related code
 // Author: Matthew D. Campbell, July 2002
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/GameState.h"
 #include "Common/Player.h"
@@ -762,8 +762,13 @@ AsciiString GameSpyStagingRoom::generateLadderGameResultsPacket( void )
 			playerStr.format(",buildingsKilled%d=%d,buildingsLost%d=%d,buildingsBuilt%d=%d",
 				playerID, buildingsKilled, playerID, buildingsLost, playerID, buildingsBuilt);
 			results.concat(playerStr);
+#if RTS_GENERALS
 			playerStr.format(",fps%d=%d,cash%d=%d,capturedTech%d=%d,discon%d=%d,side%d=%s,team%d=%d",
 				playerID, fps, playerID, earnings, playerID, techCaptured, playerID, disconnected, playerID, p[i]->getPlayerTemplate()->getSide().str(), playerID, slot->getTeamNumber());
+#elif RTS_ZEROHOUR
+			playerStr.format(",fps%d=%d,cash%d=%d,capturedTech%d=%d,discon%d=%d,side%d=%s",
+				playerID, fps, playerID, earnings, playerID, techCaptured, playerID, disconnected, playerID, p[i]->getPlayerTemplate()->getSide().str());
+#endif
 			results.concat(playerStr);
 
 			++playerID;

@@ -27,7 +27,7 @@
 // Author: Chris Huybregts, October 2001
 // Description: LAN API Callbacks
 ///////////////////////////////////////////////////////////////////////////////////////
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "strtok_r.h"
 #include "Common/GameEngine.h"
@@ -196,7 +196,11 @@ void LANAPI::OnGameStart( void )
 		option.format("%d", m_currentGame->getLANSlot( m_currentGame->getLocalSlotNum() )->getColor());
 		pref["Color"] = option;
 		if (m_currentGame->amIHost())
-			pref["Map"] = AsciiStringToQuotedPrintable(m_currentGame->getMap());
+    {
+    	pref["Map"] = AsciiStringToQuotedPrintable(m_currentGame->getMap());
+      pref.setSuperweaponRestricted( m_currentGame->getSuperweaponRestriction() > 0 );
+      pref.setStartingCash( m_currentGame->getStartingCash() );
+    }
 		pref.write();
 
 		m_isInLANMenu = FALSE;

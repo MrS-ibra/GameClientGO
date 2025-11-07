@@ -41,8 +41,8 @@ static void drawFramerateBar(void);
 #include <time.h>
 
 // USER INCLUDES //////////////////////////////////////////////////////////////
+#include "Common/FramePacer.h"
 #include "Common/ThingFactory.h"
-#include "Common/GameEngine.h"
 #include "Common/GlobalData.h"
 #include "Common/PerfTimer.h"
 #include "Common/FileSystem.h"
@@ -99,7 +99,7 @@ static void drawFramerateBar(void);
 #include "WW3D2/meshmatdesc.h"
 #include "WW3D2/meshmdl.h"
 #include "WW3D2/rddesc.h"
-#include "TARGA.H"
+#include "TARGA.h"
 #include "Lib/BaseType.h"
 
 #include "GameLogic/ScriptEngine.h"		// For TheScriptEngine - jkmcd
@@ -154,15 +154,9 @@ StatDumpClass::StatDumpClass( const char *fname )
 {
 	char buffer[ _MAX_PATH ];
 	GetModuleFileName( NULL, buffer, sizeof( buffer ) );
-	char *pEnd = buffer + strlen( buffer );
-	while( pEnd != buffer )
+	if (char *pEnd = strrchr(buffer, '\\'))
 	{
-		if( *pEnd == '\\' )
-		{
-			*pEnd = 0;
-			break;
-		}
-		pEnd--;
+		*pEnd = 0;
 	}
 	// TheSuperHackers @fix Caball009 03/06/2025 Don't use AsciiString here anymore because its memory allocator may not have been initialized yet.
 	const std::string fullPath = std::string(buffer) + "\\" + fname;
@@ -809,16 +803,14 @@ void W3DDisplay::init( void )
 
 		//Check if level was never set and default to setting most suitable for system.
 		if (TheGameLODManager->getStaticLODLevel() == STATIC_GAME_LOD_UNKNOWN)
-			TheGameLODManager->setStaticLODLevel(TheGameLODManager->findStaticLODLevel());
+		{
+			TheGameLODManager->setStaticLODLevel(TheGameLODManager->getRecommendedStaticLODLevel());
+		}
 		else
-		{	//Static LOD level was applied during GameLOD manager init except for texture reduction
+		{
+			//Static LOD level was applied during GameLOD manager init except for texture reduction
 			//which needs to be applied here.
-			Int txtReduction=TheWritableGlobalData->m_textureReductionFactor;
-			if (txtReduction > 0)
-			{		WW3D::Set_Texture_Reduction(txtReduction,32);
-					//Tell LOD manager that texture reduction was applied.
-					TheGameLODManager->setCurrentTextureReduction(txtReduction);
-			}
+			TheGameClient->setTextureLOD(TheWritableGlobalData->m_textureReductionFactor);
 		}
 
 		if (TheGlobalData->m_displayGamma != 1.0f)
@@ -1045,7 +1037,7 @@ void W3DDisplay::gatherDebugStats( void )
 		Int LOD = TheGlobalData->m_terrainLOD;
 		//unibuffer.format( L"FPS: %.2f, %.2fms mapLOD=%d [cumu FPS=%.2f] draws: %.2f sort: %.2f", fps, ms, LOD, cumuFPS, drawsPerFrame,sortPolysPerFrame);
 		if (TheGlobalData->m_useFpsLimit)
-				unibuffer.format( L"%.2f/%d FPS, ", fps, TheGameEngine->getFramesPerSecondLimit());
+				unibuffer.format( L"%.2f/%d FPS, ", fps, TheFramePacer->getFramesPerSecondLimit());
 		else
 				unibuffer.format( L"%.2f FPS, ", fps);
 
@@ -1773,14 +1765,7 @@ AGAIN:
   	//
 	//PredictiveLODOptimizerClass::Optimize_LODs( 5000 );
 
-	Bool freezeTime = TheTacticalView->isTimeFrozen() && !TheTacticalView->isCameraMovementFinished();
-	freezeTime = freezeTime || TheScriptEngine->isTimeFrozenDebug() || TheScriptEngine->isTimeFrozenScript();
-	freezeTime = freezeTime || TheGameLogic->isGamePaused();
-
-	// hack to let client spin fast in network games but still do effects at the same pace. -MDC
-	static UnsignedInt lastFrame = ~0;
-	freezeTime = freezeTime || (lastFrame == TheGameClient->getFrame());
-	lastFrame = TheGameClient->getFrame();
+	Bool freezeTime = TheFramePacer->isTimeFrozen() || TheFramePacer->isGameHalted();
 
 	/// @todo: I'm assuming the first view is our main 3D view.
 	W3DView *primaryW3DView=(W3DView *)getFirstView();
@@ -1816,7 +1801,7 @@ AGAIN:
 		}
 	}
 
-	WW3D::Update_Logic_Frame_Time(TheGameEngine->getLogicTimeStepMilliseconds());
+	WW3D::Update_Logic_Frame_Time(TheFramePacer->getLogicTimeStepMilliseconds());
 
 	// TheSuperHackers @info This binds the WW3D update to the logic update.
 	WW3D::Sync(TheGameLogic->hasUpdated());
@@ -3045,7 +3030,7 @@ void W3DDisplay::takeScreenShot(void)
 		sprintf( leafname, "%s%.3d.bmp", "sshot", frame_number++);
 #endif
 		strcpy(pathname, TheGlobalData->getPath_UserData().str());
-		strcat(pathname, leafname);
+		strlcat(pathname, leafname, ARRAY_SIZE(pathname));
 		if (_access( pathname, 0 ) == -1)
 			done = true;
 	}

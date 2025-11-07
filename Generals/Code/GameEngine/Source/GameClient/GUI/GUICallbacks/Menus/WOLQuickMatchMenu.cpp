@@ -29,7 +29,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 
 // INCLUDES ///////////////////////////////////////////////////////////////////////////////////////
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/GameEngine.h"
 #include "Common/QuickmatchPreferences.h"
@@ -1718,8 +1718,7 @@ WindowMsgHandledType WOLQuickMatchMenuSystem( GameWindow *window, UnsignedInt ms
 					req.QM.discons = numDiscons;
 
 
-					strncpy(req.QM.pings, TheGameSpyInfo->getPingString().str(), 17);
-					req.QM.pings[16] = 0;
+					strlcpy(req.QM.pings, TheGameSpyInfo->getPingString().str(), sizeof(req.QM.pings));
 
 					req.QM.botID = TheGameSpyConfig->getQMBotID();
 					req.QM.roomID = TheGameSpyConfig->getQMChannel();

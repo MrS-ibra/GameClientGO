@@ -27,13 +27,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-
-#ifndef FASTALLOCATOR_H
-#define FASTALLOCATOR_H
-
-#if defined(_MSC_VER)
 #pragma once
-#endif
 
 //#define MEMORY_OVERWRITE_TEST
 
@@ -47,7 +41,6 @@
 #include "mutex.h"
 #include <malloc.h>
 #include <stddef.h> //size_t & ptrdiff_t definition
-#include <string.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 // Forward Declarations
@@ -726,16 +719,3 @@ void main(){
    getchar();
 }
 */
-
-
-
-#endif //sentry
-
-
-
-
-
-
-
-
-

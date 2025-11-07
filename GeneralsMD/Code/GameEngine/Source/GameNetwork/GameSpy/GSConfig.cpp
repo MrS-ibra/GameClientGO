@@ -29,7 +29,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 
 // INCLUDES ///////////////////////////////////////////////////////////////////////////
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/GameState.h"
 #include "GameClient/MapUtil.h"
@@ -332,11 +332,19 @@ m_qmChannel(0)
 			mapName = TheGameState->portableMapPathToRealMapPath(TheGameState->realMapPathToPortableMapPath(mapName));
 			mapName.toLower();
 
+			// [SKB: Jul 01 2003 @ 6:43pm] :
+			// German2 is missing some maps because of content.  But, we need the m_qmMaps
+			// to contain same number of strings as the Retail version so that the
+			// QM Bot thinks that they have the same number of maps.
+			#if RTS_GENERALS
+			m_qmMaps.push_back(mapName);
+			#else
 			const MapMetaData *md = TheMapCache->findMap(mapName);
 			if (md)
 			{
 				m_qmMaps.push_back(mapName);
 			}
+			#endif
 		}
 		else if (inQMBot)
 		{

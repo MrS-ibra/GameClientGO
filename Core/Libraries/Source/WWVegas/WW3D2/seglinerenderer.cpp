@@ -44,7 +44,7 @@
 #include "sortingrenderer.h"
 #include "vp.h"
 #include "Vector3i.h"
-#include "RANDOM.H"
+#include "RANDOM.h"
 #include "v3_rnd.h"
 #include "meshgeometry.h"
 #include <algorithm>
@@ -79,6 +79,7 @@ SegLineRendererClass::SegLineRendererClass(void) :
 		NoiseAmplitude(0.0f),
 		MergeAbortFactor(1.5f),
 		TextureTileFactor(1.0f),
+		LastUsedSyncTime(WW3D::Get_Logic_Time_Milliseconds()),
 		CurrentUVOffset(0.0f,0.0f),
 		UVOffsetDeltaPerMS(0.0f, 0.0f),
 		Bits(DEFAULT_BITS),
@@ -98,6 +99,7 @@ SegLineRendererClass::SegLineRendererClass(const SegLineRendererClass & that) :
 		NoiseAmplitude(0.0f),
 		MergeAbortFactor(1.5f),
 		TextureTileFactor(1.0f),
+		LastUsedSyncTime(that.LastUsedSyncTime),
 		CurrentUVOffset(0.0f,0.0f),
 		UVOffsetDeltaPerMS(0.0f, 0.0f),
 		Bits(DEFAULT_BITS),
@@ -119,6 +121,7 @@ SegLineRendererClass & SegLineRendererClass::operator = (const SegLineRendererCl
 		NoiseAmplitude = that.NoiseAmplitude;
 		MergeAbortFactor = that.MergeAbortFactor;
 		TextureTileFactor = that.TextureTileFactor;
+		LastUsedSyncTime = that.LastUsedSyncTime;
 		CurrentUVOffset = that.CurrentUVOffset;
 		UVOffsetDeltaPerMS = that.UVOffsetDeltaPerMS;
 		Bits = that.Bits;
@@ -199,6 +202,7 @@ void SegLineRendererClass::Set_Texture_Tile_Factor(float factor)
 
 void SegLineRendererClass::Reset_Line(void)
 {
+	LastUsedSyncTime = WW3D::Get_Logic_Time_Milliseconds();
 	CurrentUVOffset.Set(0.0f,0.0f);
 }
 
@@ -233,7 +237,8 @@ void SegLineRendererClass::Render
 #endif
 */
 	// TheSuperHackers @tweak The render update is now decoupled from the logic step.
-	Vector2 uv_offset = CurrentUVOffset + UVOffsetDeltaPerMS * WW3D::Get_Logic_Frame_Time_Milliseconds();
+	const unsigned int delta = WW3D::Get_Logic_Time_Milliseconds() - LastUsedSyncTime;
+	Vector2 uv_offset = CurrentUVOffset + UVOffsetDeltaPerMS * (float)delta;
 
 	// ensure offsets are in [0, 1] range:
 	uv_offset.X = uv_offset.X - floorf(uv_offset.X);
@@ -241,6 +246,7 @@ void SegLineRendererClass::Render
 
 	// Update state
 	CurrentUVOffset = uv_offset;
+	LastUsedSyncTime = WW3D::Get_Logic_Time_Milliseconds();
 
 	// Used later
 	TextureMapMode map_mode = Get_Texture_Mapping_Mode();

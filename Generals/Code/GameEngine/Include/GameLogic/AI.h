@@ -28,16 +28,12 @@
 
 #pragma once
 
-#ifndef _AI_H_
-#define _AI_H_
-
 #include "Common/Snapshot.h"
 #include "Common/SubsystemInterface.h"
 #include "Common/GameMemory.h"
 #include "Common/GameType.h"
 #include "GameLogic/Damage.h"
 #include "Common/STLTypedefs.h"
-#include "refcount.h"
 #include "ref_ptr.h"
 
 class AIGroup;
@@ -1014,6 +1010,3 @@ private:
 
 	mutable VecObjectID	m_lastRequestedIDList;			///< this is used so we can return by reference, saving a copy
 };
-
-
-#endif // _AI_H_

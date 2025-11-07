@@ -38,6 +38,8 @@
 
 // USER INCLUDES //////////////////////////////////////////////////////////////////////////////////
 #include "Common/BuildAssistant.h"
+#include "Common/FramePacer.h"
+#include "Common/GameUtility.h"
 #include "Common/GlobalData.h"
 #include "Common/Module.h"
 #include "Common/RandomValue.h"
@@ -404,7 +406,8 @@ void W3DView::buildCameraTransform( Matrix3D *transform )
 	transform->Look_At( sourcePos, targetPos, 0 );
 
 	//WST 11/12/2002 New camera shaker system
-	CameraShakerSystem.Timestep(1.0f/30.0f);
+	// TheSuperHackers @tweak The camera shaker is now decoupled from the render update.
+	CameraShakerSystem.Timestep(TheFramePacer->getLogicTimeStepMilliseconds());
 	CameraShakerSystem.Update_Camera_Shaker(sourcePos, &m_shakerAngles);
 	transform->Rotate_X(m_shakerAngles.X);
 	transform->Rotate_Y(m_shakerAngles.Y);
@@ -984,7 +987,7 @@ static void drawablePostDraw( Drawable *draw, void *userData )
 		return;
 
 	Object* obj = draw->getObject();
-	Int localPlayerIndex = ThePlayerList ? ThePlayerList->getLocalPlayer()->getPlayerIndex() : 0;
+	const Int localPlayerIndex = rts::getObservedOrLocalPlayerIndex_Safe();
 #if ENABLE_CONFIGURABLE_SHROUD
 	ObjectShroudStatus ss = (!obj || !TheGlobalData->m_shroudOn) ? OBJECTSHROUD_CLEAR : obj->getShroudedStatus(localPlayerIndex);
 #else
@@ -1049,7 +1052,9 @@ Bool W3DView::updateCameraMovements()
 		didUpdate = true;
 	} else if (m_doingMoveCameraOnWaypointPath) {
 		m_previousLookAtPosition = *getPosition();
-		moveAlongWaypointPath(TheW3DFrameLengthInMsec);
+		// TheSuperHackers @tweak The scripted camera movement is now decoupled from the render update.
+		// The scripted camera will still move when the time is frozen, but not when the game is halted.
+		moveAlongWaypointPath(TheFramePacer->getLogicTimeStepMilliseconds(FramePacer::IgnoreFrozenTime));
 		didUpdate = true;
 	}
 	if (m_doingScriptedCameraLock)
@@ -1347,7 +1352,7 @@ void W3DView::update(void)
 			// if scrolling, only adjust if we're too close or too far
 			if (m_scrollAmount.length() < m_scrollAmountCutoff || (m_currentHeightAboveGround < m_minHeightAboveGround) || (TheGlobalData->m_enforceMaxCameraHeight && m_currentHeightAboveGround > m_maxHeightAboveGround))
 			{
-				const Real fpsRatio = (Real)BaseFps / TheGameEngine->getUpdateFps();
+				const Real fpsRatio = TheFramePacer->getBaseOverUpdateFpsRatio();
 				const Real zoomAdj = (desiredZoom - m_zoom) * TheGlobalData->m_cameraAdjustSpeed * fpsRatio;
 				if (fabs(zoomAdj) >= 0.0001f)	// only do positive
 				{
@@ -1359,7 +1364,7 @@ void W3DView::update(void)
 		else if (!didScriptedMovement)
 		{
 			// we're not scrolling; settle toward desired height above ground
-			const Real fpsRatio = (Real)BaseFps / TheGameEngine->getUpdateFps();
+			const Real fpsRatio = TheFramePacer->getBaseOverUpdateFpsRatio();
 			const Real zoomAdj = (m_zoom - desiredZoom) * TheGlobalData->m_cameraAdjustSpeed * fpsRatio;
 			if (fabs(zoomAdj) >= 0.0001f)
 			{

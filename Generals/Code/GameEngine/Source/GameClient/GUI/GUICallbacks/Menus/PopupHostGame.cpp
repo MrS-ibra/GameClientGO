@@ -50,7 +50,7 @@
 //-----------------------------------------------------------------------------
 // USER INCLUDES //////////////////////////////////////////////////////////////
 //-----------------------------------------------------------------------------
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/GlobalData.h"
 #include "Common/NameKeyGenerator.h"
@@ -542,10 +542,17 @@ void createGame( void )
 	req.password = passwd.str();
 	CustomMatchPreferences customPref;
 	Bool aO = GadgetCheckBoxIsChecked(checkBoxAllowObservers);
+  Bool limitArmies = FALSE;
+  Bool useStats = TRUE;
 	customPref.setAllowsObserver(aO);
+  customPref.setFactionsLimited( limitArmies );
+  customPref.setUseStats( useStats );
 	customPref.write();
 	req.stagingRoomCreation.allowObservers = aO;
+  req.stagingRoomCreation.useStats = useStats;
 	TheGameSpyGame->setAllowObservers(aO);
+  TheGameSpyGame->setOldFactionsOnly( limitArmies );
+  TheGameSpyGame->setUseStats( useStats );
 	req.stagingRoomCreation.exeCRC = TheGlobalData->m_exeCRC;
 	req.stagingRoomCreation.iniCRC = TheGlobalData->m_iniCRC;
 	req.stagingRoomCreation.gameVersion = TheGameSpyInfo->getInternalIP();

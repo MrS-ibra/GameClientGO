@@ -27,16 +27,18 @@
 // Author: Michael S. Booth, October 2000
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/AudioAffect.h"
 #include "Common/AudioHandleSpecialValues.h"
 #include "Common/BuildAssistant.h"
 #include "Common/CRCDebug.h"
+#include "Common/FramePacer.h"
 #include "Common/GameAudio.h"
 #include "Common/GameEngine.h"
 #include "Common/GameLOD.h"
 #include "Common/GameState.h"
+#include "Common/GameUtility.h"
 #include "Common/INI.h"
 #include "Common/LatchRestore.h"
 #include "Common/MapObject.h"
@@ -73,7 +75,6 @@
 #include "GameClient/ParticleSys.h"
 #include "GameClient/TerrainVisual.h"
 #include "GameClient/View.h"
-#include "GameClient/ControlBar.h"
 #include "GameClient/CampaignManager.h"
 #include "GameClient/GameWindowTransitions.h"
 
@@ -1720,9 +1721,23 @@ void GameLogic::startNewGame(Bool loadingSaveGame)
 	// update the loadscreen
 	updateLoadProgress(LOAD_PROGRESS_POST_VICTORY_CONDITION_SETUP);
 
+	Player *localPlayer = ThePlayerList->getLocalPlayer();
+	Player *observerPlayer = ThePlayerList->findPlayerWithNameKey(TheNameKeyGenerator->nameToKey("ReplayObserver"));
+
 	// set the radar as on a new map
-	TheRadar->newMap(TheTerrainLogic);
-	TheInGameUI->setClientQuiet(FALSE); // okay to start beeping and stuff
+	TheRadar->newMap( TheTerrainLogic );
+
+	// TheSuperHackers @tweak Force on radar for all observers.
+	for (Int i = 0; i < MAX_PLAYER_COUNT; ++i)
+	{
+		Player *player = ThePlayerList->getNthPlayer(i);
+		if (player->isPlayerObserver())
+		{
+			TheRadar->forceOn(i, TRUE);
+		}
+	}
+
+	TheInGameUI->setClientQuiet( FALSE ); // okay to start beeping and stuff
 
 	// Tell the multiplayer victory condition singleton that the players are created
 	TheVictoryConditions->cachePlayerPtrs();
@@ -1742,7 +1757,7 @@ void GameLogic::startNewGame(Bool loadingSaveGame)
 	ThePartitionManager->init();
 	ThePartitionManager->refreshShroudForLocalPlayer();// Can't do this until after init, and doesn't seem right to do in init
 
-	TheGhostObjectManager->setLocalPlayerIndex(ThePlayerList->getLocalPlayer()->getPlayerIndex());
+	TheGhostObjectManager->setLocalPlayerIndex(localPlayer->getPlayerIndex());
 	TheGhostObjectManager->reset();
 
 	// update the loadscreen
@@ -1817,8 +1832,8 @@ void GameLogic::startNewGame(Bool loadingSaveGame)
 	updateLoadProgress(LOAD_PROGRESS_POST_PATHFINDER_NEW_MAP);
 
 	// reveal the map for the permanent observer
-	ThePartitionManager->revealMapForPlayerPermanently(ThePlayerList->findPlayerWithNameKey(TheNameKeyGenerator->nameToKey("ReplayObserver"))->getPlayerIndex());
-	DEBUG_LOG(("Reveal shroud for %ls whose index is %d", ThePlayerList->findPlayerWithNameKey(TheNameKeyGenerator->nameToKey("ReplayObserver"))->getPlayerDisplayName().str(), ThePlayerList->findPlayerWithNameKey(TheNameKeyGenerator->nameToKey("ReplayObserver"))->getPlayerIndex()));
+	ThePartitionManager->revealMapForPlayerPermanently( observerPlayer->getPlayerIndex() );
+	DEBUG_LOG(("Reveal shroud for %ls whose index is %d", observerPlayer->getPlayerDisplayName().str(), observerPlayer->getPlayerIndex()));
 
 	if (game)
 	{
@@ -1857,7 +1872,7 @@ void GameLogic::startNewGame(Bool loadingSaveGame)
 
 	// If forceFluffToProp == true, removable objects get created on client only. [7/14/2003]
 	// If static lod is HIGH, we don't do force fluff to client side only (create logic side props, more expensive. jba)
-	Bool forceFluffToProp = TheGameLODManager->getStaticLODLevel() != STATIC_GAME_LOD_HIGH;
+	Bool forceFluffToProp = TheGameLODManager->getStaticLODLevel() < STATIC_GAME_LOD_HIGH;
 	if (TheGameLODManager->getStaticLODLevel() == STATIC_GAME_LOD_CUSTOM &&
 		TheGlobalData->m_useShadowVolumes) {
 		// Custom LOD, and volumetric shadows turned on - very high detail.  So use logic props too. jba. [7/14/2003]
@@ -2183,9 +2198,8 @@ void GameLogic::startNewGame(Bool loadingSaveGame)
 		// relationships.  If there is no "ThePlayer", we have to assume that
 		// all players on the map are the local player's enemy, except neutral
 		// and civilian players.
-		Player* localPlayer = ThePlayerList->getLocalPlayer();
 		DEBUG_ASSERTCRASH(localPlayer, ("Local player has not been established for Challenge map."));
-		Player* placeholderThePlayer = ThePlayerList->findPlayerWithNameKey(NAMEKEY("ThePlayer"));
+		Player *placeholderThePlayer = ThePlayerList->findPlayerWithNameKey(NAMEKEY("ThePlayer"));
 		DEBUG_ASSERTCRASH(placeholderThePlayer, ("Challenge maps without player \"ThePlayer\" assume that the local player is mutual enemies with all other players except the neutral and civilian players."));
 
 		if (placeholderThePlayer)
@@ -2328,15 +2342,15 @@ void GameLogic::startNewGame(Bool loadingSaveGame)
 				// explicitly set the Control bar to Observer Mode
 		if (m_gameMode == GAME_REPLAY)
 		{
+			rts::changeLocalPlayer(observerPlayer);
 
-			ThePlayerList->setLocalPlayer(ThePlayerList->findPlayerWithNameKey(TheNameKeyGenerator->nameToKey("ReplayObserver")));
-			TheRadar->forceOn(TRUE);
-			ThePartitionManager->refreshShroudForLocalPlayer();
-			TheControlBar->setControlBarSchemeByPlayer(ThePlayerList->getLocalPlayer());
-			DEBUG_LOG(("Start of a replay game %ls, %d", ThePlayerList->getLocalPlayer()->getPlayerDisplayName().str(), ThePlayerList->getLocalPlayer()->getPlayerIndex()));
+			DEBUG_LOG(("Start of a replay game %ls, %d", localPlayer->getPlayerDisplayName().str(), localPlayer->getPlayerIndex()));
 		}
 		else
-			TheControlBar->setControlBarSchemeByPlayer(ThePlayerList->getLocalPlayer());
+		{
+			TheControlBar->setControlBarSchemeByPlayer(localPlayer);
+			TheControlBar->initSpecialPowershortcutBar(localPlayer);
+		}
 		//		ShowControlBar();
 
 	}
@@ -2387,7 +2401,6 @@ void GameLogic::startNewGame(Bool loadingSaveGame)
 			}
 		}
 	}
-	TheControlBar->initSpecialPowershortcutBar(ThePlayerList->getLocalPlayer());
 
 	if (m_gameMode == GAME_SHELL)
 	{
@@ -4422,8 +4435,8 @@ void GameLogic::setGamePausedInFrame(UnsignedInt frame, Bool disableLogicTimeSca
 
 		if (disableLogicTimeScale)
 		{
-			m_logicTimeScaleEnabledMemory = TheGameEngine->isLogicTimeScaleEnabled();
-			TheGameEngine->enableLogicTimeScale(FALSE);
+			m_logicTimeScaleEnabledMemory = TheFramePacer->isLogicTimeScaleEnabled();
+			TheFramePacer->enableLogicTimeScale(FALSE);
 		}
 	}
 }
@@ -4462,7 +4475,7 @@ void GameLogic::pauseGameLogic(Bool paused)
 	if (!paused && m_logicTimeScaleEnabledMemory)
 	{
 		m_logicTimeScaleEnabledMemory = FALSE;
-		TheGameEngine->enableLogicTimeScale(TRUE);
+		TheFramePacer->enableLogicTimeScale(TRUE);
 	}
 }
 

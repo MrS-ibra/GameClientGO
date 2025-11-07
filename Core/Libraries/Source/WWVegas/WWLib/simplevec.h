@@ -47,16 +47,10 @@
  *   SimpleDynVecClass<T>::Delete_All -- delete all items from the array                       *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#if defined(_MSC_VER)
 #pragma once
-#endif
-
-#ifndef SIMPLEVEC_H
-#define SIMPLEVEC_H
 
 #include "always.h"
 #include <assert.h>
-#include <string.h>		// for memmove
 
 
 #if (_MSC_VER >= 1200)
@@ -639,6 +633,3 @@ inline int SimpleDynVecClass<T>::Find_Index(T const & object)
 #if (_MSC_VER >= 1200)
 #pragma warning (pop)
 #endif
-
-#endif // SIMPLEVEC_H
-

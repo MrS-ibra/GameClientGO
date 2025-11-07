@@ -28,7 +28,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // INCLUDES ///////////////////////////////////////////////////////////////////////////////////////
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #define DEFINE_SHADOW_NAMES								// for TheShadowNames[]
 #define DEFINE_WEAPONSLOTTYPE_NAMES
@@ -1420,6 +1420,11 @@ protected:
 				debris->getDrawable()->fadeOut(m_fadeFrames);
 			}
 		}
+
+#if !RETAIL_COMPATIBLE_CRC && !RETAIL_COMPATIBLE_BUG
+		ObjectID sinkID = sourceObj->getExperienceTracker()->getExperienceSink();
+		firstObject->getExperienceTracker()->setExperienceSink(sinkID != INVALID_ID ? sinkID : sourceObj->getID());
+#endif
 
 		if (container)
 			doStuffToObj(container, AsciiString::TheEmptyString, pos, mtx, orientation, sourceObj, lifetimeFrames);

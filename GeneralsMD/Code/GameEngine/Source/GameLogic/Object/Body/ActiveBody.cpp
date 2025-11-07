@@ -28,7 +28,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // INCLUDES ///////////////////////////////////////////////////////////////////////////////////////
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 #include "Common/BitFlagsIO.h"
 #include "Common/CRCDebug.h"
 #include "Common/DamageFX.h"
@@ -405,14 +405,19 @@ void ActiveBody::attemptDamage( DamageInfo *damageInfo )
 					}
 					else
 					{
-						//Removing the rider will scuttle the bike.
-						Object *rider = *(contain->getContainedItemsList()->begin());
-						ai->aiEvacuateInstantly( TRUE, CMD_FROM_AI );
+						// TheSuperHackers @bugfix Caball009 04/09/2025 Check whether a bike still has a rider.
+						// A rider may dismount or be sniped off a bike when it's disabled, resulting in a bike object with an empty contain list.
+						if ( !contain->getContainedItemsList()->empty() )
+						{
+							//Removing the rider will scuttle the bike.
+							Object* rider = *(contain->getContainedItemsList()->begin());
+							ai->aiEvacuateInstantly(TRUE, CMD_FROM_AI);
 
-						//Kill the rider.
-						if (damager)
-							damager->scoreTheKill( rider );
-						rider->kill();
+							//Kill the rider.
+							if (damager)
+								damager->scoreTheKill(rider);
+							rider->kill();
+						}
 					}
 				}
 				else

@@ -27,7 +27,7 @@
 // Author: Chris Huybregts, October 2001
 // Description: Lan Game Options Menu
 ///////////////////////////////////////////////////////////////////////////////////////
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 
 #include "Common/PlayerTemplate.h"
@@ -221,15 +221,8 @@ static void playerTooltip(GameWindow *window,
 		TheMouse->setCursorTooltip( UnicodeString::TheEmptyString );
 		return;
 	}
-	UnicodeString tooltip;
-	tooltip.format(TheGameText->fetch("TOOLTIP:LANPlayer"), player->getLogin().str(), player->getHost().str());
-#if defined(RTS_DEBUG)
-	UnicodeString ip;
-	ip.format(L" - %d.%d.%d.%d", PRINTF_IP_AS_4_INTS(player->getIP()));
-	tooltip.concat(ip);
-#endif
 
-	TheMouse->setCursorTooltip( tooltip );
+	setLANPlayerTooltip(player);
 }
 
 void StartPressed(void)
@@ -623,7 +616,7 @@ static void handleStartingCashSelection()
     GadgetComboBoxGetSelectedPos(comboBoxStartingCash, &selIndex);
 
     Money startingCash;
-    startingCash.deposit( (UnsignedInt)GadgetComboBoxGetItemData( comboBoxStartingCash, selIndex ), FALSE );
+    startingCash.deposit( (UnsignedInt)GadgetComboBoxGetItemData( comboBoxStartingCash, selIndex ), FALSE, FALSE );
     myGame->setStartingCash( startingCash );
     myGame->resetAccepted();
 
@@ -997,6 +990,29 @@ void updateGameOptions( void )
 	}
 }
 
+
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
+void setLANPlayerTooltip(LANPlayer* player)
+{
+	UnicodeString tooltip;
+
+	if (!player->getLogin().isEmpty() || !player->getHost().isEmpty())
+	{
+		tooltip.format(TheGameText->fetch("TOOLTIP:LANPlayer"), player->getLogin().str(), player->getHost().str());
+	}
+
+#if defined(RTS_DEBUG)
+	UnicodeString ip;
+	ip.format(L" - %d.%d.%d.%d", PRINTF_IP_AS_4_INTS(player->getIP()));
+	tooltip.concat(ip);
+#endif
+
+	if (!tooltip.isEmpty())
+	{
+		TheMouse->setCursorTooltip( tooltip );
+	}
+}
 
 
 //-------------------------------------------------------------------------------------------------

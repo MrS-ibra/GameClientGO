@@ -28,7 +28,7 @@
 // Description: LAN callback handlers
 ///////////////////////////////////////////////////////////////////////////////////////
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/crc.h"
 #include "Common/GameState.h"
@@ -46,7 +46,7 @@ void LANAPI::handleRequestLocations( LANMessage *msg, UnsignedInt senderIP )
 	{
 		LANMessage reply;
 		fillInLANMessage( &reply );
-		reply.LANMessageType = LANMessage::MSG_LOBBY_ANNOUNCE;
+		reply.messageType = LANMessage::MSG_LOBBY_ANNOUNCE;
 
 		sendMessage(&reply);
 		m_lastResendTime = timeGetTime();
@@ -60,11 +60,10 @@ void LANAPI::handleRequestLocations( LANMessage *msg, UnsignedInt senderIP )
 			{
 				LANMessage reply;
 				fillInLANMessage( &reply );
-				reply.LANMessageType = LANMessage::MSG_GAME_ANNOUNCE;
+				reply.messageType = LANMessage::MSG_GAME_ANNOUNCE;
 				AsciiString gameOpts = GenerateGameOptionsString();
-				strncpy(reply.GameInfo.options,gameOpts.str(),m_lanMaxOptionsLength);
-				wcsncpy(reply.GameInfo.gameName, m_currentGame->getName().str(), g_lanGameNameLength);
-				reply.GameInfo.gameName[g_lanGameNameLength] = 0;
+				strlcpy(reply.GameInfo.options, gameOpts.str(), ARRAY_SIZE(reply.GameInfo.options));
+				wcslcpy(reply.GameInfo.gameName, m_currentGame->getName().str(), ARRAY_SIZE(reply.GameInfo.gameName));
 				reply.GameInfo.inProgress = m_currentGame->isGameInProgress();
 
 				sendMessage(&reply);
@@ -190,12 +189,11 @@ void LANAPI::handleRequestGameInfo( LANMessage *msg, UnsignedInt senderIP )
 		{
 			LANMessage reply;
 			fillInLANMessage( &reply );
-			reply.LANMessageType = LANMessage::MSG_GAME_ANNOUNCE;
+			reply.messageType = LANMessage::MSG_GAME_ANNOUNCE;
 
 			AsciiString gameOpts = GameInfoToAsciiString(m_currentGame);
-			strncpy(reply.GameInfo.options,gameOpts.str(),m_lanMaxOptionsLength);
-			wcsncpy(reply.GameInfo.gameName, m_currentGame->getName().str(), g_lanGameNameLength);
-			reply.GameInfo.gameName[g_lanGameNameLength] = 0;
+			strlcpy(reply.GameInfo.options,gameOpts.str(), ARRAY_SIZE(reply.GameInfo.options));
+			wcslcpy(reply.GameInfo.gameName, m_currentGame->getName().str(), ARRAY_SIZE(reply.GameInfo.gameName));
 			reply.GameInfo.inProgress = m_currentGame->isGameInProgress();
 			reply.GameInfo.isDirectConnect = m_currentGame->getIsDirectConnect();
 
@@ -219,7 +217,7 @@ void LANAPI::handleRequestJoin( LANMessage *msg, UnsignedInt senderIP )
 	{
 		if (m_currentGame->isGameInProgress())
 		{
-			reply.LANMessageType = LANMessage::MSG_JOIN_DENY;
+			reply.messageType = LANMessage::MSG_JOIN_DENY;
 			reply.GameNotJoined.reason = LANAPIInterface::RET_GAME_STARTED;
 			reply.GameNotJoined.gameIP = m_localIP;
 			reply.GameNotJoined.playerIP = senderIP;
@@ -234,19 +232,21 @@ void LANAPI::handleRequestJoin( LANMessage *msg, UnsignedInt senderIP )
 #if defined(RTS_DEBUG)
 			if (TheGlobalData->m_netMinPlayers > 0) {
 #endif
-/*			if (msg->GameToJoin.iniCRC != TheGlobalData->m_iniCRC ||
+// TheSuperHackers @todo Enable CRC checks!
+#if !RTS_ZEROHOUR
+			if (msg->GameToJoin.iniCRC != TheGlobalData->m_iniCRC ||
 					msg->GameToJoin.exeCRC != TheGlobalData->m_exeCRC)
 			{
 				DEBUG_LOG(("LANAPI::handleRequestJoin - join denied because of CRC mismatch. CRCs are them/us INI:%X/%X exe:%X/%X",
 					msg->GameToJoin.iniCRC, TheGlobalData->m_iniCRC,
 					msg->GameToJoin.exeCRC, TheGlobalData->m_exeCRC));
-				reply.LANMessageType = LANMessage::MSG_JOIN_DENY;
+				reply.messageType = LANMessage::MSG_JOIN_DENY;
 				reply.GameNotJoined.reason = LANAPIInterface::RET_CRC_MISMATCH;
 				reply.GameNotJoined.gameIP = m_localIP;
 				reply.GameNotJoined.playerIP = senderIP;
 				canJoin = false;
 			}
-*/
+#endif
 #if defined(RTS_DEBUG)
 			}
 #endif
@@ -277,7 +277,7 @@ void LANAPI::handleRequestJoin( LANMessage *msg, UnsignedInt senderIP )
 					if (!strncmp(s.str(), msg->GameToJoin.serial, g_maxSerialLength))
 					{
 						// serials match!  kick the punk!
-						reply.LANMessageType = LANMessage::MSG_JOIN_DENY;
+						reply.messageType = LANMessage::MSG_JOIN_DENY;
 						reply.GameNotJoined.reason = LANAPIInterface::RET_SERIAL_DUPE;
 						reply.GameNotJoined.gameIP = m_localIP;
 						reply.GameNotJoined.playerIP = senderIP;
@@ -297,7 +297,7 @@ void LANAPI::handleRequestJoin( LANMessage *msg, UnsignedInt senderIP )
 				if (slot->isHuman() && slot->getName().compare(msg->name) == 0)
 				{
 					// just deny duplicates
-					reply.LANMessageType = LANMessage::MSG_JOIN_DENY;
+					reply.messageType = LANMessage::MSG_JOIN_DENY;
 					reply.GameNotJoined.reason = LANAPIInterface::RET_DUPLICATE_NAME;
 					reply.GameNotJoined.gameIP = m_localIP;
 					reply.GameNotJoined.playerIP = senderIP;
@@ -314,9 +314,8 @@ void LANAPI::handleRequestJoin( LANMessage *msg, UnsignedInt senderIP )
 				if (m_currentGame->getLANSlot(player)->isOpen())
 				{
 					// OK, add him in.
-					reply.LANMessageType = LANMessage::MSG_JOIN_ACCEPT;
-					wcsncpy(reply.GameJoined.gameName, m_currentGame->getName().str(), g_lanGameNameLength);
-					reply.GameJoined.gameName[g_lanGameNameLength] = 0;
+					reply.messageType = LANMessage::MSG_JOIN_ACCEPT;
+					wcslcpy(reply.GameJoined.gameName, m_currentGame->getName().str(), ARRAY_SIZE(reply.GameJoined.gameName));
 					reply.GameJoined.slotPosition = player;
 					reply.GameJoined.gameIP = m_localIP;
 					reply.GameJoined.playerIP = senderIP;
@@ -339,9 +338,8 @@ void LANAPI::handleRequestJoin( LANMessage *msg, UnsignedInt senderIP )
 
 			if (canJoin && player == MAX_SLOTS)
 			{
-				reply.LANMessageType = LANMessage::MSG_JOIN_DENY;
-				wcsncpy(reply.GameNotJoined.gameName, m_currentGame->getName().str(), g_lanGameNameLength);
-				reply.GameNotJoined.gameName[g_lanGameNameLength] = 0;
+				reply.messageType = LANMessage::MSG_JOIN_DENY;
+				wcslcpy(reply.GameNotJoined.gameName, m_currentGame->getName().str(), ARRAY_SIZE(reply.GameNotJoined.gameName));
 				reply.GameNotJoined.reason = LANAPIInterface::RET_GAME_FULL;
 				reply.GameNotJoined.gameIP = m_localIP;
 				reply.GameNotJoined.playerIP = senderIP;
@@ -351,7 +349,7 @@ void LANAPI::handleRequestJoin( LANMessage *msg, UnsignedInt senderIP )
 	}
 	else
 	{
-		reply.LANMessageType = LANMessage::MSG_JOIN_DENY;
+		reply.messageType = LANMessage::MSG_JOIN_DENY;
 		reply.GameNotJoined.reason = LANAPIInterface::RET_GAME_GONE;
 		reply.GameNotJoined.gameIP = m_localIP;
 		reply.GameNotJoined.playerIP = senderIP;

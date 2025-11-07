@@ -28,13 +28,14 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES ////////////////////////////////////////////////////////////
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 #include "GameClient/GameClient.h"
 
 // USER INCLUDES //////////////////////////////////////////////////////////////
 #include "Common/ActionManager.h"
 #include "Common/GameEngine.h"
 #include "Common/GameState.h"
+#include "Common/GameUtility.h"
 #include "Common/GlobalData.h"
 #include "Common/PerfTimer.h"
 #include "Common/Player.h"
@@ -646,42 +647,38 @@ void GameClient::update( void )
 		TheVideoPlayer->UPDATE();
 	}
 
-	Bool freezeTime = TheTacticalView->isTimeFrozen() && !TheTacticalView->isCameraMovementFinished();
-	freezeTime = freezeTime || TheScriptEngine->isTimeFrozenDebug();
-	freezeTime = freezeTime || TheScriptEngine->isTimeFrozenScript();
-	freezeTime = freezeTime || TheGameLogic->isGamePaused();
-	Int localPlayerIndex = ThePlayerList ? ThePlayerList->getLocalPlayer()->getPlayerIndex() : 0;
+	const Bool freezeTime = TheGameEngine->isTimeFrozen() || TheGameEngine->isGameHalted();
 
-	// hack to let client spin fast in network games but still do effects at the same pace. -MDC
-	static UnsignedInt lastFrame = ~0;
-	freezeTime = freezeTime || (lastFrame == m_frame);
-	lastFrame = m_frame;
+	const Int localPlayerIndex = rts::getObservedOrLocalPlayer()->getPlayerIndex();
 
 	if (!freezeTime)
 	{
+		Int numPlayers = ThePlayerList->getPlayerCount();
+		Int numNonLocalPlayers = 0;
+		Int nonLocalPlayerIndices[MAX_PLAYER_COUNT];
+
 #if ENABLE_CONFIGURABLE_SHROUD
 		if (TheGlobalData->m_shroudOn)
 #else
 		if (true)
 #endif
 		{
-			//localPlayerIndex=TheGhostObjectManager->getLocalPlayerIndex();	//always use the first local player set since normally can't change.  Doesn't work with debug "CTRL_SHIFT_SPACE"
-#ifdef DEBUG_FOG_MEMORY
-			//Find indices of all active players
-			Int numPlayers=ThePlayerList->getPlayerCount();
-			Int numNonLocalPlayers=0;
-			Int nonLocalPlayerIndices[MAX_PLAYER_COUNT];
-			for (Int i=0; i<numPlayers; i++)
-			{	Player *player=ThePlayerList->getNthPlayer(i);
-				//if (player->getPlayerType == PLAYER_HUMAN)
-				if (player->getPlayerIndex() != localPlayerIndex)
-					nonLocalPlayerIndices[numNonLocalPlayers++]=player->getPlayerIndex();
+			if (TheGhostObjectManager->trackAllPlayers())
+			{
+				//Find indices of all active players
+				for (Int i=0; i < numPlayers; i++)
+				{
+					Player *player = ThePlayerList->getNthPlayer(i);
+					if (player->getPlayerTemplate() != NULL && player->getPlayerIndex() != localPlayerIndex)
+						nonLocalPlayerIndices[numNonLocalPlayers++] = player->getPlayerIndex();
+				}
+				//update ghost objects which don't have drawables or objects.
+				TheGhostObjectManager->updateOrphanedObjects(nonLocalPlayerIndices, numNonLocalPlayers);
 			}
-			//update ghostObjects which don't have drawables or objects.
-			TheGhostObjectManager->updateOrphanedObjects(nonLocalPlayerIndices,numNonLocalPlayers);
-#else
-			TheGhostObjectManager->updateOrphanedObjects(NULL,0);
-#endif
+			else
+			{
+				TheGhostObjectManager->updateOrphanedObjects(NULL, 0);
+			}
 		}
 
 
@@ -695,20 +692,31 @@ void GameClient::update( void )
 #else
 			if (true)
 #endif
-			{	//immobile objects need to take snapshots whenever they become fogged
+			{
+				//immobile objects need to take snapshots whenever they become fogged
 				//so need to refresh their status.  We can't rely on external calls
 				//to getShroudStatus() because they are only made for visible on-screen
 				//objects.
 				Object *object=draw->getObject();
 				if (object)
 				{
-	#ifdef DEBUG_FOG_MEMORY
-					Int *playerIndex=nonLocalPlayerIndices;
-					for (i=0; i<numNonLocalPlayers; i++, playerIndex++)
-						object->getShroudedStatus(*playerIndex);
-	#endif
+					if (TheGhostObjectManager->trackAllPlayers())
+					{
+						// TheSuperHackers @info Update the shrouded status for all objects
+						// that own a ghost object for all non local players. This is costly.
+						if (object->hasGhostObject())
+						{
+							Int *playerIndex = nonLocalPlayerIndices;
+							Int *const playerIndexEnd = nonLocalPlayerIndices + numNonLocalPlayers;
+							for (; playerIndex < playerIndexEnd; ++playerIndex)
+							{
+								object->getShroudedStatus(*playerIndex);
+							}
+						}
+					}
+
 					ObjectShroudStatus ss=object->getShroudedStatus(localPlayerIndex);
-					if (ss >= OBJECTSHROUD_FOGGED && draw->getShroudClearFrame()!=0) {
+					if (ss >= OBJECTSHROUD_FOGGED && draw->getShroudClearFrame() != InvalidShroudClearFrame) {
 						UnsignedInt limit = 2*LOGICFRAMES_PER_SECOND;
 						if (object->isEffectivelyDead()) {
 							// extend the time, so we can see the dead plane blow up & crash.
@@ -847,7 +855,7 @@ void GameClient::updateFakeDrawables(void)
 
 		if( object && object->isKindOf( KINDOF_FS_FAKE ) )
 		{
-			Relationship rel=ThePlayerList->getLocalPlayer()->getRelationship(object->getTeam());
+			Relationship rel = rts::getObservedOrLocalPlayer()->getRelationship(object->getTeam());
 			if (rel == ALLIES || rel == NEUTRAL)
 				draw->setTerrainDecal(TERRAIN_DECAL_SHADOW_TEXTURE);
 			else

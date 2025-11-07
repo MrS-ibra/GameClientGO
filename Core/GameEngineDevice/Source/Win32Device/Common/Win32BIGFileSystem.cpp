@@ -42,8 +42,6 @@
 #include "Win32Device/Common/Win32BIGFileSystem.h"
 #include "Utility/endian_compat.h"
 
-#include "../NextGenMP_defines.h"
-
 
 static const char *BIGFileIdentifier = "BIGF";
 
@@ -131,7 +129,7 @@ ArchiveFile * Win32BIGFileSystem::openArchiveFile(const Char *filename) {
 	// read in each directory listing.
 	ArchivedFileInfo *fileInfo = NEW ArchivedFileInfo;
 	// TheSuperHackers @fix Mauller 23/04/2025 Create new file handle when necessary to prevent memory leak
-	ArchiveFile *archiveFile = NEW Win32BIGFile;
+	ArchiveFile *archiveFile = NEW Win32BIGFile(filename, AsciiString::TheEmptyString);
 
 	for (Int i = 0; i < numLittleFiles; ++i) {
 		Int filesize = 0;
@@ -222,17 +220,7 @@ Bool Win32BIGFileSystem::loadBigFilesFromDirectory(AsciiString dir, AsciiString 
 
 		if (archiveFile != NULL) {
 			DEBUG_LOG(("Win32BIGFileSystem::loadBigFilesFromDirectory - loading %s into the directory tree.", (*it).str()));
-
-			// NGMP_CHANGE: The EA version ships with a duplicate and outdated INIZH file. GameEngine.cpp line 342 tries to delete it - but this does not work on EA App/Origin installs because the folder is owned by the app and is not writeable.
-			//				So instead, we just don't load it.
-			AsciiString fileLower = (*it);
-			fileLower.toLower(); // in place
-			if (strcmp(fileLower.str(), "data\\ini\\inizh.big") == 0)
-			{
-				it++;
-				continue;
-			}
-			loadIntoDirectoryTree(archiveFile, *it, overwrite);
+			loadIntoDirectoryTree(archiveFile, overwrite);
 			m_archiveFileMap[(*it)] = archiveFile;
 			DEBUG_LOG(("Win32BIGFileSystem::loadBigFilesFromDirectory - %s inserted into the archive file map.", (*it).str()));
 			actuallyAdded = TRUE;

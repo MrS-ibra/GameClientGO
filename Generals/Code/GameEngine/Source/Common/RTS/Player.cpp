@@ -42,7 +42,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "PreRTS.h"	// This must go first in EVERY cpp file int the GameEngine
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #define DEFINE_SCIENCE_AVAILABILITY_NAMES
 
@@ -98,6 +98,7 @@
 #include "GameLogic/Module/BattlePlanUpdate.h"
 #include "GameLogic/VictoryConditions.h"
 
+#include "GameNetwork/GameInfo.h"
 
 
 //Grey for neutral.
@@ -447,7 +448,16 @@ void Player::init(const PlayerTemplate* pt)
 
 		if( m_money.countMoney() == 0 )
 		{
-			m_money.deposit( TheGlobalData->m_defaultStartingCash, FALSE );
+			// TheSuperHackers @bugfix Now correctly deposits the money and fixes its audio and academy issues.
+			// Note that copying the entire Money class instead would also copy the player index inside of it.
+			if ( TheGameInfo )
+			{
+				m_money.deposit( TheGameInfo->getStartingCash().countMoney(), FALSE, FALSE );
+			}
+			else
+			{
+				m_money.deposit( TheGlobalData->m_defaultStartingCash.countMoney(), FALSE, FALSE );
+			}
 		}
 
 		m_playerDisplayName.clear();
@@ -693,13 +703,15 @@ void Player::update()
 		}
 	}
 
-#if !RETAIL_COMPATIBLE_CRC
+#if !RETAIL_COMPATIBLE_BUG && !RETAIL_COMPATIBLE_CRC
 	// TheSuperHackers @bugfix Stubbjax 26/09/2025 The Tunnel System now heals
 	// all units once per frame instead of once per frame per Tunnel Network.
 	TunnelTracker* tunnelSystem = getTunnelSystem();
 	if (tunnelSystem)
 		tunnelSystem->healObjects();
 #endif
+
+	m_money.updateIncomeBucket();
 }
 
 //=============================================================================
@@ -1811,7 +1823,7 @@ void Player::transferAssetsFromThat(Player *that)
 	// transfer all his money
 	UnsignedInt allMoney = that->getMoney()->countMoney();
 	that->getMoney()->withdraw(allMoney);
-	getMoney()->deposit(allMoney);
+	getMoney()->deposit(allMoney, TRUE, FALSE);
 }
 
 //=============================================================================
@@ -2549,7 +2561,7 @@ Upgrade *Player::findUpgrade( const UpgradeTemplate *upgradeTemplate )
 //=================================================================================================
 /** Does the player have this completed upgrade */
 //=================================================================================================
-Bool Player::hasUpgradeComplete( const UpgradeTemplate *upgradeTemplate )
+Bool Player::hasUpgradeComplete( const UpgradeTemplate *upgradeTemplate ) const
 {
 	UpgradeMaskType testMask = upgradeTemplate->getUpgradeMask();
 	return hasUpgradeComplete( testMask );
@@ -2560,7 +2572,7 @@ Bool Player::hasUpgradeComplete( const UpgradeTemplate *upgradeTemplate )
 	Does the player have this completed upgrade.  This form is exposed so Objects can do quick lookups.
 */
 //=================================================================================================
-Bool Player::hasUpgradeComplete( UpgradeMaskType testMask )
+Bool Player::hasUpgradeComplete( UpgradeMaskType testMask ) const
 {
 	return m_upgradesCompleted.testForAll( testMask );
 }
