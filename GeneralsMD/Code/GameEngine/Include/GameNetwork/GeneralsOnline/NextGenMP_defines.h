@@ -57,6 +57,9 @@
 
 //#define GENERALS_ONLINE_RUN_FAST 1
 
+// Set retail bugs on, we don't have the INI changes etc necessary yet
+#define RETAIL_COMPATIBLE_BUG 1
+
 #define GENERALS_ONLINE_DEFAULT_LOBBY_CAMERA_ZOOM 310
 #define GENERALS_ONLINE_MIN_LOBBY_CAMERA_ZOOM 210
 #define GENERALS_ONLINE_MAX_LOBBY_CAMERA_ZOOM 1000
