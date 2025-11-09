@@ -71,6 +71,10 @@ struct LobbyEntry
 	std::string password;
 
 	std::vector<LobbyMemberEntry> members;
+
+	std::string region;
+
+	int latency;
 };
 
 enum class EJoinLobbyResult

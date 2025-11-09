@@ -462,12 +462,16 @@ void NGMP_OnlineServices_LobbyInterface::SearchForLobbies(std::function<void()> 
 	std::map<std::string, std::string> mapHeaders;
 
 	NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendGETRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
-	{
-		// TODO_NGMP: Error handling
-		try
 		{
-			nlohmann::json jsonObject = nlohmann::json::parse(strBody);
+			try
+			{
+				nlohmann::json jsonObject = nlohmann::json::parse(strBody);
 
+				std::vector<int> vecLatencies;
+
+				jsonObject["latencies"].get_to(vecLatencies);
+
+				int latencyIndex = 0;
 			for (const auto& lobbyEntryIter : jsonObject["lobbies"])
 			{
 				LobbyEntry lobbyEntry;
@@ -490,6 +494,19 @@ void NGMP_OnlineServices_LobbyInterface::SearchForLobbies(std::function<void()> 
 				lobbyEntryIter["IniCRC"].get_to(lobbyEntry.ini_crc);
 				lobbyEntryIter["MatchID"].get_to(lobbyEntry.match_id);
 				lobbyEntryIter["LobbyType"].get_to(lobbyEntry.lobby_type);
+				lobbyEntryIter["Region"].get_to(lobbyEntry.region);
+
+				// attach latency
+				if (latencyIndex < vecLatencies.size())
+				{
+					lobbyEntry.latency = vecLatencies[latencyIndex];
+				}
+				else
+				{
+					// dummy value
+					lobbyEntry.latency = 9001;
+				}
+				++latencyIndex;
 
 				// correct map path
 				if (lobbyEntry.map_official)
@@ -722,6 +739,7 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 						lobbyEntryIter["IniCRC"].get_to(lobbyEntry.ini_crc);
 						lobbyEntryIter["MatchID"].get_to(lobbyEntry.match_id);
 						lobbyEntryIter["LobbyType"].get_to(lobbyEntry.lobby_type);
+						lobbyEntryIter["Region"].get_to(lobbyEntry.region);
 
 						// store, we'll need it later and lobby obj gets destroyed on leave
 						m_CurrentMatchID = lobbyEntry.match_id;

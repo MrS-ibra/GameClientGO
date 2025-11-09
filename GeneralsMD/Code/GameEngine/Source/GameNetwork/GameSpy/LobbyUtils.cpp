@@ -76,9 +76,9 @@ enum {
 	COLUMN_LADDER,
 	COLUMN_NUMPLAYERS,
 	COLUMN_PASSWORD,
-	COLUMN_PING,
+	COLUMN_OBSERVER,
   COLUMN_USE_STATS,
-  COLUMN_OBSERVER,
+  COLUMN_PING
 };
 #else
 enum {
@@ -336,6 +336,14 @@ static void gameTooltip(GameWindow* window,
 	UnicodeString gameName;
 	gameName.format(L"%s", from_utf8(lobbyEntry.name).c_str());
 	tooltip.format(TheGameText->fetch("TOOLTIP:GameInfoGameName"), gameName.str());
+
+	UnicodeString region;
+	region.format(L"\n\nRegion: %s", from_utf8(lobbyEntry.region).c_str());
+	tooltip.concat(region);
+
+	UnicodeString latency;
+	latency.format(L"\nLatency: %d (%d frames)\n", lobbyEntry.latency, ConvertMSLatencyToGenToolFrames(lobbyEntry.latency));
+	tooltip.concat(latency);
 #else
 	tooltip.format(TheGameText->fetch("TOOLTIP:GameInfoGameName"), room->getGameName().str());
 #endif
@@ -663,8 +671,7 @@ static Int insertGame(GameWindow* win, LobbyEntry& lobbyInfo, Bool showMap)
 	bool bAllowSpectators = lobbyInfo.allow_observers;
 	bool bTrackStats = lobbyInfo.track_stats;
 
-	// TODO_NGMP
-	int latency = 5;
+	int latency = lobbyInfo.latency;
 
 	// TODO_NGMP: Asian text
 	/*
@@ -799,11 +806,11 @@ static Int insertGame(GameWindow* win, LobbyEntry& lobbyInfo, Bool showMap)
 	}
 	// CLH picking an arbitrary number for our ping display
 	// TODO_NGMP: Better values for this
-	if (ping < 30)
+	if (ping < 250)
 	{
 		GadgetListBoxAddEntryImage(win, pingImages[0], index, COLUMN_PING, width, height);
 	}
-	else if (ping < 70)
+	else if (ping < 500)
 	{
 		GadgetListBoxAddEntryImage(win, pingImages[1], index, COLUMN_PING, width, height);
 	}
