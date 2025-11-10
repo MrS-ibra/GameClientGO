@@ -13,7 +13,7 @@ size_t WriteMemoryCallback(void* contents, size_t sizePerByte, size_t numBytes, 
 }
 
 HTTPRequest::HTTPRequest(EHTTPVerb httpVerb, EIPProtocolVersion protover, const char* szURI, std::map<std::string, std::string>& inHeaders, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback,
-	std::function<void(size_t bytesReceived)> progressCallback /*= nullptr*/, int timeoutMS/*= -1*/, bool bApplyRestrictiveCountryOverride/* = false*/) noexcept
+	std::function<void(size_t bytesReceived)> progressCallback /*= nullptr*/, int timeoutMS/*= -1*/) noexcept
 {	
 	m_pCURL = curl_easy_init();
 
@@ -31,8 +31,6 @@ HTTPRequest::HTTPRequest(EHTTPVerb httpVerb, EIPProtocolVersion protover, const 
 	m_mapHeaders = inHeaders;
 
 	m_progressCallback = progressCallback;
-
-	m_bApplyRestrictiveCountryOverride = bApplyRestrictiveCountryOverride;
 }
 
 HTTPRequest::~HTTPRequest()

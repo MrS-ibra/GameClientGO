@@ -12,7 +12,7 @@ class HTTPRequest
 {
 public:
 	HTTPRequest(EHTTPVerb httpVerb, EIPProtocolVersion protover, const char* szURI, std::map<std::string, std::string>& inHeaders, std::function<void(bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)> completionCallback, std::function<void(size_t bytesReceived)>
-		progressCallback = nullptr, int timeout = -1, bool bApplyRestrictiveCountryOverride = false) noexcept;
+		progressCallback = nullptr, int timeout = -1) noexcept;
 	~HTTPRequest();
 
 	bool EasyHandleMatches(CURL* pHandle)
@@ -91,7 +91,6 @@ private:
 	bool m_bNeedsProgressUpdate = false;
 	bool m_bIsStarted = false;
 	bool m_bIsComplete = false;
-	bool m_bApplyRestrictiveCountryOverride = false;
 
 	struct curl_slist* headers = nullptr;
 

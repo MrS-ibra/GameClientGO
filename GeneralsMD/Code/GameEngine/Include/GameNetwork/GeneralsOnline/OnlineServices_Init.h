@@ -282,13 +282,6 @@ struct ServiceConfig
 		use_default_config, ra_slack_override_percent_in_default, do_probes, do_replay_upload)
 };
 
-struct ServiceCountryConfig
-{
-	bool apply_restrictive_country_tls_settings = false;
-
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ServiceCountryConfig, apply_restrictive_country_tls_settings)
-};
-
 class NGMP_OnlineServicesManager
 {
 private:
@@ -402,7 +395,6 @@ public:
 	void WaitForScreenshotThreads();
 
 	void GetAndParseServiceConfig(std::function<void(void)> cbOnDone);
-	void GetAndParseServiceCountryConfig(std::function<void(void)> cbOnDone);
 
 	~NGMP_OnlineServicesManager()
 	{
@@ -504,7 +496,6 @@ public:
 	NGMP_OnlineServices_MatchmakingInterface* m_pMatchmakingInterface = nullptr;
 
 	ServiceConfig& GetServiceConfig() { return m_ServiceConfig; }
-	ServiceCountryConfig& GetServiceCountryConfig() { return m_ServiceCountryConfig; }
 
 private:
 	// main thread SS Upload
@@ -516,7 +507,6 @@ private:
 	std::mutex m_mutexScreenshotThreads;
 
 	ServiceConfig m_ServiceConfig;
-	ServiceCountryConfig m_ServiceCountryConfig;
 
 	HTTPManager* m_pHTTPManager = nullptr;
 
