@@ -73,6 +73,12 @@ void HTTPRequest::StartRequest()
 
 void HTTPRequest::OnResponsePartialWrite(std::uint8_t* pBuffer, size_t numBytes)
 {
+	if (m_currentBufSize_Used + numBytes > m_vecBuffer.size())
+	{
+		size_t newSize = std::max<size_t>(m_vecBuffer.size() * 2, m_currentBufSize_Used + numBytes);
+		m_vecBuffer.resize(newSize);
+	}
+
 	// do we need a buffer resize?
 	if (m_currentBufSize_Used + numBytes >= m_vecBuffer.size())
 	{

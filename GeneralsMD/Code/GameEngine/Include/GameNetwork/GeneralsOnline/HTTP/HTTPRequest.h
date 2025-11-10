@@ -86,7 +86,7 @@ private:
 	CURLcode m_pendingCURLCode = CURL_LAST;
 #endif
 
-	const size_t g_initialBufSize = (1024 * 4); // 4KB
+	const size_t g_initialBufSize = (1024 * 32); // 32KB
 
 	bool m_bNeedsProgressUpdate = false;
 	bool m_bIsStarted = false;
