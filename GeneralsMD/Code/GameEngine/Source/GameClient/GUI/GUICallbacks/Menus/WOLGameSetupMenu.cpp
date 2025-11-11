@@ -530,13 +530,13 @@ static void playerTooltip(GameWindow *window,
 	}
 	else if (bIsConnected)
 	{
-		playerInfo.format(L"\nConnection State: Connected (%hs)\nLatency: %d ms\nWins: %d\nLosses: %d\nDisconnects: %d\nFavorite Army: %s",
-			strConnectionType.c_str(), latency, totalWins, totalLosses, totalDiscons, favoriteSide.str());
+		playerInfo.format(L"\nConnection State: Connected (%hs)\nLatency: %d ms\nRegion: %hs\nWins: %d\nLosses: %d\nDisconnects: %d\nFavorite Army: %s",
+			strConnectionType.c_str(), latency, member.region.c_str(), totalWins, totalLosses, totalDiscons, favoriteSide.str());
 	}
 	else
 	{
-		playerInfo.format(L"\nConnection State: Connecting...\nLatency: %d ms\nWins: %d\nLosses: %d\nDisconnects: %d\nFavorite Army: %s",
-			latency, totalWins, totalLosses, totalDiscons, favoriteSide.str());
+		playerInfo.format(L"\nConnection State: Connecting...\nLatency: %d ms\nRegion: %hs\nWins: %d\nLosses: %d\nDisconnects: %d\nFavorite Army: %s",
+			latency, member.region.c_str(), totalWins, totalLosses, totalDiscons, favoriteSide.str());
 	}
 #else
 			playerInfo.format(L"\nLatency: %d ms\nWins: %d\nLosses: %d\nDisconnects: %d\nFavorite Army: %s",

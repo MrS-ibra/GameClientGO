@@ -1121,3 +1121,21 @@ int PlayerConnection::GetLatency()
 
 	return -1;
 }
+
+float PlayerConnection::GetConnectionQuality()
+{
+	if (m_hSteamConnection != k_HSteamNetConnection_Invalid)
+	{
+		const int k_nLanes = 1;
+		SteamNetConnectionRealTimeStatus_t status;
+		SteamNetConnectionRealTimeLaneStatus_t laneStatus[k_nLanes];
+
+		EResult res = SteamNetworkingSockets()->GetConnectionRealTimeStatus(m_hSteamConnection, &status, k_nLanes, laneStatus);
+		if (res == k_EResultOK)
+		{
+			return std::min<float>(status.m_flConnectionQualityLocal, status.m_flConnectionQualityRemote);
+		}
+	}
+
+	return -1;
+}
