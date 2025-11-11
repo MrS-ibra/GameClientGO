@@ -468,8 +468,24 @@ void NGMP_OnlineServices_LobbyInterface::SearchForLobbies(std::function<void()> 
 				nlohmann::json jsonObject = nlohmann::json::parse(strBody);
 
 				std::vector<int> vecLatencies;
+				std::map<int64_t, int> mapPlayerLatencies;
 
 				jsonObject["latencies"].get_to(vecLatencies);
+
+				// player latencies
+				for (const auto& playerLatencyEntryIter : jsonObject["playerlatencies"])
+				{
+					int64_t user_id = -1;
+					int latency = -1;
+
+					playerLatencyEntryIter["user_id"].get_to(user_id);
+					playerLatencyEntryIter["latency"].get_to(latency);
+
+					if (user_id != -1 && latency != -1)
+					{
+						mapPlayerLatencies[user_id] = latency;
+					}
+				}
 
 				int latencyIndex = 0;
 			for (const auto& lobbyEntryIter : jsonObject["lobbies"])
@@ -530,6 +546,17 @@ void NGMP_OnlineServices_LobbyInterface::SearchForLobbies(std::function<void()> 
 					memberEntryIter["IsReady"].get_to(memberEntry.m_bIsReady);
 					memberEntryIter["SlotIndex"].get_to(memberEntry.m_SlotIndex);
 					memberEntryIter["SlotState"].get_to(memberEntry.m_SlotState);
+					memberEntryIter["Region"].get_to(memberEntry.region);
+
+					// store latency
+					if (mapPlayerLatencies.contains(memberEntry.user_id))
+					{
+						memberEntry.latency = mapPlayerLatencies[memberEntry.user_id];
+					}
+					else
+					{
+						memberEntry.latency = 0;
+					}
 
 					lobbyEntry.members.push_back(memberEntry);
 				}

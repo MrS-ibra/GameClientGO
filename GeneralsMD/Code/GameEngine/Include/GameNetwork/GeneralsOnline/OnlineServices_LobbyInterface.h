@@ -26,6 +26,8 @@ struct LobbyMemberEntry : public NetworkMemberBase
 	uint16_t m_SlotIndex = 999999;
 	uint16_t m_SlotState = SlotState::SLOT_OPEN;
 
+	std::string region;
+	int latency = 0;
 
 	bool IsHuman() const
 	{
@@ -73,7 +75,6 @@ struct LobbyEntry
 	std::vector<LobbyMemberEntry> members;
 
 	std::string region;
-
 	int latency;
 };
 

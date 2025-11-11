@@ -374,6 +374,7 @@ static void gameTooltip(GameWindow* window,
 	}
 	tmp.format(TheGameText->fetch("TOOLTIP:GameInfoMap"), mapName.str());
 	tooltip.concat(tmp);
+	tooltip.concat(L"\n");
 
 #if defined(GENERALS_ONLINE)
 	for (LobbyMemberEntry& member : lobbyEntry.members)
@@ -381,7 +382,7 @@ static void gameTooltip(GameWindow* window,
 		if (member.IsHuman())
 		{
 			UnicodeString plrName;
-			plrName.format(L"%s", from_utf8(member.display_name).c_str());
+			plrName.format(L"%s [%hs, %dms latency]", from_utf8(member.display_name).c_str(), member.region.c_str(), member.latency);
 
 			// TODO_NGMP: We don't have stats info
 			//tmp.format(TheGameText->fetch("TOOLTIP:GameInfoPlayer"), plrName.str(), slot->getWins(), slot->getLosses());

@@ -477,6 +477,17 @@ void ScoreScreenUpdate( WindowLayout * layout, void *userData)
 				TheAudio->update();//Since GameEngine::update() is suspended until after I am gone... 
 			}
 		}
+
+		NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+		if (pLobbyInterface != nullptr)
+		{
+			// populate match info
+			if (pLobbyInterface->IsInLobby())
+			{
+				pLobbyInterface->LeaveCurrentLobby();
+
+			}
+		}
 	}
 }
 
@@ -1160,8 +1171,6 @@ void initInternetMultiPlayer(void)
  			
 
 		}
-
-		pLobbyInterface->LeaveCurrentLobby();
 	}
 #endif
 

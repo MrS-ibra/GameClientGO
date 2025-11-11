@@ -180,7 +180,12 @@ Bool NextGenTransport::doSend(void)
 				return FALSE;
 			}
 
-			NGMPGameSlot* pSlot = (NGMPGameSlot*)pLobbyInterface->GetCurrentGame()->getSlot(m_outBuffer[i].addr);
+			if (TheNGMPGame == nullptr)
+			{
+				return FALSE;
+			}
+
+			NGMPGameSlot* pSlot = (NGMPGameSlot*)TheNGMPGame->getSlot(m_outBuffer[i].addr);
 
 			if (pSlot != nullptr)
 			{
