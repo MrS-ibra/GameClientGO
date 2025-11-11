@@ -162,8 +162,20 @@ void NGMP_OnlineServices_AuthInterface::BeginLogin()
 				// if 4XX, just log in again
 				if (statusCode >= 400 && statusCode < 500)
 				{
-					NetworkLog(ELogVerbosity::LOG_RELEASE, "LOGIN: Login failed due to 4XX code, trying to re-auth");
-					DoReAuth();
+					if (statusCode == 423)
+					{
+						ClearGSMessageBoxes();
+						GSMessageBoxOk(UnicodeString(L"Account Banned"), UnicodeString(L"You are banned. You can file an appeal in Discord."), []()
+							{
+								TheShell->pop();
+							});
+						return;
+					}
+					else
+					{
+						NetworkLog(ELogVerbosity::LOG_RELEASE, "LOGIN: Login failed due to 4XX code, trying to re-auth");
+						DoReAuth();
+					}
 				}
 				else
 				{
@@ -276,6 +288,17 @@ void NGMP_OnlineServices_AuthInterface::Tick()
 				{
 					try
 					{
+						if (statusCode == 423)
+						{
+							m_bWaitingLogin = false;
+							ClearGSMessageBoxes();
+							GSMessageBoxOk(UnicodeString(L"Account Banned"), UnicodeString(L"You are banned. You can file an appeal in Discord."), []()
+								{
+									TheShell->pop();
+								});
+							return;
+						}
+
 						nlohmann::json jsonObject = nlohmann::json::parse(strBody);
 						AuthResponse authResp = jsonObject.get<AuthResponse>();
 

@@ -227,8 +227,9 @@ class WebSocketMessage_RoomChatIncoming : public WebSocketMessageBase
 public:
 	std::string message;
 	bool action;
+	bool admin;
 
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_RoomChatIncoming, msg_id, message, action)
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_RoomChatIncoming, msg_id, message, action, admin)
 };
 
 class WebSocketMessage_NetworkSignal : public WebSocketMessageBase
@@ -447,7 +448,7 @@ void WebSocket::Tick()
 										{
 											UnicodeString unicodeStr(from_utf8(chatData.message).c_str());
 
-											Color color = DetermineColorForChatMessage(EChatMessageType::CHAT_MESSAGE_TYPE_NETWORK_ROOM, true, chatData.action);
+											Color color = DetermineColorForChatMessage(EChatMessageType::CHAT_MESSAGE_TYPE_NETWORK_ROOM, true, chatData.action, chatData.admin);
 
 											NGMP_OnlineServices_RoomsInterface* pRoomsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_RoomsInterface>();
 											if (pRoomsInterface != nullptr && pRoomsInterface->m_OnChatCallback != nullptr)
@@ -647,7 +648,8 @@ void WebSocket::Tick()
 													}
 												}
 
-												Color color = DetermineColorForChatMessage(EChatMessageType::CHAT_MESSAGE_TYPE_LOBBY, true, chatData.action, lobbySlot);
+												// no admin chat in lobby
+												Color color = DetermineColorForChatMessage(EChatMessageType::CHAT_MESSAGE_TYPE_LOBBY, true, chatData.action, false, lobbySlot);
 
 												if (pLobbyInterface->m_OnChatCallback != nullptr)
 												{

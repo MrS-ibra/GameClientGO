@@ -13,14 +13,14 @@ enum class EChatMessageType
 	CHAT_MESSAGE_TYPE_NETWORK_ROOM,
 	CHAT_MESSAGE_TYPE_LOBBY
 };
-static Color DetermineColorForChatMessage(EChatMessageType chatMessageType, Bool isPublic, Bool isAction, int lobbySlot = -1)
+static Color DetermineColorForChatMessage(EChatMessageType chatMessageType, Bool isPublic, bool bAction, bool bAdmin, int lobbySlot = -1)
 {
 	Color style = GameMakeColor(255, 255, 255, 255);
 
 	// TODO_NGMP: Support owner chat again
 	Bool isOwner = false;
 
-	if (isPublic && isAction)
+	if (isPublic && bAction)
 	{
 		style = (isOwner) ? GameSpyColor[GSCOLOR_CHAT_OWNER_EMOTE] : GameSpyColor[GSCOLOR_CHAT_EMOTE];
 	}
@@ -54,10 +54,17 @@ static Color DetermineColorForChatMessage(EChatMessageType chatMessageType, Bool
 		}
 		else
 		{
-			style = (isOwner) ? GameSpyColor[GSCOLOR_CHAT_OWNER] : GameSpyColor[GSCOLOR_CHAT_NORMAL];
+			if (bAdmin)
+			{
+				style = GameMakeColor(0, 162, 232, 255);
+			}
+			else
+			{
+				style = (isOwner) ? GameSpyColor[GSCOLOR_CHAT_OWNER] : GameSpyColor[GSCOLOR_CHAT_NORMAL];
+			}
 		}
 	}
-	else if (isAction)
+	else if (bAction)
 	{
 		style = (isOwner) ? GameSpyColor[GSCOLOR_CHAT_PRIVATE_OWNER_EMOTE] : GameSpyColor[GSCOLOR_CHAT_PRIVATE_EMOTE];
 	}

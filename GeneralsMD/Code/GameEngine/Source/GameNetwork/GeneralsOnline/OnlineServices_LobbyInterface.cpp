@@ -840,6 +840,7 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 								memberEntryIter["HasMap"].get_to(memberEntry.has_map);
 								memberEntryIter["SlotState"].get_to(memberEntry.m_SlotState);
 								memberEntryIter["SlotIndex"].get_to(memberEntry.m_SlotIndex);
+								memberEntryIter["Region"].get_to(memberEntry.region);
 
 								lobbyEntry.members.push_back(memberEntry);
 
