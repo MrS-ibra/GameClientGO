@@ -859,7 +859,10 @@ void PopulateLobbyPlayerListbox(void)
 					// restore top visible entry
 					GadgetListBoxSetTopVisibleEntry(listboxLobbyPlayers, previousTopIndex);
 
-					Int index = insertPlayerInListbox(pi, GameSpyColor[GSCOLOR_PLAYER_NORMAL]);
+					
+					bool bIsAdmin = wcsncmp(pi.m_nameUni.str(), L"[\u2605\u2605GO STAFF\u2605\u2605]", 14) == 0; // TODO_NGMP: determine by service flag, not name
+
+					Int index = insertPlayerInListbox(pi, bIsAdmin ? GameMakeColor(0, 162, 232, 255) : GameSpyColor[GSCOLOR_PLAYER_NORMAL]);
 
 					// TODO_NGMP: Use int for user ID like gamespy did, or move everything to uint64
 					std::set<Int> indicesToSelect;
