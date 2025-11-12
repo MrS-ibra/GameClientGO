@@ -1003,7 +1003,7 @@ void WebSocket::SendData_CountdownStarted()
 }
 
 
-void WebSocket::SendData_StartFullMeshConnectivityCheck(std::function<void(bool)> cbOnConnectivityCheckComplete)
+void WebSocket::SendData_StartFullMeshConnectivityCheck(std::function<void(bool, std::list<std::pair<int64_t, int64_t>>)> cbOnConnectivityCheckComplete)
 {
 	m_cbOnConnectivityCheckComplete = cbOnConnectivityCheckComplete;
 

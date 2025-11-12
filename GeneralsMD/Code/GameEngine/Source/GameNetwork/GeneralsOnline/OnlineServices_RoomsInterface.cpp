@@ -196,14 +196,6 @@ public:
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_NetworkStartSignalling, msg_id, lobby_id, user_id, preferred_port)
 };
 
-class WebSocketMessage_FullMeshConnectivityCheckResponse : public WebSocketMessageBase
-{
-public:
-	bool mesh_complete;
-
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_FullMeshConnectivityCheckResponse, mesh_complete)
-};
-
 class WebSocketMessage_NetworkDisconnectPlayer : public WebSocketMessageBase
 {
 public:
@@ -511,18 +503,45 @@ void WebSocket::Tick()
 									case EWebSocketMessageID::FULL_MESH_CONNECTIVITY_CHECK_RESPONSE_COMPLETE_TO_HOST:
 									{
 										// all checks are done, process start for host
-										WebSocketMessage_FullMeshConnectivityCheckResponse meshOutcome;
-										bool bParsed = JSONGetAsObject(jsonObject, &meshOutcome);
 
-										if (bParsed)
+										bool bMeshComplete = false;
+
+										try
 										{
+											jsonObject["mesh_complete"].get_to(bMeshComplete);
+
+											std::list<std::pair<int64_t, int64_t>> missingConnections;
+											if (!bMeshComplete)
+											{
+												NetworkLog(ELogVerbosity::LOG_RELEASE, "[FULL_MESH_CONNECTIVITY_CHECK_RESPONSE_COMPLETE_TO_HOST] Mesh is not complete for someone");
+												for (const auto& missingConnectionEntryIter : jsonObject["missing_connections"])
+												{
+													int64_t source_user_id = -1;
+													int64_t target_user_id = -1;
+
+													missingConnectionEntryIter["source_user_id"].get_to(source_user_id);
+													missingConnectionEntryIter["target_user_id"].get_to(target_user_id);
+
+													missingConnections.push_back(std::make_pair(source_user_id, target_user_id));
+												}
+											}
+											else
+											{
+												NetworkLog(ELogVerbosity::LOG_RELEASE, "[FULL_MESH_CONNECTIVITY_CHECK_RESPONSE_COMPLETE_TO_HOST] Mesh is fully complete");
+											}
+
 											// invoke callback
 											if (m_cbOnConnectivityCheckComplete != nullptr)
 											{
-												m_cbOnConnectivityCheckComplete(meshOutcome.mesh_complete);
+												m_cbOnConnectivityCheckComplete(bMeshComplete, missingConnections);
 											}
 
 											m_cbOnConnectivityCheckComplete = NULL;
+										}
+										catch (...)
+										{
+											NetworkLog(ELogVerbosity::LOG_RELEASE, "[FULL_MESH_CONNECTIVITY_CHECK_RESPONSE_COMPLETE_TO_HOST] Error processing response");
+											break;
 										}
 
 										break;

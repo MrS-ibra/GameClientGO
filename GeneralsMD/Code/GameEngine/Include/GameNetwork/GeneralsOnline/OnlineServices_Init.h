@@ -189,8 +189,8 @@ public:
 
 	void SendData_CountdownStarted();
 
-	std::function<void(bool)> m_cbOnConnectivityCheckComplete = nullptr;
-	void SendData_StartFullMeshConnectivityCheck(std::function<void(bool)> cbOnConnectivityCheckComplete);
+	std::function<void(bool, std::list<std::pair<int64_t, int64_t>>)> m_cbOnConnectivityCheckComplete = nullptr;
+	void SendData_StartFullMeshConnectivityCheck(std::function<void(bool, std::list<std::pair<int64_t, int64_t>>)> cbOnConnectivityCheckComplete);
 
 	void Tick();
 

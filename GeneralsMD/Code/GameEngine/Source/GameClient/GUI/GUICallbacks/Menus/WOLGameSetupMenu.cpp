@@ -1086,7 +1086,7 @@ static void StartPressed(void)
 				buttonStart->winEnable(FALSE);
 			}
 
-			pWS->SendData_StartFullMeshConnectivityCheck([=](bool bMeshFullyConnected)
+			pWS->SendData_StartFullMeshConnectivityCheck([=](bool bMeshFullyConnected, std::list<std::pair<int64_t, int64_t>> missingConnections)
 				{
 					if (bMeshFullyConnected)
 					{
@@ -1141,6 +1141,36 @@ static void StartPressed(void)
 					{
 						UnicodeString strInform = UnicodeString(L"Mesh is not fully connected yet! Please try again soon");
 						GadgetListBoxAddEntryText(listboxGameSetupChat, strInform, GameMakeColor(255, 0, 0, 255), -1, -1);
+
+						NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+
+						// who is missing who?
+						//std::list<std::pair<int64_t, int64_t>> missingConnections
+						GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"The following players are not yet connected: "), GameMakeColor(255, 0, 0, 255), -1, -1);
+						for (auto& missingPair : missingConnections)
+						{
+							bool bFoundPlayer = false;
+							if (pLobbyInterface != nullptr)
+							{
+								LobbyMemberEntry lobbyMemberSource = pLobbyInterface->GetRoomMemberFromID(missingPair.first);
+								LobbyMemberEntry lobbyMemberTarget = pLobbyInterface->GetRoomMemberFromID(missingPair.second);
+								if (lobbyMemberSource.user_id != -1 && lobbyMemberTarget.user_id != -1)
+								{
+									bFoundPlayer = true;
+
+									UnicodeString strMissingConnection;
+									strMissingConnection.format(L"Player %s is not connected to Player %s", from_utf8(lobbyMemberSource.display_name).c_str(), from_utf8(lobbyMemberTarget.display_name).c_str());
+									GadgetListBoxAddEntryText(listboxGameSetupChat, strMissingConnection, GameMakeColor(255, 0, 0, 255), -1, -1);
+								}
+							}
+
+							if (!bFoundPlayer) // if we couldnt find a display name... show a user ID instead, better than nothing
+							{
+								UnicodeString strMissingConnection;
+								strMissingConnection.format(L"Player %lld is not connected to Player %lld", missingPair.first, missingPair.second);
+								GadgetListBoxAddEntryText(listboxGameSetupChat, strMissingConnection, GameMakeColor(255, 0, 0, 255), -1, -1);
+							}
+						}
 
 						// restore state
 						if (buttonBack != nullptr)

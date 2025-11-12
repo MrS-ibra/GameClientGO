@@ -27,13 +27,13 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 	}
 
 	// find player connection
-	PlayerConnection* pPlayerConnection = nullptr;
+	int64_t connectionID = -1;
 	std::map<int64_t, PlayerConnection>& connections = pMesh->GetAllConnections();
 	for (auto& kvPair : connections)
 	{
 		if (kvPair.second.m_hSteamConnection == pInfo->m_hConn)
 		{
-			pPlayerConnection = &kvPair.second;
+			connectionID = kvPair.first;
 			break;
 		}
 	}
@@ -62,27 +62,29 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 		NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Closing in callback");
 		SteamNetworkingSockets()->CloseConnection(pInfo->m_hConn, 0, nullptr, false);
 
-		if (pPlayerConnection != nullptr && pInfo != nullptr)
+		if (connectionID != -1 && pInfo != nullptr)
 		{
+			PlayerConnection& plrConnection = connections[connectionID];
+
 			if (TheNetwork != nullptr)
 			{
-				TheNetwork->GetConnectionManager()->disconnectPlayer(pPlayerConnection->m_userID);
+				TheNetwork->GetConnectionManager()->disconnectPlayer(plrConnection.m_userID);
 			}
 
-			NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Closing connection %lld", pPlayerConnection->m_userID);
+			NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Closing connection %lld", plrConnection.m_userID);
 
 			ServiceConfig& serviceConf = NGMP_OnlineServicesManager::GetInstance()->GetServiceConfig();
 			const int numSignallingAttempts = 3;
-			bool bShouldRetry = pPlayerConnection->m_SignallingAttempts < numSignallingAttempts && serviceConf.retry_signalling;
+			bool bShouldRetry = plrConnection.m_SignallingAttempts < numSignallingAttempts && serviceConf.retry_signalling;
 
 			bool bWasError = pInfo->m_info.m_eState == k_ESteamNetworkingConnectionState_ProblemDetectedLocally || pInfo->m_info.m_eEndReason != k_ESteamNetConnectionEnd_App_Generic;
-			pPlayerConnection->SetDisconnected(bWasError, pMesh, bShouldRetry && bWasError);
+			plrConnection.SetDisconnected(bWasError, pMesh, bShouldRetry && bWasError);
 			
 			// the highest slot player, should leave. In most cases, this is the most recently joined player, but this may not be 100% accurate due to backfills.
 			// TODO_NGMP: In the future, we should pick the most recently joined by timestamp
 			if (bWasError) // only if it wasn't a clean disconnect (e.g. lobby leave)
 			{
-				NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][DISCONNECT HANDLER] Determined we didn't connect due to an error, Retrying: %d (currently at %d/%d attempts)", bShouldRetry, pPlayerConnection->m_SignallingAttempts, numSignallingAttempts);
+				NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][DISCONNECT HANDLER] Determined we didn't connect due to an error, Retrying: %d (currently at %d/%d attempts)", bShouldRetry, plrConnection.m_SignallingAttempts, numSignallingAttempts);
 				
 				// should we retry signaling?
 				if (bShouldRetry)
@@ -100,11 +102,11 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 							// Behavior:
 							// disconnected slot userID is higher than ours, do nothing, they will signal
 							// disconnected slot userID is lower than ours, we signal
-							if ((myUserID > pPlayerConnection->m_userID))
+							if ((myUserID > plrConnection.m_userID))
 							{
 								NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][DISCONNECT HANDLER] Send signal start request...");
 
-								pWS->SendData_RequestSignalling(pPlayerConnection->m_userID);
+								pWS->SendData_RequestSignalling(plrConnection.m_userID);
 							}
 							else
 							{
@@ -127,7 +129,7 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 					NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
 					if (pLobbyInterface != nullptr)
 					{
-						NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][DISCONNECT HANDLER] Performing local removal for user %lld from lobby due to failure to connect\n", pPlayerConnection->m_userID);
+						NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][DISCONNECT HANDLER] Performing local removal for user %lld from lobby due to failure to connect\n", plrConnection.m_userID);
 						if (pLobbyInterface->m_OnCannotConnectToLobbyCallback != nullptr)
 						{
 							pLobbyInterface->m_OnCannotConnectToLobbyCallback();
@@ -163,64 +165,71 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 			// Note that we assume we will only ever receive a single connection
 
 #if _DEBUG
-			if (pPlayerConnection != nullptr)
-				assert(pPlayerConnection->m_hSteamConnection == k_HSteamNetConnection_Invalid); // not really a bug in this code, but a bug in the test
+			if (connectionID != -1)
+				assert(plrConnection.m_hSteamConnection == k_HSteamNetConnection_Invalid); // not really a bug in this code, but a bug in the test
 #endif
 
 			NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Considering Accepting\n", pInfo->m_info.m_szConnectionDescription);
 
-			if (pPlayerConnection != nullptr && pInfo != nullptr)
+			if (connectionID != -1)
 			{
-				pPlayerConnection->UpdateState(EConnectionState::CONNECTING_DIRECT, pMesh);
-				NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM CONNECTION] Updating connection from %u to %u on user %lld", pPlayerConnection->m_hSteamConnection, pInfo->m_hConn, pPlayerConnection->m_userID);
-				SteamNetworkingSockets()->SetConnectionName(pInfo->m_hConn, std::format("Steam Connection User{}", pPlayerConnection->m_userID).c_str());
-				pPlayerConnection->m_hSteamConnection = pInfo->m_hConn;
-			}
+				PlayerConnection& plrConnection = connections[connectionID];
 
-			// check user is in the lobby, otherwise reject
-			NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
-			if (pLobbyInterface == nullptr)
-			{
-				NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Rejecting - Lobby interface is null\n", pInfo->m_info.m_szConnectionDescription);
-
-				NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Closing connection 2 %lld", pPlayerConnection->m_userID);
-				SteamNetworkingSockets()->CloseConnection(pInfo->m_hConn, 1000, "Lobby interface is null (Rejected)", false);
-
-				if (TheNetwork != nullptr)
+				if (pInfo != nullptr)
 				{
-					TheNetwork->GetConnectionManager()->disconnectPlayer(pPlayerConnection->m_userID);
+
+
+					plrConnection.UpdateState(EConnectionState::CONNECTING_DIRECT, pMesh);
+					NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM CONNECTION] Updating connection from %u to %u on user %lld", plrConnection.m_hSteamConnection, pInfo->m_hConn, plrConnection.m_userID);
+					SteamNetworkingSockets()->SetConnectionName(pInfo->m_hConn, std::format("Steam Connection User{}", plrConnection.m_userID).c_str());
+					plrConnection.m_hSteamConnection = pInfo->m_hConn;
 				}
 
-				return;
-			}
-
-			auto currentLobby = pLobbyInterface->GetCurrentLobby();
-			bool bPlayerIsInLobby = false;
-			for (const auto& member : currentLobby.members)
-			{
-				// TODO_NGMP: Use bytes or SteamID instead... string compare is nasty
-				if (std::to_string(member.user_id) == pInfo->m_info.m_identityRemote.GetGenericString())
+				// check user is in the lobby, otherwise reject
+				NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+				if (pLobbyInterface == nullptr)
 				{
-					bPlayerIsInLobby = true;
-					break;
+					NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Rejecting - Lobby interface is null\n", pInfo->m_info.m_szConnectionDescription);
+
+					NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Closing connection 2 %lld", plrConnection.m_userID);
+					SteamNetworkingSockets()->CloseConnection(pInfo->m_hConn, 1000, "Lobby interface is null (Rejected)", false);
+
+					if (TheNetwork != nullptr)
+					{
+						TheNetwork->GetConnectionManager()->disconnectPlayer(plrConnection.m_userID);
+					}
+
+					return;
 				}
-			}
 
-			if (bPlayerIsInLobby)
-			{
-				NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Accepting - Player is in lobby\n", pInfo->m_info.m_szConnectionDescription);
-				SteamNetworkingSockets()->AcceptConnection(pInfo->m_hConn);
-			}
-			else
-			{
-				NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Rejecting - Player is not in lobby\n", pInfo->m_info.m_szConnectionDescription);
-
-				NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Closing connection not in lobby %lld", pPlayerConnection->m_userID);
-				SteamNetworkingSockets()->CloseConnection(pInfo->m_hConn, 1000, "Player is not in lobby (Rejected)", false);
-
-				if (TheNetwork != nullptr)
+				auto currentLobby = pLobbyInterface->GetCurrentLobby();
+				bool bPlayerIsInLobby = false;
+				for (const auto& member : currentLobby.members)
 				{
-					TheNetwork->GetConnectionManager()->disconnectPlayer(pPlayerConnection->m_userID);
+					// TODO_NGMP: Use bytes or SteamID instead... string compare is nasty
+					if (std::to_string(member.user_id) == pInfo->m_info.m_identityRemote.GetGenericString())
+					{
+						bPlayerIsInLobby = true;
+						break;
+					}
+				}
+
+				if (bPlayerIsInLobby)
+				{
+					NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Accepting - Player is in lobby\n", pInfo->m_info.m_szConnectionDescription);
+					SteamNetworkingSockets()->AcceptConnection(pInfo->m_hConn);
+				}
+				else
+				{
+					NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Rejecting - Player is not in lobby\n", pInfo->m_info.m_szConnectionDescription);
+
+					NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Closing connection not in lobby %lld", plrConnection.m_userID);
+					SteamNetworkingSockets()->CloseConnection(pInfo->m_hConn, 1000, "Player is not in lobby (Rejected)", false);
+
+					if (TheNetwork != nullptr)
+					{
+						TheNetwork->GetConnectionManager()->disconnectPlayer(plrConnection.m_userID);
+					}
 				}
 			}
 			
@@ -230,14 +239,16 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 			// Note that we will get notification when our own connection that
 			// we initiate enters this state.
 #if _DEBUG
-			if (pPlayerConnection != nullptr)
-			assert(pPlayerConnection->m_hSteamConnection == pInfo->m_hConn);
+			if (connectionID != -1)
+				assert(plrConnection.m_hSteamConnection == pInfo->m_hConn);
 #endif
 			NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Entered connecting state\n", pInfo->m_info.m_szConnectionDescription);
 
-			if (pPlayerConnection != nullptr)
+			if (connectionID != -1)
 			{
-				pPlayerConnection->UpdateState(EConnectionState::CONNECTING_DIRECT, pMesh);
+				PlayerConnection& plrConnection = connections[connectionID];
+
+				plrConnection.UpdateState(EConnectionState::CONNECTING_DIRECT, pMesh);
 			}
 		}
 		break;
@@ -245,11 +256,12 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 	case k_ESteamNetworkingConnectionState_FindingRoute:
 		// P2P connections will spend a brief time here where they swap addresses
 		// and try to find a route.
-		if (pPlayerConnection != nullptr && pInfo != nullptr)
+		if (connectionID != -1 && pInfo != nullptr)
 		{
 			NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] finding route\n", pInfo->m_info.m_szConnectionDescription);
 
-			pPlayerConnection->UpdateState(EConnectionState::FINDING_ROUTE, pMesh);
+			PlayerConnection& plrConnection = connections[connectionID];
+			plrConnection.UpdateState(EConnectionState::FINDING_ROUTE, pMesh);
 		}
 		break;
 
@@ -286,9 +298,11 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 			NetworkLog(ELogVerbosity::LOG_RELEASE, "[CONNECTION FLAGS]: has k_nSteamNetworkConnectionInfoFlags_DualWifi");
 		}
 
-		if (pPlayerConnection != nullptr)
+		if (connectionID != -1)
 		{
-			pPlayerConnection->UpdateState(EConnectionState::CONNECTED_DIRECT, pMesh);
+			PlayerConnection& plrConnection = connections[connectionID];
+
+			plrConnection.UpdateState(EConnectionState::CONNECTED_DIRECT, pMesh);
 		}
 
 		break;
