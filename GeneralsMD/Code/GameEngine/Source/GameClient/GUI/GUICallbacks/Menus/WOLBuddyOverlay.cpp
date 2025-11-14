@@ -54,6 +54,8 @@
 #include "GameNetwork/GameSpy/PersistentStorageDefs.h"
 #include "GameNetwork/GameSpy/PersistentStorageThread.h"
 #include "GameNetwork/GameSpy/ThreadUtils.h"
+#include "../OnlineServices_SocialInterface.h"
+#include "../OnlineServices_Init.h"
 
 // PRIVATE DATA ///////////////////////////////////////////////////////////////////////////////////
 
@@ -144,6 +146,7 @@ enum
 
 void InitBuddyControls(Int type)
 {
+#if !defined(GENERALS_ONLINE)
 	if(!TheGameSpyInfo)
 	{
 		buddyControls.textEntryEditID = NAMEKEY_INVALID;
@@ -155,6 +158,7 @@ void InitBuddyControls(Int type)
 		buddyControls.isInit = FALSE;
 		return;
 	}
+#endif
 	switch (type) {
 	case BUDDY_RESETALL_CRAP:
 		buddyControls.textEntryEditID = NAMEKEY_INVALID;
@@ -376,8 +380,137 @@ static void insertChat( BuddyMessage msg )
 	}
 }
 
+#if defined(GENERALS_ONLINE)
+void updateBuddyInfo( bool bIsAutoRefresh = false )
+#else
 void updateBuddyInfo( void )
+#endif
 {
+	// TODO_SOCIAL
+#if defined(GENERALS_ONLINE)
+	if (!buddyControls.isInit)
+		return;
+
+	// Get friends
+	NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+	if (pSocialInterface == nullptr)
+	{
+		return;
+	}
+
+	// If it's the first time in, show loading, otherwise, on refreshes, we already have some list we can use
+	if (!bIsAutoRefresh)
+	{
+		GadgetListBoxReset(buddyControls.listboxBuddies);
+		GadgetListBoxAddEntryText(buddyControls.listboxBuddies, UnicodeString(L"Loading..."), GameMakeColor(255, 194, 15, 255), -1);
+	}
+
+	pSocialInterface->GetFriendsList([](FriendsResult friendsResult)
+		{
+			int selected;
+			GPProfile selectedProfile = 0;
+			int visiblePos = GadgetListBoxGetTopVisibleEntry(buddyControls.listboxBuddies);
+
+			GadgetListBoxGetSelected(buddyControls.listboxBuddies, &selected);
+			if (selected >= 0)
+				selectedProfile = (GPProfile)GadgetListBoxGetItemData(buddyControls.listboxBuddies, selected);
+
+			selected = -1;
+			GadgetListBoxReset(buddyControls.listboxBuddies);
+
+			// TODO_SOCIAL: De-register callback when buddy list exits, otherwise half of these UI elements probably wont exist anymore
+
+			// FRIENDS
+			for (FriendsEntry& friendsEntry : friendsResult.vecFriends)
+			{
+				int64_t profileID = friendsEntry.user_id;
+				AsciiString strName = AsciiString(friendsEntry.display_name.c_str());
+				UnicodeString strStatus = UnicodeString(L"Online");
+				UnicodeString strLocation = UnicodeString(L"Location!");
+
+				// insert name into box
+				UnicodeString formatStr;
+				formatStr.translate(strName.str());
+
+				bool isSavedIgnored = false;
+				Color nameColor = (isSavedIgnored) ?
+					GameSpyColor[GSCOLOR_PLAYER_IGNORED] : GameSpyColor[GSCOLOR_PLAYER_BUDDY];
+				int index = GadgetListBoxAddEntryText(buddyControls.listboxBuddies, formatStr, nameColor, -1, -1);
+
+				// insert status into box
+				AsciiString marker;
+				marker.format("Buddy:%ls", strStatus.str());
+				if (!strStatus.compareNoCase(L"Offline") ||
+					!strStatus.compareNoCase(L"Online") ||
+					!strStatus.compareNoCase(L"Matching"))
+				{
+					formatStr = TheGameText->fetch(marker);
+				}
+				else if (!strStatus.compareNoCase(L"Staging") ||
+					!strStatus.compareNoCase(L"Loading") ||
+					!strStatus.compareNoCase(L"Playing"))
+				{
+					formatStr.format(TheGameText->fetch(marker), strLocation.str());
+				}
+				else if (!strStatus.compareNoCase(L"Chatting"))
+				{
+					UnicodeString roomName;
+
+					AsciiString strCurrentRoomName = "Room Name";
+
+					//GroupRoomMap::iterator gIt = TheGameSpyInfo->getGroupRoomList()->find(_wtoi(strLocation.str()));
+					//if (gIt != TheGameSpyInfo->getGroupRoomList()->end())
+					{
+						AsciiString s;
+						s.format("GUI:%s", strCurrentRoomName.str());
+						roomName = TheGameText->fetch(s);
+					}
+					formatStr.format(TheGameText->fetch(marker), roomName.str());
+				}
+				else
+				{
+					formatStr = strStatus;
+				}
+				GadgetListBoxAddEntryText(buddyControls.listboxBuddies, formatStr, GameSpyColor[GSCOLOR_DEFAULT], index, 1);
+				GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(profileID), index, 0);
+				GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(ITEM_BUDDY), index, 1);
+
+				if (profileID == selectedProfile)
+					selected = index;
+			}
+
+			// REQUESTS
+			for (FriendsEntry& friendsEntry : friendsResult.vecPendingRequests)
+			{
+				int64_t profileID = friendsEntry.user_id;
+				AsciiString strName = AsciiString(friendsEntry.display_name.c_str());
+
+				// insert name into box
+				UnicodeString formatStr;
+				formatStr.translate(strName.str());
+				int index = GadgetListBoxAddEntryText(buddyControls.listboxBuddies, formatStr, GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
+				GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(profileID), index, 0);
+
+				// insert status into box
+				formatStr = TheGameText->fetch("GUI:BuddyAddReq");
+				GadgetListBoxAddEntryText(buddyControls.listboxBuddies, formatStr, GameSpyColor[GSCOLOR_DEFAULT], index, 1);
+				GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(ITEM_REQUEST), index, 1);
+
+				if (profileID == selectedProfile)
+					selected = index;
+			}
+
+			// select the same guy
+			if (selected >= 0)
+			{
+				GadgetListBoxSetSelected(buddyControls.listboxBuddies, selected);
+			}
+
+			// view the same spot
+			GadgetListBoxSetTopVisibleEntry(buddyControls.listboxBuddies, visiblePos);
+		});
+#else
+
 	if (!TheGameSpyBuddyMessageQueue->isConnected())
 	{
 		GadgetListBoxReset(buddyControls.listboxBuddies);
@@ -483,6 +616,7 @@ void updateBuddyInfo( void )
 
 	// view the same spot
 	GadgetListBoxSetTopVisibleEntry(buddyControls.listboxBuddies, visiblePos);
+#endif
 }
 
 void HandleBuddyResponses( void )
@@ -695,6 +829,8 @@ void deleteNotificationBox( void )
 
 void PopulateOldBuddyMessages(void)
 {
+	// TODO_SOCIAL
+#if !defined(GENERALS_ONLINE)
 	// show previous messages
 	BuddyMessageList *messages = TheGameSpyInfo->getBuddyMessages();
 	for (BuddyMessageList::iterator mIt = messages->begin(); mIt != messages->end(); ++mIt)
@@ -702,6 +838,7 @@ void PopulateOldBuddyMessages(void)
 		BuddyMessage message = *mIt;
 		insertChat(message);
 	}
+#endif
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -786,8 +923,11 @@ void WOLBuddyOverlayShutdown( WindowLayout *layout, void *userData )
 //-------------------------------------------------------------------------------------------------
 void WOLBuddyOverlayUpdate( WindowLayout * layout, void *userData)
 {
+	// TODO_SOCIAL: Hide overlay if we lose connection
+#if !defined(GENERALS_ONLINE)
 	if (!TheGameSpyBuddyMessageQueue || !TheGameSpyBuddyMessageQueue->isConnected())
 		GameSpyCloseOverlay(GSOVERLAY_BUDDY);
+#endif
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1405,32 +1545,65 @@ void setUnignoreText( WindowLayout *layout, AsciiString nick, GPProfile id)
 
 void refreshIgnoreList( void )
 {
+	// TODO_SOCIAL
+#if defined(GENERALS_ONLINE)
+	// Get friends
+	NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+	if (pSocialInterface == nullptr)
+	{
+		return;
+	}
 
+	GadgetListBoxReset(listboxIgnore);
+	GadgetListBoxAddEntryText(listboxIgnore, UnicodeString(L"Loading..."), GameMakeColor(255, 194, 15, 255), -1);
 
+	pSocialInterface->GetBlockList([](BlockedResult blockResult)
+		{
+			GadgetListBoxReset(listboxIgnore);
+
+			// TODO_SOCIAL: De-register callback when buddy list exits, otherwise half of these UI elements probably wont exist anymore
+
+			for (FriendsEntry& blockedEntry : blockResult.vecBlocked)
+			{
+				//int64_t profileID = blockedEntry.user_id;
+				AsciiString strName = AsciiString(blockedEntry.display_name.c_str());
+
+				//void* pUserData = nullptr;
+
+					//AsciiString aName = *iListIt;
+				UnicodeString name;
+				name.translate(strName);
+				Int pos = GadgetListBoxAddEntryText(listboxIgnore, name, GameMakeColor(255, 100, 100, 255), -1);
+				GadgetListBoxSetItemData(listboxIgnore, 0, pos);
+				//++iListIt;
+			}
+		});
+#else
 	SavedIgnoreMap tempMap;
 	tempMap = TheGameSpyInfo->returnSavedIgnoreList();
 	SavedIgnoreMap::iterator it = tempMap.begin();
 	GadgetListBoxReset(listboxIgnore);
-	while(it != tempMap.end())
+	while (it != tempMap.end())
 	{
 		UnicodeString name;
 		name.translate(it->second);
-		Int pos = GadgetListBoxAddEntryText(listboxIgnore, name, GameMakeColor(255,100,100,255),-1);
-		GadgetListBoxSetItemData(listboxIgnore, (void *)it->first,pos );
+		Int pos = GadgetListBoxAddEntryText(listboxIgnore, name, GameMakeColor(255, 100, 100, 255), -1);
+		GadgetListBoxSetItemData(listboxIgnore, (void*)it->first, pos);
 		++it;
 	}
 	IgnoreList tempList;
 	tempList = TheGameSpyInfo->returnIgnoreList();
 	IgnoreList::iterator iListIt = tempList.begin();
-	while( iListIt != tempList.end())
+	while (iListIt != tempList.end())
 	{
 		AsciiString aName = *iListIt;
 		UnicodeString name;
 		name.translate(aName);
-		Int pos = GadgetListBoxAddEntryText(listboxIgnore, name, GameMakeColor(255,100,100,255),-1);
-		GadgetListBoxSetItemData(listboxIgnore, 0,pos );
+		Int pos = GadgetListBoxAddEntryText(listboxIgnore, name, GameMakeColor(255, 100, 100, 255), -1);
+		GadgetListBoxSetItemData(listboxIgnore, 0, pos);
 		++iListIt;
 	}
+#endif
 
 //
 //	GPProfile profileID = 0;

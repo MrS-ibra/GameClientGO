@@ -12,6 +12,7 @@ class NGMP_OnlineServices_LobbyInterface;
 class NGMP_OnlineServices_RoomsInterface;
 class NGMP_OnlineServices_StatsInterface;
 class NGMP_OnlineServices_MatchmakingInterface;
+class NGMP_OnlineServices_SocialInterface;
 
 class NetworkMesh;
 
@@ -381,6 +382,10 @@ public:
 			{
 				return m_pOnlineServicesManager->m_pMatchmakingInterface;
 			}
+			else if constexpr (std::is_same<T, NGMP_OnlineServices_SocialInterface>::value)
+			{
+				return m_pOnlineServicesManager->m_pSocialInterface;
+			}
 		}
 
 		return nullptr;
@@ -420,6 +425,12 @@ public:
 		{
 			delete m_pRoomInterface;
 			m_pRoomInterface = nullptr;
+		}
+
+		if (m_pSocialInterface != nullptr)
+		{
+			delete m_pSocialInterface;
+			m_pSocialInterface = nullptr;
 		}
 
 		if (m_pHTTPManager != nullptr)
@@ -494,6 +505,7 @@ public:
 	NGMP_OnlineServices_RoomsInterface* m_pRoomInterface = nullptr;
 	NGMP_OnlineServices_StatsInterface* m_pStatsInterface = nullptr;
 	NGMP_OnlineServices_MatchmakingInterface* m_pMatchmakingInterface = nullptr;
+	NGMP_OnlineServices_SocialInterface* m_pSocialInterface = nullptr;
 
 	ServiceConfig& GetServiceConfig() { return m_ServiceConfig; }
 

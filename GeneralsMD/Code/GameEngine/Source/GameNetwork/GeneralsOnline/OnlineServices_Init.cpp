@@ -747,6 +747,7 @@ void NGMP_OnlineServicesManager::Init()
 	m_pRoomInterface = new NGMP_OnlineServices_RoomsInterface();
 	m_pStatsInterface = new NGMP_OnlineServices_StatsInterface();
 	m_pMatchmakingInterface = new NGMP_OnlineServices_MatchmakingInterface();
+	m_pSocialInterface = new NGMP_OnlineServices_SocialInterface();
 
 	m_pHTTPManager = new HTTPManager();
 	m_pHTTPManager->Initialize();
@@ -845,7 +846,7 @@ void NGMP_OnlineServicesManager::InitSentry()
 
 	sentry_options_set_dsn(options, "https://61750bebd112d279bcc286d617819269@o4509316925554688.ingest.us.sentry.io/4509316927586304");
 	sentry_options_set_database_path(options, strDumpPath.c_str());
-	sentry_options_set_release(options, "generalsonline-client@111125");
+	sentry_options_set_release(options, "generalsonline-client@111125_QFE1");
 
 	// local player info
 	int64_t userID = -1;
