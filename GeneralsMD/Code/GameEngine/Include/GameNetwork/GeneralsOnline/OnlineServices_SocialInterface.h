@@ -39,14 +39,17 @@ public:
 	void AcceptPendingRequest(int64_t target_user_id);
 	void RejectPendingRequest(int64_t target_user_id);
 
-	void OnChatMessage(int64_t source_user_id, int64_t target_user_id, UnicodeString unicodeStr)
+	void OnChatMessage(int64_t source_user_id, int64_t target_user_id, UnicodeString unicodeStr);
+
+	std::vector<UnicodeString> GetChatMessagesForUser(int64_t target_user_id)
 	{
-		if (m_cbOnChatMessage != nullptr)
+		if (m_mapCachedMessages.contains(target_user_id))
 		{
-			m_cbOnChatMessage(source_user_id, target_user_id, unicodeStr);
+			return m_mapCachedMessages[target_user_id];
 		}
+
+		return std::vector<UnicodeString>();
 	}
-	
 
 	// Callbacks
 	void InvokeCallback_NewFriendRequest(std::string strDisplayName)
@@ -67,6 +70,10 @@ public:
 	}
 
 private:
+	// NOTE: We cache messages here, because the UI isn't always present, but we dont want to miss messages
+	// TODO_SOCIAL: Limit this
+	std::map<int64_t, std::vector<UnicodeString>> m_mapCachedMessages; // user id here is who we are talking to / target user
+
 	std::function<void(FriendsResult friendsResult)> m_cbOnGetFriendsList = nullptr;
 	std::function<void(BlockedResult blockResult)> m_cbOnGetBlockList = nullptr;
 

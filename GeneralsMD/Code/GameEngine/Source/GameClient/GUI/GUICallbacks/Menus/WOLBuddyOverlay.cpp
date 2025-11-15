@@ -928,13 +928,32 @@ void WOLBuddyOverlayInit( WindowLayout *layout, void *userData )
 
 		pSocialInterface->RegisterForCallback_OnChatMessage([](int64_t source_user_id, int64_t target_user_id, UnicodeString unicodeStr)
 			{
-				UnicodeString s;
-				s.format(L"%s", unicodeStr.str());
-				Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, s, GameSpyColor[GSCOLOR_PLAYER_BUDDY], -1, -1);
-				GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString::TheEmptyString, GameSpyColor[GSCOLOR_PLAYER_BUDDY], index, 1);
+				// Only add if the user is currently selected, otherwise show notification and just rely on the cache
 
+				Int selected = -1;
+				GadgetListBoxGetSelected(buddyControls.listboxBuddies, &selected);
+				if (selected >= 0)
+				{
+					GPProfile profileID = (GPProfile)GadgetListBoxGetItemData(buddyControls.listboxBuddies, selected);
+
+
+					// sending to them, or getting from them, is valid
+					if (profileID == source_user_id || profileID == target_user_id)
+					{
+						UnicodeString s;
+						s.format(L"%s", unicodeStr.str());
+						Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, s, GameSpyColor[GSCOLOR_PLAYER_BUDDY], -1, -1);
+						GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString::TheEmptyString, GameSpyColor[GSCOLOR_PLAYER_BUDDY], index, 1);
+					}
+					else
+					{
+						// TODO_SOCIAL: Update name to be name [10] (notification count)
+					}
+				}
 			});
 	}
+
+	
 
 	parentID = TheNameKeyGenerator->nameToKey( AsciiString( "WOLBuddyOverlay.wnd:BuddyMenuParent" ) );
 	buttonHideID = TheNameKeyGenerator->nameToKey( AsciiString( "WOLBuddyOverlay.wnd:ButtonHide" ) );
@@ -1101,6 +1120,41 @@ WindowMsgHandledType WOLBuddyOverlaySystem( GameWindow *window, UnsignedInt msg,
 
 				return MSG_HANDLED;
 			}
+		case GLM_SELECTED:
+		{
+			GameWindow* control = (GameWindow*)mData1;
+			Int controlID = control->winGetWindowId();
+
+			if (controlID == buddyControls.listboxBuddiesID)
+			{
+				// restore any cached chat messages
+
+				// clear current box contents
+				GadgetListBoxReset(buddyControls.listboxChat);
+
+				// get selection
+				Int selected = -1;
+				GadgetListBoxGetSelected(buddyControls.listboxBuddies, &selected);
+				if (selected >= 0)
+				{
+					GPProfile profileID = (GPProfile)GadgetListBoxGetItemData(control, selected);
+					UnicodeString nick = GadgetListBoxGetText(control, selected);
+
+					NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+					if (pSocialInterface != nullptr)
+					{
+						std::vector<UnicodeString> vecMessages = pSocialInterface->GetChatMessagesForUser(profileID);
+
+						for (const UnicodeString& unicodeStr : vecMessages)
+						{
+							Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, unicodeStr, GameSpyColor[GSCOLOR_PLAYER_BUDDY], -1, -1);
+							GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString::TheEmptyString, GameSpyColor[GSCOLOR_PLAYER_BUDDY], index, 1);
+						}
+					}
+				}
+			}
+			break;
+		}
 		case GLM_RIGHT_CLICKED:
 			{
 				GameWindow *control = (GameWindow *)mData1;
@@ -1110,12 +1164,12 @@ WindowMsgHandledType WOLBuddyOverlaySystem( GameWindow *window, UnsignedInt msg,
 				{
 
 #if defined(GENERALS_ONLINE)
-					// TODO_SOCIAL
 					RightClickStruct* rc = (RightClickStruct*)mData2;
 					WindowLayout* rcLayout;
 					if (rc->pos < 0)
 						break;
 
+					// TODO_SOCIAL: Set isbuddy, isRequest etc again
 					Bool isBuddy = false, isRequest = false;
 
 					GPProfile profileID = (GPProfile)GadgetListBoxGetItemData(control, rc->pos);

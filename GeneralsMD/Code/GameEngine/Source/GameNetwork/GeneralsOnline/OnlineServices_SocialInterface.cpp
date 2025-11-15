@@ -142,3 +142,38 @@ void NGMP_OnlineServices_SocialInterface::RejectPendingRequest(int64_t target_us
 
 		});
 }
+
+void NGMP_OnlineServices_SocialInterface::OnChatMessage(int64_t source_user_id, int64_t target_user_id, UnicodeString unicodeStr)
+{
+	if (m_cbOnChatMessage != nullptr)
+	{
+		m_cbOnChatMessage(source_user_id, target_user_id, unicodeStr);
+	}
+
+	// also cache it incase UI isnt visible
+	NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
+	if (pAuthInterface != nullptr)
+	{
+		int64_t user_id_to_store = -1;
+
+		// was it me chatting?
+		if (pAuthInterface->GetUserID() == source_user_id)
+		{
+			// cache under target user
+			user_id_to_store = target_user_id;
+		}
+		else
+		{
+			// cache under source user
+			user_id_to_store = source_user_id;
+		}
+
+		// does it exist yet?
+		if (!m_mapCachedMessages.contains(target_user_id))
+		{
+			m_mapCachedMessages[target_user_id] = std::vector<UnicodeString>();
+		}
+
+		m_mapCachedMessages[user_id_to_store].push_back(unicodeStr);
+	}
+}
