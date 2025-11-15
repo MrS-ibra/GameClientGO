@@ -37,6 +37,8 @@ void NGMP_OnlineServices_SocialInterface::GetFriendsList(std::function<void(Frie
 
 					friendEntryIter["user_id"].get_to(newFriend.user_id);
 					friendEntryIter["display_name"].get_to(newFriend.display_name);
+					friendEntryIter["online"].get_to(newFriend.online);
+					friendEntryIter["presence"].get_to(newFriend.presence);
 
 
 					friendsResult.vecFriends.push_back(newFriend);
@@ -105,5 +107,38 @@ void NGMP_OnlineServices_SocialInterface::GetBlockList(std::function<void(Blocke
 				m_cbOnGetBlockList(blockedResult);
 				m_cbOnGetBlockList = nullptr;
 			}
+		});
+}
+
+void NGMP_OnlineServices_SocialInterface::AddFriend(int64_t target_user_id)
+{
+	std::string strURI = std::format("{}/{}", NGMP_OnlineServicesManager::GetAPIEndpoint("Social/Friends/Requests"), target_user_id);
+	std::map<std::string, std::string> mapHeaders;
+
+	NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPUTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, "", [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
+		{
+
+		});
+}
+
+void NGMP_OnlineServices_SocialInterface::AcceptPendingRequest(int64_t target_user_id)
+{
+	std::string strURI = std::format("{}/{}", NGMP_OnlineServicesManager::GetAPIEndpoint("Social/Friends/Requests"), target_user_id);
+	std::map<std::string, std::string> mapHeaders;
+
+	NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPOSTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, "", [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
+		{
+
+		});
+}
+
+void NGMP_OnlineServices_SocialInterface::RejectPendingRequest(int64_t target_user_id)
+{
+	std::string strURI = std::format("{}/{}", NGMP_OnlineServicesManager::GetAPIEndpoint("Social/Friends/Requests"), target_user_id);
+	std::map<std::string, std::string> mapHeaders;
+
+	NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendDELETERequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, "", [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
+		{
+
 		});
 }

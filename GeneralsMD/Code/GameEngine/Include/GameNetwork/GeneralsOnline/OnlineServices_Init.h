@@ -67,7 +67,10 @@ enum EWebSocketMessageID
 	LOBBY_CHANGE_PASSWORD = 25,
 	FULL_MESH_CONNECTIVITY_CHECK_HOST_REQUESTS_BEGIN = 26,
 	FULL_MESH_CONNECTIVITY_CHECK_RESPONSE = 27,
-	FULL_MESH_CONNECTIVITY_CHECK_RESPONSE_COMPLETE_TO_HOST = 28
+	FULL_MESH_CONNECTIVITY_CHECK_RESPONSE_COMPLETE_TO_HOST = 28,
+	SOCIAL_NEW_FRIEND_REQUEST = 29,
+	SOCIAL_FRIEND_CHAT_MESSAGE_CLIENT_TO_SERVER = 30,
+	SOCIAL_FRIEND_CHAT_MESSAGE_SERVER_TO_CLIENT = 31
 };
 
 enum class EQoSRegions
@@ -175,6 +178,7 @@ public:
 
 	void SendData_ChangeName(UnicodeString& strNewName);
 	void SendData_RoomChatMessage(UnicodeString& msg, bool bIsAction);
+	void SendData_FriendMessage(UnicodeString& msg, int64_t target_user_id);
 	void SendData_LobbyChatMessage(UnicodeString& msg, bool bIsAction, bool bIsAnnouncement, bool bShowAnnouncementToHost);
 	void SendData_JoinNetworkRoom(int roomID);
 	void SendData_LeaveNetworkRoom();

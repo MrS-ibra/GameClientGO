@@ -200,10 +200,17 @@ void InitBuddyControls(Int type)
 WindowMsgHandledType BuddyControlSystem( GameWindow *window, UnsignedInt msg,
 														 WindowMsgData mData1, WindowMsgData mData2)
 {
-	if(!TheGameSpyInfo || TheGameSpyInfo->getLocalProfileID() == 0 || !buddyControls.isInit)
+#if defined(GENERALS_ONLINE)
+	if(!buddyControls.isInit)
 	{
 		return MSG_IGNORED;
 	}
+#else
+	if (!TheGameSpyInfo || TheGameSpyInfo->getLocalProfileID() == 0 || !buddyControls.isInit)
+	{
+		return MSG_IGNORED;
+	}
+#endif
 
 	switch( msg )
 	{
@@ -271,6 +278,26 @@ WindowMsgHandledType BuddyControlSystem( GameWindow *window, UnsignedInt msg,
 				GadgetListBoxGetSelected(buddyControls.listboxBuddies, &selected);
 				if (selected >= 0)
 				{
+#if defined(GENERALS_ONLINE)
+					int profileID = (int)GadgetListBoxGetItemData(buddyControls.listboxBuddies, selected);
+
+					// TODO_SOCIAL: Original game didnt let you talk to someone in your game, maybe we should do the same? can you chat via communicator after death?
+					// maybe this doesnt matter anymore? discord exists.
+
+					std::shared_ptr<WebSocket> pWS = NGMP_OnlineServicesManager::GetWebSocket();
+					if (pWS != nullptr)
+					{
+						UnicodeString txtInput;
+						txtInput.set(GadgetTextEntryGetText(buddyControls.textEntryEdit));
+						GadgetTextEntrySetText(buddyControls.textEntryEdit, UnicodeString::TheEmptyString);
+						txtInput.trim();
+						if (!txtInput.isEmpty())
+						{
+							pWS->SendData_FriendMessage(txtInput, profileID);
+						}
+					}
+						
+#else
 					GPProfile selectedProfile = (GPProfile)GadgetListBoxGetItemData(buddyControls.listboxBuddies, selected);
 					BuddyInfoMap *m = TheGameSpyInfo->getBuddyMap();
 					BuddyInfoMap::iterator recipIt = m->find(selectedProfile);
@@ -326,6 +353,7 @@ WindowMsgHandledType BuddyControlSystem( GameWindow *window, UnsignedInt msg,
 						// put message on screen
 						insertChat(message);
 					}
+#endif
 				}
 				else
 				{
@@ -421,16 +449,35 @@ void updateBuddyInfo( void )
 			// TODO_SOCIAL: De-register callback when buddy list exits, otherwise half of these UI elements probably wont exist anymore
 
 			// FRIENDS
+			int i = 0;
 			for (FriendsEntry& friendsEntry : friendsResult.vecFriends)
 			{
 				int64_t profileID = friendsEntry.user_id;
-				AsciiString strName = AsciiString(friendsEntry.display_name.c_str());
+
+				//AsciiString strName;
+
+				UnicodeString strName;
+				if (friendsEntry.online)
+				{
+					strName.format(L"\u25CF %hs", friendsEntry.display_name.c_str());
+				}
+				else
+				{
+					strName.format(L"\u25CC %hs", friendsEntry.display_name.c_str());
+				}
+				//else
+				{
+					//strName.format(L"\u26D4 %hs", friendsEntry.display_name.c_str());
+				}
+
+				++i;
+				//AsciiString strName = AsciiString();
 				UnicodeString strStatus = UnicodeString(L"Online");
 				UnicodeString strLocation = UnicodeString(L"Location!");
 
 				// insert name into box
-				UnicodeString formatStr;
-				formatStr.translate(strName.str());
+				UnicodeString formatStr = strName;
+				//formatStr.translate(strName.str());
 
 				bool isSavedIgnored = false;
 				Color nameColor = (isSavedIgnored) ?
@@ -438,6 +485,7 @@ void updateBuddyInfo( void )
 				int index = GadgetListBoxAddEntryText(buddyControls.listboxBuddies, formatStr, nameColor, -1, -1);
 
 				// insert status into box
+				/*
 				AsciiString marker;
 				marker.format("Buddy:%ls", strStatus.str());
 				if (!strStatus.compareNoCase(L"Offline") ||
@@ -471,6 +519,20 @@ void updateBuddyInfo( void )
 				{
 					formatStr = strStatus;
 				}
+				*/
+
+				if (friendsEntry.online)
+				{
+					UnicodeString strGameState = TheGameText->fetch("Buddy:Online");
+					formatStr.format(L"%s - %hs", strGameState.str(), friendsEntry.presence.c_str());
+				}
+				else
+				{
+					// TODO_SOCIAL: Show last online
+					UnicodeString strGameState = TheGameText->fetch("Buddy:Offline");
+					formatStr.format(L"%s", strGameState.str());
+				}
+
 				GadgetListBoxAddEntryText(buddyControls.listboxBuddies, formatStr, GameSpyColor[GSCOLOR_DEFAULT], index, 1);
 				GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(profileID), index, 0);
 				GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(ITEM_BUDDY), index, 1);
@@ -621,6 +683,7 @@ void updateBuddyInfo( void )
 
 void HandleBuddyResponses( void )
 {
+#if !defined(GENERALS_ONLINE)
 	if (TheGameSpyBuddyMessageQueue)
 	{
 		BuddyResponse resp;
@@ -770,6 +833,8 @@ void HandleBuddyResponses( void )
 	{
 		DEBUG_CRASH(("No buddy message queue!"));
 	}
+#endif
+
 	if(noticeLayout && timeGetTime() > noticeExpires)
 	{
 		deleteNotificationBox();
@@ -846,6 +911,31 @@ void PopulateOldBuddyMessages(void)
 //-------------------------------------------------------------------------------------------------
 void WOLBuddyOverlayInit( WindowLayout *layout, void *userData )
 {
+	// TODO_SOCIAL: In lobby member list, flag friends
+	// TODO_SOCIAL: Lobby sort list by member
+	// GO: register for callbacks
+	NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+	if (pSocialInterface != nullptr)
+	{
+		pSocialInterface->RegisterForCallback_NewFriendRequest([](std::string strDisplayName)
+			{
+				updateBuddyInfo();
+				// insert status into box
+				lastNotificationWasStatus = FALSE;
+				numOnlineInNotification = 0;
+				showNotificationBox(AsciiString(strDisplayName.c_str()), TheGameText->fetch("Buddy:AddNotification"));
+			});
+
+		pSocialInterface->RegisterForCallback_OnChatMessage([](int64_t source_user_id, int64_t target_user_id, UnicodeString unicodeStr)
+			{
+				UnicodeString s;
+				s.format(L"%s", unicodeStr.str());
+				Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, s, GameSpyColor[GSCOLOR_PLAYER_BUDDY], -1, -1);
+				GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString::TheEmptyString, GameSpyColor[GSCOLOR_PLAYER_BUDDY], index, 1);
+
+			});
+	}
+
 	parentID = TheNameKeyGenerator->nameToKey( AsciiString( "WOLBuddyOverlay.wnd:BuddyMenuParent" ) );
 	buttonHideID = TheNameKeyGenerator->nameToKey( AsciiString( "WOLBuddyOverlay.wnd:ButtonHide" ) );
 	buttonAddBuddyID = TheNameKeyGenerator->nameToKey( AsciiString( "WOLBuddyOverlay.wnd:ButtonAdd" ) );
@@ -1018,6 +1108,67 @@ WindowMsgHandledType WOLBuddyOverlaySystem( GameWindow *window, UnsignedInt msg,
 
 				if( controlID == listboxIgnoreID )
 				{
+
+#if defined(GENERALS_ONLINE)
+					// TODO_SOCIAL
+					RightClickStruct* rc = (RightClickStruct*)mData2;
+					WindowLayout* rcLayout;
+					if (rc->pos < 0)
+						break;
+
+					Bool isBuddy = false, isRequest = false;
+
+					GPProfile profileID = (GPProfile)GadgetListBoxGetItemData(control, rc->pos);
+					UnicodeString nick = GadgetListBoxGetText(control, rc->pos);
+
+					/*
+					
+					BuddyInfoMap* buddies = TheGameSpyInfo->getBuddyMap();
+					BuddyInfoMap::iterator bIt;
+					bIt = buddies->find(profileID);
+					if (bIt != buddies->end())
+					{
+						isBuddy = true;
+					}
+					else
+					{
+						buddies = TheGameSpyInfo->getBuddyRequestMap();
+						bIt = buddies->find(profileID);
+						if (bIt != buddies->end())
+						{
+							isRequest = true;
+						}
+						else
+						{
+							// neither buddy nor request
+							//break;
+						}
+					}
+					*/
+
+					GadgetListBoxSetSelected(control, rc->pos);
+					if (isBuddy)
+						rcLayout = TheWindowManager->winCreateLayout(AsciiString("Menus/RCBuddiesMenu.wnd"));
+					else if (isRequest)
+						rcLayout = TheWindowManager->winCreateLayout(AsciiString("Menus/RCBuddyRequestMenu.wnd"));
+					else
+						rcLayout = TheWindowManager->winCreateLayout(AsciiString("Menus/RCNonBuddiesMenu.wnd"));
+					rcMenu = rcLayout->getFirstWindow();
+					rcMenu->winGetLayout()->runInit();
+					rcMenu->winBringToTop();
+					rcMenu->winHide(FALSE);
+
+
+
+					rcMenu->winSetPosition(rc->mouseX, rc->mouseY);
+					GameSpyRCMenuData* rcData = NEW GameSpyRCMenuData;
+					rcData->m_id = profileID;
+					rcData->m_nick.translate(nick);
+					rcData->m_itemType = (isBuddy) ? ITEM_BUDDY : ((isRequest) ? ITEM_REQUEST : ITEM_NONBUDDY);
+					setUnignoreText(rcLayout, rcData->m_nick, rcData->m_id);
+					rcMenu->winSetUserData((void*)rcData);
+					TheWindowManager->winSetLoneWindow(rcMenu);
+#else
 					RightClickStruct *rc = (RightClickStruct *)mData2;
 					WindowLayout *rcLayout;
 					if(rc->pos < 0)
@@ -1070,6 +1221,7 @@ WindowMsgHandledType WOLBuddyOverlaySystem( GameWindow *window, UnsignedInt msg,
 					setUnignoreText(rcLayout, rcData->m_nick, rcData->m_id);
 					rcMenu->winSetUserData((void *)rcData);
 					TheWindowManager->winSetLoneWindow(rcMenu);
+#endif
 				}
 				break;
 			}
@@ -1318,6 +1470,55 @@ static void closeRightClickMenu(GameWindow *win)
 
 void RequestBuddyAdd(Int profileID, AsciiString nick)
 {
+
+#if defined(GENERALS_ONLINE)
+	// request to add a buddy
+	NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+	if (pSocialInterface == nullptr)
+	{
+		return;
+	}
+	pSocialInterface->AddFriend(profileID);
+
+	// NOTE: The original Buddy:InviteSent string didn't make its way into the final game...
+	// TODO_NGMP: Use the SH localization system for strings instead
+	//UnicodeString s;
+	//s.format(L, nick.str());
+
+
+// TODO_SOCIAL
+// 	// save message for future incarnations of the buddy window
+// 	BuddyMessageList* messages = TheGameSpyInfo->getBuddyMessages();
+// 	BuddyMessage message;
+// 	message.m_timestamp = time(NULL);
+// 	message.m_senderID = 0;
+// 	message.m_senderNick = "";
+// 	message.m_recipientID = TheGameSpyInfo->getLocalProfileID();
+// 	message.m_recipientNick = TheGameSpyInfo->getLocalBaseName();
+// 	message.m_message.format(TheGameText->fetch("Buddy:InviteSentToPlayer"), nick.str());
+
+	// TODO_SOCIAL
+	// insert status into box
+	//messages->push_back(message);
+
+	DEBUG_LOG(("Inserting buddy add request"));
+
+	// TODO_SOCIAL
+	// put message on screen
+	//insertChat(message);
+
+	// play audio notification
+	AudioEventRTS buddyMsgAudio("GUIMessageReceived");
+	if (TheAudio)
+	{
+		TheAudio->addAudioEvent(&buddyMsgAudio);
+	}
+
+	lastNotificationWasStatus = FALSE;
+	numOnlineInNotification = 0;
+	//showNotificationBox(AsciiString::TheEmptyString, s);
+	showNotificationBox(nick, UnicodeString(L"Invite Sent to %hs"));
+#else
 	// request to add a buddy
 	BuddyRequest req;
 	req.buddyRequestType = BuddyRequest::BUDDYREQUEST_ADDBUDDY;
@@ -1364,6 +1565,7 @@ void RequestBuddyAdd(Int profileID, AsciiString nick)
 	lastNotificationWasStatus = FALSE;
 	numOnlineInNotification = 0;
 	showNotificationBox(AsciiString::TheEmptyString, s);
+#endif
 }
 
 WindowMsgHandledType WOLBuddyOverlayRCMenuSystem( GameWindow *window, UnsignedInt msg, WindowMsgData mData1, WindowMsgData mData2 )
@@ -1423,6 +1625,13 @@ WindowMsgHandledType WOLBuddyOverlayRCMenuSystem( GameWindow *window, UnsignedIn
 					DEBUG_LOG(("ButtonAdd was pushed"));
 					if (isRequest)
 					{
+#if defined(GENERALS_ONLINE)
+						NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+						if (pSocialInterface != nullptr)
+						{
+							pSocialInterface->AcceptPendingRequest(profileID);
+						}
+#else
 						// ok the request
 						BuddyRequest req;
 						req.buddyRequestType = BuddyRequest::BUDDYREQUEST_OKADD;
@@ -1438,6 +1647,7 @@ WindowMsgHandledType WOLBuddyOverlayRCMenuSystem( GameWindow *window, UnsignedIn
 							RequestBuddyAdd(profileID, nick);
 						}
 						updateBuddyInfo();
+#endif
 					}
 					else if (!isBuddy)
 					{
@@ -1450,6 +1660,7 @@ WindowMsgHandledType WOLBuddyOverlayRCMenuSystem( GameWindow *window, UnsignedIn
 						break;
 					if (isBuddy)
 					{
+						// TODO_SOCIAL
 						// delete the buddy
 						BuddyRequest req;
 						req.buddyRequestType = BuddyRequest::BUDDYREQUEST_DELBUDDY;
@@ -1458,6 +1669,13 @@ WindowMsgHandledType WOLBuddyOverlayRCMenuSystem( GameWindow *window, UnsignedIn
 					}
 					else
 					{
+#if defined(GENERALS_ONLINE)
+						NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+						if (pSocialInterface != nullptr)
+						{
+							pSocialInterface->RejectPendingRequest(profileID);
+						}
+#else
 						// delete the request
 						BuddyRequest req;
 						req.buddyRequestType = BuddyRequest::BUDDYREQUEST_DENYADD;
@@ -1465,12 +1683,17 @@ WindowMsgHandledType WOLBuddyOverlayRCMenuSystem( GameWindow *window, UnsignedIn
 						TheGameSpyBuddyMessageQueue->addRequest(req);
 						BuddyInfoMap *m = TheGameSpyInfo->getBuddyRequestMap();
 						m->erase( profileID );
+#endif
 					}
+
+					// TODO_SOCIAL
+#if !defined(GENERALS_ONLINE)
 					BuddyInfoMap *buddies = (isBuddy)?TheGameSpyInfo->getBuddyMap():TheGameSpyInfo->getBuddyRequestMap();
 					buddies->erase(profileID);
 					updateBuddyInfo();
 					DEBUG_LOG(("ButtonDelete was pushed"));
 					PopulateLobbyPlayerListbox();
+#endif
 				}
 				else if( controlID == buttonPlayID )
 				{
@@ -1509,15 +1732,18 @@ WindowMsgHandledType WOLBuddyOverlayRCMenuSystem( GameWindow *window, UnsignedIn
 				else if( controlID == buttonStatsID )
 				{
 					DEBUG_LOG(("buttonStatsID was pushed"));
-					GameSpyCloseOverlay(GSOVERLAY_PLAYERINFO);
 
-					// TODO_NGMP: Need to support unicode again here
-					//SetLookAtPlayer(profileID,nick );
+#if defined(GENERALS_ONLINE)
+					SetLookAtPlayer(profileID, UnicodeString(from_utf8(nick.str()).c_str()));
+					GameSpyOpenOverlay(GSOVERLAY_PLAYERINFO);
+#else
+					SetLookAtPlayer(profileID, nick);
 					GameSpyOpenOverlay(GSOVERLAY_PLAYERINFO);
 					PSRequest req;
 					req.requestType = PSRequest::PSREQUEST_READPLAYERSTATS;
 					req.player.id = profileID;
 					TheGameSpyPSMessageQueue->addRequest(req);
+#endif
 				}
 				closeRightClickMenu(window);
 				break;
@@ -1538,8 +1764,15 @@ void setUnignoreText( WindowLayout *layout, AsciiString nick, GPProfile id)
 	GameWindow *win = TheWindowManager->winGetWindowFromId(layout->getFirstWindow(), ID);
 	if(win)
 	{
+		// TODO_SOCIAL
+#if defined(GENERALS_ONLINE)
+		bool bIgnored = false;
+		if (bIgnored)
+			GadgetButtonSetText(win, TheGameText->fetch("GUI:Unignore"));
+#else
 		if(TheGameSpyInfo->isSavedIgnored(id) || TheGameSpyInfo->isIgnored(nick))
 			GadgetButtonSetText(win, TheGameText->fetch("GUI:Unignore"));
+#endif
 	}
 }
 

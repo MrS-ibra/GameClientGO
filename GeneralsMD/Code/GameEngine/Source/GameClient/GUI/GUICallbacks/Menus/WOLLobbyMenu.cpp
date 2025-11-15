@@ -1116,11 +1116,14 @@ void WOLLobbyMenuInit( WindowLayout *layout, void *userData )
 	{
 		pLobbyInterface->LeaveCurrentLobby();
 	}
+	
 
-	// TODO_NGMP: impl this again
+	// TODO_SOCIAL: re-enable
+#if !defined(_DEBUG)
 	GameWindow* buttonBuddy = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("WOLCustomLobby.wnd:ButtonBuddy"));
 	if (buttonBuddy)
 		buttonBuddy->winEnable(FALSE);
+#endif
 
 	nextScreen = NULL;
 	buttonPushed = false;
@@ -1143,9 +1146,6 @@ void WOLLobbyMenuInit( WindowLayout *layout, void *userData )
 	buttonRefreshID = TheNameKeyGenerator->nameToKey(AsciiString("WOLCustomLobby.wnd:ButtonRefresh"));
 	buttonRefresh = TheWindowManager->winGetWindowFromId(parent, buttonRefreshID);
 
-	// GENERALS_ONLINE: Disable refresh button, we refresh via push now, this button isn't necessary
-	//buttonRefresh->winHide(TRUE);
-
 	buttonJoinID = TheNameKeyGenerator->nameToKey(AsciiString("WOLCustomLobby.wnd:ButtonJoin"));
 	buttonJoin = TheWindowManager->winGetWindowFromId(parent, buttonJoinID);
 	buttonJoin->winEnable(FALSE);
@@ -1165,9 +1165,6 @@ void WOLLobbyMenuInit( WindowLayout *layout, void *userData )
 
 	listboxLobbyChatID = TheNameKeyGenerator->nameToKey(AsciiString("WOLCustomLobby.wnd:ListboxChat"));
 	listboxLobbyChat = TheWindowManager->winGetWindowFromId(parent, listboxLobbyChatID);
-
-	// TODO_NGMP
-	//TheGameSpyInfo->registerTextWindow(listboxLobbyChat);
 
 	comboLobbyGroupRoomsID = TheNameKeyGenerator->nameToKey(AsciiString("WOLCustomLobby.wnd:ComboBoxGroupRooms"));
 	comboLobbyGroupRooms = TheWindowManager->winGetWindowFromId(parent, comboLobbyGroupRoomsID);
@@ -1633,6 +1630,10 @@ void WOLLobbyMenuUpdate( WindowLayout * layout, void *userData)
 		}
 
 	}
+
+#if defined(GENERALS_ONLINE) // GO needs to tick this, so notifications disappear etc
+	HandleBuddyResponses();
+#endif
 
 	if (TheShell->isAnimFinished() && TheTransitionHandler->isFinished() && !buttonPushed && TheGameSpyPeerMessageQueue)
 	{
@@ -2532,11 +2533,134 @@ WindowMsgHandledType WOLLobbyMenuSystem( GameWindow *window, UnsignedInt msg,
 				GameWindow *control = (GameWindow *)mData1;
 				Int controlID = control->winGetWindowId();
 
-				if( controlID == listboxLobbyPlayersID )
+				if (controlID == listboxLobbyPlayersID)
 				{
-					// TODO_NGMP: enable social again
+					// TODO_SOCIAL: enable this
+#if !defined(_DEBUG)
 					break;
+#endif
 
+#if defined(GENERALS_ONLINE)
+					RightClickStruct* rc = (RightClickStruct*)mData2;
+					WindowLayout* rcLayout = NULL;
+					GameWindow* rcMenu;
+					if (rc->pos < 0)
+					{
+						GadgetListBoxSetSelected(control, -1);
+						break;
+					}
+
+					// TODO_NGMP: This causes issues with duplicate names. We should have better ways of looking this up + perhaps only allow unique names
+					NGMP_OnlineServices_RoomsInterface* pRoomsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_RoomsInterface>();
+					NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
+					NGMP_OnlineServices_StatsInterface* pStatsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_StatsInterface>();
+					if (pRoomsInterface != nullptr && pAuthInterface != nullptr && pStatsInterface != nullptr)
+					{
+						int profileID = (int)GadgetListBoxGetItemData(listboxLobbyPlayers, rc->pos, 0);
+						NetworkRoomMember* roomMember = pRoomsInterface->GetRoomMemberFromID(profileID);
+
+						if (rc->pos >= 0)
+						{
+							if (roomMember != nullptr)
+							{
+								AsciiString aName = AsciiString(roomMember->display_name.c_str());
+								int64_t localuserID = pAuthInterface->GetUserID();
+
+								// TODO_SOCIAL: Detect this
+								Bool isBuddy = FALSE;
+								if (profileID <= 0)
+									rcLayout = TheWindowManager->winCreateLayout(AsciiString("Menus/RCNoProfileMenu.wnd"));
+								else
+								{
+									if (profileID == localuserID)
+									{
+										rcLayout = TheWindowManager->winCreateLayout(AsciiString("Menus/RCLocalPlayerMenu.wnd"));
+									}
+									else if (isBuddy)
+									{
+										rcLayout = TheWindowManager->winCreateLayout(AsciiString("Menus/RCBuddiesMenu.wnd"));
+									}
+									else
+										rcLayout = TheWindowManager->winCreateLayout(AsciiString("Menus/RCNonBuddiesMenu.wnd"));
+								}
+								if (!rcLayout)
+									break;
+
+								GadgetListBoxSetSelected(control, rc->pos);
+
+								rcMenu = rcLayout->getFirstWindow();
+								rcMenu->winGetLayout()->runInit();
+								rcMenu->winBringToTop();
+								rcMenu->winHide(FALSE);
+								setUnignoreText(rcLayout, aName, profileID);
+								ICoord2D rcSize, rcPos;
+								rcMenu->winGetSize(&rcSize.x, &rcSize.y);
+								rcPos.x = rc->mouseX;
+								rcPos.y = rc->mouseY;
+								if (rc->mouseX + rcSize.x > TheDisplay->getWidth())
+									rcPos.x = TheDisplay->getWidth() - rcSize.x;
+								if (rc->mouseY + rcSize.y > TheDisplay->getHeight())
+									rcPos.y = TheDisplay->getHeight() - rcSize.y;
+								rcMenu->winSetPosition(rcPos.x, rcPos.y);
+
+								GameSpyRCMenuData* rcData = NEW GameSpyRCMenuData;
+								rcData->m_id = profileID;
+								rcData->m_nick = aName;
+								rcData->m_itemType = (isBuddy) ? ITEM_BUDDY : ITEM_NONBUDDY;
+								rcMenu->winSetUserData((void*)rcData);
+								TheWindowManager->winSetLoneWindow(rcMenu);
+							}
+							else if (controlID == GetGameListBoxID())
+							{
+								// TODO_NGMP: enable right click for ladders again
+								break;
+
+								RightClickStruct* rc = (RightClickStruct*)mData2;
+								WindowLayout* rcLayout = NULL;
+								GameWindow* rcMenu;
+								if (rc->pos < 0)
+								{
+									GadgetListBoxSetSelected(control, -1);
+									break;
+								}
+
+								Int selectedID = (Int)GadgetListBoxGetItemData(control, rc->pos);
+								if (selectedID > 0)
+								{
+									StagingRoomMap* srm = TheGameSpyInfo->getStagingRoomList();
+									StagingRoomMap::iterator srmIt = srm->find(selectedID);
+									if (srmIt != srm->end())
+									{
+										GameSpyStagingRoom* theRoom = srmIt->second;
+										if (!theRoom)
+											break;
+										const LadderInfo* linfo = TheLadderList->findLadder(theRoom->getLadderIP(), theRoom->getLadderPort());
+										if (linfo)
+										{
+											rcLayout = TheWindowManager->winCreateLayout(AsciiString("Menus/RCGameDetailsMenu.wnd"));
+											if (!rcLayout)
+												break;
+
+											GadgetListBoxSetSelected(control, rc->pos);
+
+											rcMenu = rcLayout->getFirstWindow();
+											rcMenu->winGetLayout()->runInit();
+											rcMenu->winBringToTop();
+											rcMenu->winHide(FALSE);
+											rcMenu->winSetPosition(rc->mouseX, rc->mouseY);
+
+											rcMenu->winSetUserData((void*)selectedID);
+											TheWindowManager->winSetLoneWindow(rcMenu);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				break;
+		}
+#else
 					RightClickStruct *rc = (RightClickStruct *)mData2;
 					WindowLayout *rcLayout = NULL;
 					GameWindow *rcMenu;
@@ -2644,6 +2768,7 @@ WindowMsgHandledType WOLLobbyMenuSystem( GameWindow *window, UnsignedInt msg,
 				}
 				break;
 			}
+#endif
 
 //		//---------------------------------------------------------------------------------------------
 //		case GSM_SLIDER_TRACK:

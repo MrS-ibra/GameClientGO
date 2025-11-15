@@ -9,6 +9,8 @@ struct FriendsEntry
 {
 	int64_t user_id = -1;
 	std::string display_name;
+	bool online;
+	std::string presence;
 };
 
 struct FriendsResult
@@ -32,7 +34,43 @@ public:
 
 	void GetBlockList(std::function<void(BlockedResult blockResult)> cb);
 
+	void AddFriend(int64_t target_user_id);
+
+	void AcceptPendingRequest(int64_t target_user_id);
+	void RejectPendingRequest(int64_t target_user_id);
+
+	void OnChatMessage(int64_t source_user_id, int64_t target_user_id, UnicodeString unicodeStr)
+	{
+		if (m_cbOnChatMessage != nullptr)
+		{
+			m_cbOnChatMessage(source_user_id, target_user_id, unicodeStr);
+		}
+	}
+	
+
+	// Callbacks
+	void InvokeCallback_NewFriendRequest(std::string strDisplayName)
+	{
+		if (m_cbOnNewFriendRequest != nullptr)
+		{
+			m_cbOnNewFriendRequest(strDisplayName);
+		}
+	}
+	void RegisterForCallback_NewFriendRequest(std::function<void(std::string strDisplayName)> cbOnNewFriendRequest)
+	{
+		m_cbOnNewFriendRequest = cbOnNewFriendRequest;
+	}
+
+	void RegisterForCallback_OnChatMessage(std::function<void(int64_t source_user_id, int64_t target_user_id, UnicodeString unicodeStr)> cbOnChatMessage)
+	{
+		m_cbOnChatMessage = cbOnChatMessage;
+	}
+
 private:
 	std::function<void(FriendsResult friendsResult)> m_cbOnGetFriendsList = nullptr;
 	std::function<void(BlockedResult blockResult)> m_cbOnGetBlockList = nullptr;
+
+	std::function<void(std::string strDisplayName)> m_cbOnNewFriendRequest = nullptr;
+
+	std::function<void(int64_t source_user_id, int64_t target_user_id, UnicodeString unicodeStr)> m_cbOnChatMessage = nullptr;
 };

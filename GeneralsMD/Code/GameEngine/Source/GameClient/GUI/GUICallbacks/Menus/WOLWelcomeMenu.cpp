@@ -743,6 +743,10 @@ void WOLWelcomeMenuUpdate( WindowLayout * layout, void *userData)
 	}
 #endif
 
+#if defined(GENERALS_ONLINE) // GO needs to tick this, so notifications disappear etc
+	HandleBuddyResponses();
+#endif
+
 	if (TheShell->isAnimFinished() && !buttonPushed && TheGameSpyPeerMessageQueue)
 	{
 		HandleBuddyResponses();

@@ -947,6 +947,18 @@ void WebSocket::SendData_ChangeName(UnicodeString& strNewName)
 	Send(strBody.c_str());
 }
 
+
+void WebSocket::SendData_FriendMessage(UnicodeString& msg, int64_t target_user_id)
+{
+	nlohmann::json j;
+	j["msg_id"] = EWebSocketMessageID::SOCIAL_FRIEND_CHAT_MESSAGE_CLIENT_TO_SERVER;
+	j["target_user_id"] = target_user_id;
+	j["message"] = to_utf8(msg.str());
+	std::string strBody = j.dump();
+
+	Send(strBody.c_str());
+}
+
 void WebSocket::SendData_LobbyChatMessage(UnicodeString& msg, bool bIsAction, bool bIsAnnouncement, bool bShowAnnouncementToHost)
 {
 	nlohmann::json j;
