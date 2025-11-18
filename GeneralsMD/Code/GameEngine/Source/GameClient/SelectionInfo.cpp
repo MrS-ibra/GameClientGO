@@ -345,6 +345,14 @@ Bool addDrawableToList( Drawable *draw, void *userData )
 	if (!pds->drawableListToFill)
 		return FALSE;
 
+#if !RTS_GENERALS || !RETAIL_COMPATIBLE_BUG
+	if (draw->getFullyObscuredByShroud())
+		return FALSE;
+
+	if (draw->isDrawableEffectivelyHidden())
+		return FALSE;
+#endif
+
 	if (!draw->getTemplate()->isAnyKindOf(pds->kindofsToMatch))
 		return FALSE;
 

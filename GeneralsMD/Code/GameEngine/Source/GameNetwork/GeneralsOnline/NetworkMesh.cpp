@@ -164,16 +164,16 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 			// Somebody's knocking
 			// Note that we assume we will only ever receive a single connection
 
-#if _DEBUG
-			if (connectionID != -1)
-				assert(plrConnection.m_hSteamConnection == k_HSteamNetConnection_Invalid); // not really a bug in this code, but a bug in the test
-#endif
-
 			NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Considering Accepting\n", pInfo->m_info.m_szConnectionDescription);
 
 			if (connectionID != -1)
 			{
 				PlayerConnection& plrConnection = connections[connectionID];
+
+#if _DEBUG
+				if (connectionID != -1)
+					assert(plrConnection.m_hSteamConnection == k_HSteamNetConnection_Invalid); // not really a bug in this code, but a bug in the test
+#endif
 
 				if (pInfo != nullptr)
 				{
@@ -238,15 +238,16 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 		{
 			// Note that we will get notification when our own connection that
 			// we initiate enters this state.
-#if _DEBUG
-			if (connectionID != -1)
-				assert(plrConnection.m_hSteamConnection == pInfo->m_hConn);
-#endif
 			NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Entered connecting state\n", pInfo->m_info.m_szConnectionDescription);
 
 			if (connectionID != -1)
 			{
 				PlayerConnection& plrConnection = connections[connectionID];
+
+#if _DEBUG
+				if (connectionID != -1)
+					assert(plrConnection.m_hSteamConnection == pInfo->m_hConn);
+#endif
 
 				plrConnection.UpdateState(EConnectionState::CONNECTING_DIRECT, pMesh);
 			}
