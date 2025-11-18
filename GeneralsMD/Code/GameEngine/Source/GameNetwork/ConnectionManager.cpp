@@ -1391,6 +1391,8 @@ Real ConnectionManager::getMaximumLatency()
 		// 0 = original
 		// 1 = pick highest between original and Valve latency (current)
 		// 2 = pick highest between original and Valve latency (historic)
+		// 3 = use Valve latency (current)
+		// 4 = use Valve latency (historic)
 	}
 
 	Real maxLatency = 0.0f;
@@ -1427,6 +1429,33 @@ Real ConnectionManager::getMaximumLatency()
 		{
 			Real maxGOLatency = (pMesh->getMaximumHistoricalLatency() / 1000.f);
 			return maxLatency > maxGOLatency ? maxLatency : maxGOLatency;
+		}
+		else
+		{
+			return maxLatency;
+		}
+	}
+	else if (latencyLogicModel == 3)
+	{
+		NetworkMesh* pMesh = NGMP_OnlineServicesManager::GetNetworkMesh();
+
+		if (pMesh != nullptr)
+		{
+			Real maxGOLatency = (pMesh->getMaximumLatency() / 1000.f);
+			return maxGOLatency;
+		}
+		else
+		{
+			return maxLatency;
+		}
+	}
+	else if (latencyLogicModel == 4)
+	{
+		NetworkMesh* pMesh = NGMP_OnlineServicesManager::GetNetworkMesh();
+		if (pMesh != nullptr)
+		{
+			Real maxGOLatency = (pMesh->getMaximumHistoricalLatency() / 1000.f);
+			return maxGOLatency;
 		}
 		else
 		{

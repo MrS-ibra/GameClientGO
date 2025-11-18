@@ -276,10 +276,12 @@ struct ServiceConfig
 	int ra_slack_override_percent_in_default = 10;
 	bool do_probes = true;
 	bool do_replay_upload = true;
+
+	int network_mesh_histogram_duration = 20000;
 	
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ServiceConfig, retry_signalling, use_mapped_port, min_run_ahead_frames, ra_update_frequency_frames, relay_all_traffic,
 		ra_slack_percent, frame_grouping_frames, enable_host_migration, network_do_immediate_flush_per_frame, network_send_flags, network_latency_logic_model,
-		use_default_config, ra_slack_override_percent_in_default, do_probes, do_replay_upload)
+		use_default_config, ra_slack_override_percent_in_default, do_probes, do_replay_upload, network_mesh_histogram_duration)
 };
 
 class NGMP_OnlineServicesManager
