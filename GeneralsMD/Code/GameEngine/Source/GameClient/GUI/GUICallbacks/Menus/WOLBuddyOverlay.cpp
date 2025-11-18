@@ -228,7 +228,7 @@ WindowMsgHandledType BuddyControlSystem( GameWindow *window, UnsignedInt msg,
 
 					GPProfile profileID = (GPProfile)GadgetListBoxGetItemData(control, rc->pos, 0);
 					RCItemType itemType = (RCItemType)(Int)GadgetListBoxGetItemData(control, rc->pos, 1);
-					UnicodeString nick = GadgetListBoxGetText(control, rc->pos);
+					UnicodeString nick = UnicodeString(GadgetListBoxGetText(control, rc->pos).str() + 2); // Skip the online/offline indicator
 
 					GadgetListBoxSetSelected(control, rc->pos);
 					if (itemType == ITEM_BUDDY)
@@ -1714,12 +1714,20 @@ WindowMsgHandledType WOLBuddyOverlayRCMenuSystem( GameWindow *window, UnsignedIn
 						break;
 					if (isBuddy)
 					{
-						// TODO_SOCIAL
 						// delete the buddy
+
+#if defined(GENERALS_ONLINE)
+						NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+						if (pSocialInterface != nullptr)
+						{
+							pSocialInterface->RemoveFriend(profileID);
+						}
+#else
 						BuddyRequest req;
 						req.buddyRequestType = BuddyRequest::BUDDYREQUEST_DELBUDDY;
 						req.arg.profile.id = profileID;
 						TheGameSpyBuddyMessageQueue->addRequest(req);
+#endif
 					}
 					else
 					{
@@ -1755,6 +1763,13 @@ WindowMsgHandledType WOLBuddyOverlayRCMenuSystem( GameWindow *window, UnsignedIn
 				}
 				else if( controlID == buttonIgnoreID )
 				{
+#if defined(GENERALS_ONLINE)
+					NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+					if (pSocialInterface != nullptr)
+					{
+						pSocialInterface->IgnoreUser(profileID);
+					}
+#else
 					DEBUG_LOG(("%s is isGameSpyUser %d", nick.str(), isGameSpyUser));
 					if( isGameSpyUser )
 					{
@@ -1778,6 +1793,9 @@ WindowMsgHandledType WOLBuddyOverlayRCMenuSystem( GameWindow *window, UnsignedIn
 							TheGameSpyInfo->addToIgnoreList(nick);
 						}
 					}
+#endif
+
+					// TODO_SOCIAL: do this in a callback above
 					updateBuddyInfo();
 					refreshIgnoreList();
 					// repopulate our player listboxes now

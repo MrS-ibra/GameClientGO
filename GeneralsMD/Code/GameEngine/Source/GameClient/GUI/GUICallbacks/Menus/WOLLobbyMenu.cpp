@@ -738,7 +738,6 @@ void PopulateLobbyPlayerListbox(void)
 
 		int profileID = (int)GadgetListBoxGetItemData(listboxLobbyPlayers, selectedIndices[i], 0);
 		selectedUserIDs.insert(profileID);
-		DEBUG_LOG(("Saving off old selection %d (%s)", selectedIndices[i], selectedName.str()));
 	}
 
 	// save off old top entry
@@ -869,7 +868,6 @@ void PopulateLobbyPlayerListbox(void)
 					std::set<int>::const_iterator selIt = selectedUserIDs.find(netRoomMember.user_id);
 					if (selIt != selectedUserIDs.end())
 					{
-						DEBUG_LOG(("Marking index %d (%s) to re-select", index, info.m_name.str()));
 						indicesToSelect.insert(index);
 					}
 

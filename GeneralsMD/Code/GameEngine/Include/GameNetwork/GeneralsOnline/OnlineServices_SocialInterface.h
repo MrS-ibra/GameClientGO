@@ -35,6 +35,10 @@ public:
 	void GetBlockList(std::function<void(BlockedResult blockResult)> cb);
 
 	void AddFriend(int64_t target_user_id);
+	void RemoveFriend(int64_t target_user_id);
+
+	void IgnoreUser(int64_t target_user_id);
+	void UnignoreUser(int64_t target_user_id);
 
 	void AcceptPendingRequest(int64_t target_user_id);
 	void RejectPendingRequest(int64_t target_user_id);
