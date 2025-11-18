@@ -92,7 +92,13 @@ static AnimateWindowManager *theAnimateWindowManager = NULL;
 WindowMsgHandledType BuddyControlSystem( GameWindow *window, UnsignedInt msg,
 														 WindowMsgData mData1, WindowMsgData mData2);
 void InitBuddyControls(Int type);
+
+#if defined(GENERALS_ONLINE)
+void updateBuddyInfo(bool bIsAutoRefresh = false);
+#else
 void updateBuddyInfo( void );
+#endif
+
 static void grabWindowPointers( void )
 {
 	for (Int i=0; i<MAX_SLOTS; ++i)

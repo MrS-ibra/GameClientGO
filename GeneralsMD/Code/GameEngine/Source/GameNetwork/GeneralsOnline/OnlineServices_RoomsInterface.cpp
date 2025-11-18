@@ -224,6 +224,16 @@ public:
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_RoomChatIncoming, msg_id, message, action, admin)
 };
 
+class WebSocketMessage_Social_FriendChatMessage_Incoming : public WebSocketMessageBase
+{
+public:
+	int64_t source_user_id;
+	int64_t target_user_id;
+	std::string message;
+	
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_Social_FriendChatMessage_Incoming, msg_id, source_user_id, target_user_id, message)
+};
+
 class WebSocketMessage_NetworkSignal : public WebSocketMessageBase
 {
 public:
@@ -251,6 +261,14 @@ public:
 	std::string message;
 
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_MatchmakingMessage, msg_id, message)
+};
+
+class WebSocketMessage_Social_NewFriendRequest : public WebSocketMessageBase
+{
+public:
+	std::string display_name;
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_Social_NewFriendRequest, msg_id, display_name)
 };
 
 class WebSocketMessage_NetworkRoomMemberListUpdate : public WebSocketMessageBase
@@ -446,6 +464,24 @@ void WebSocket::Tick()
 											if (pRoomsInterface != nullptr && pRoomsInterface->m_OnChatCallback != nullptr)
 											{
 												pRoomsInterface->m_OnChatCallback(unicodeStr, color);
+											}
+										}
+									}
+									break;
+
+									case EWebSocketMessageID::SOCIAL_FRIEND_CHAT_MESSAGE_SERVER_TO_CLIENT:
+									{
+										WebSocketMessage_Social_FriendChatMessage_Incoming chatData;
+										bool bParsed = JSONGetAsObject(jsonObject, &chatData);
+
+										if (bParsed)
+										{
+											UnicodeString unicodeStr(from_utf8(chatData.message).c_str());
+
+											NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+											if (pSocialInterface != nullptr)
+											{
+												pSocialInterface->OnChatMessage(chatData.source_user_id, chatData.target_user_id, unicodeStr);
 											}
 										}
 									}
@@ -770,7 +806,7 @@ void WebSocket::Tick()
 
 									case EWebSocketMessageID::MATCHMAKING_MESSAGE:
 									{
-										 WebSocketMessage_MatchmakingMessage matchmakingMsg;
+										WebSocketMessage_MatchmakingMessage matchmakingMsg;
 										bool bParsed = JSONGetAsObject(jsonObject, &matchmakingMsg);
 
 										if (bParsed)
@@ -779,6 +815,22 @@ void WebSocket::Tick()
 											if (pLobbyInterface != nullptr)
 											{
 												pLobbyInterface->InvokeMatchmakingMessageCallback(matchmakingMsg.message);
+											}
+										}
+									}
+									break;
+
+									case EWebSocketMessageID::SOCIAL_NEW_FRIEND_REQUEST:
+									{
+										WebSocketMessage_Social_NewFriendRequest incomingNotify;
+										bool bParsed = JSONGetAsObject(jsonObject, &incomingNotify);
+
+										if (bParsed)
+										{
+											NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+											if (pSocialInterface != nullptr)
+											{
+												pSocialInterface->InvokeCallback_NewFriendRequest(incomingNotify.display_name);
 											}
 										}
 									}

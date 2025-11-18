@@ -747,6 +747,7 @@ void NGMP_OnlineServicesManager::Init()
 	m_pRoomInterface = new NGMP_OnlineServices_RoomsInterface();
 	m_pStatsInterface = new NGMP_OnlineServices_StatsInterface();
 	m_pMatchmakingInterface = new NGMP_OnlineServices_MatchmakingInterface();
+	m_pSocialInterface = new NGMP_OnlineServices_SocialInterface();
 
 	m_pHTTPManager = new HTTPManager();
 	m_pHTTPManager->Initialize();
@@ -941,6 +942,18 @@ void WebSocket::SendData_ChangeName(UnicodeString& strNewName)
 	nlohmann::json j;
 	j["msg_id"] = EWebSocketMessageID::PLAYER_NAME_CHANGE;
 	j["name"] = to_utf8(strNewName.str());
+	std::string strBody = j.dump();
+
+	Send(strBody.c_str());
+}
+
+
+void WebSocket::SendData_FriendMessage(UnicodeString& msg, int64_t target_user_id)
+{
+	nlohmann::json j;
+	j["msg_id"] = EWebSocketMessageID::SOCIAL_FRIEND_CHAT_MESSAGE_CLIENT_TO_SERVER;
+	j["target_user_id"] = target_user_id;
+	j["message"] = to_utf8(msg.str());
 	std::string strBody = j.dump();
 
 	Send(strBody.c_str());

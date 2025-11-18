@@ -1429,6 +1429,10 @@ void WOLQuickMatchMenuUpdate( WindowLayout * layout, void *userData)
 		raiseMessageBoxes = false;
 	}
 
+#if defined(GENERALS_ONLINE) // GO needs to tick this, so notifications disappear etc
+	HandleBuddyResponses();
+#endif
+
 	/// @todo: MDC handle disconnects in-game the same way as Custom Match!
 
 	if (TheShell->isAnimFinished() && !buttonPushed && TheGameSpyPeerMessageQueue)
