@@ -71,7 +71,10 @@ enum EWebSocketMessageID
 	SOCIAL_NEW_FRIEND_REQUEST = 29,
 	SOCIAL_FRIEND_CHAT_MESSAGE_CLIENT_TO_SERVER = 30,
 	SOCIAL_FRIEND_CHAT_MESSAGE_SERVER_TO_CLIENT = 31,
-	SOCIAL_FRIEND_ONLINE_STATUS_CHANGED = 32
+	SOCIAL_FRIEND_ONLINE_STATUS_CHANGED = 32,
+	SOCIAL_SUBSCRIBE_REALTIME_UPDATES = 33,
+	SOCIAL_UNSUBSCRIBE_REALTIME_UPDATES = 34,
+	SOCIAL_FRIENDS_OVERALL_STATUS_UPDATE = 35
 };
 
 enum class EQoSRegions
@@ -191,6 +194,9 @@ public:
 
 	void SendData_ChangeLobbyPassword(UnicodeString& strNewPassword);
 	void SendData_RemoveLobbyPassword();
+
+	void SendData_SubscribeRealtimeUpdates();
+	void SendData_UnsubscribeRealtimeUpdates();
 
 
 	void SendData_CountdownStarted();

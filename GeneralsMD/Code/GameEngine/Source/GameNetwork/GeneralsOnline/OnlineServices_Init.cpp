@@ -1007,6 +1007,24 @@ void WebSocket::SendData_StartGame()
 	Send(strBody.c_str());
 }
 
+
+void WebSocket::SendData_SubscribeRealtimeUpdates()
+{
+	nlohmann::json j;
+	j["msg_id"] = EWebSocketMessageID::SOCIAL_SUBSCRIBE_REALTIME_UPDATES;
+	std::string strBody = j.dump();
+	Send(strBody.c_str());
+}
+
+
+void WebSocket::SendData_UnsubscribeRealtimeUpdates()
+{
+	nlohmann::json j;
+	j["msg_id"] = EWebSocketMessageID::SOCIAL_UNSUBSCRIBE_REALTIME_UPDATES;
+	std::string strBody = j.dump();
+	Send(strBody.c_str());
+}
+
 void WebSocket::SendData_CountdownStarted()
 {
 	nlohmann::json j;

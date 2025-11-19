@@ -245,10 +245,18 @@ bool NGMP_OnlineServices_SocialInterface::IsUserIgnored(int64_t target_user_id)
 
 void NGMP_OnlineServices_SocialInterface::RegisterForRealtimeServiceUpdates()
 {
-	// TODO_SOCIAL
+	std::shared_ptr<WebSocket> pWS = NGMP_OnlineServicesManager::GetWebSocket();
+	if (pWS != nullptr)
+	{
+		pWS->SendData_SubscribeRealtimeUpdates();
+	}
 }
 
 void NGMP_OnlineServices_SocialInterface::DeregisterForRealtimeServiceUpdates()
 {
-	// TODO_SOCIAL
+	std::shared_ptr<WebSocket> pWS = NGMP_OnlineServicesManager::GetWebSocket();
+	if (pWS != nullptr)
+	{
+		pWS->SendData_UnsubscribeRealtimeUpdates();
+	}
 }

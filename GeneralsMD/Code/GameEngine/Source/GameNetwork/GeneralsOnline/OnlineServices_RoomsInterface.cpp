@@ -243,6 +243,15 @@ public:
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_Social_FriendStatusChanged, display_name, online)
 };
 
+class WebSocketMessage_FriendsOverallStatusUpdate : public WebSocketMessageBase
+{
+public:
+	int num_online;
+	int num_pending;
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_FriendsOverallStatusUpdate, num_online, num_pending)
+};
+
 class WebSocketMessage_NetworkSignal : public WebSocketMessageBase
 {
 public:
@@ -507,6 +516,42 @@ void WebSocket::Tick()
 											if (pSocialInterface != nullptr)
 											{
 												pSocialInterface->OnOnlineStatusChanged(statusChangedData.display_name, statusChangedData.online);
+											}
+										}
+									}
+									break;
+
+									case EWebSocketMessageID::SOCIAL_FRIENDS_OVERALL_STATUS_UPDATE:
+									{
+										// From WOLBuddyOverlay.cpp
+										static Bool lastNotificationWasStatus = FALSE;
+										static Int numOnlineInNotification = 0;
+										void showNotificationBox(AsciiString nick, UnicodeString message);
+										lastNotificationWasStatus = FALSE;
+										numOnlineInNotification = 0;
+
+										WebSocketMessage_FriendsOverallStatusUpdate statusUpdateData;
+										bool bParsed = JSONGetAsObject(jsonObject, &statusUpdateData);
+
+										if (bParsed)
+										{
+											UnicodeString strFormat = UnicodeString::TheEmptyString;
+											if (statusUpdateData.num_online > 0 && statusUpdateData.num_pending > 0)
+											{
+												strFormat.format(L"You have %d friend(s) online and %d pending friend request(s)", statusUpdateData.num_online, statusUpdateData.num_pending);
+											}
+											else if (statusUpdateData.num_online > 0)
+											{
+												strFormat.format(L"You have %d friend(s) online.", statusUpdateData.num_online);
+											}
+											else if (statusUpdateData.num_pending > 0)
+											{
+												strFormat.format(L"You have %d pending friend request(s)", statusUpdateData.num_pending);
+											}
+
+											if (!strFormat.isEmpty())
+											{
+												showNotificationBox(AsciiString::TheEmptyString, strFormat);
 											}
 										}
 									}
