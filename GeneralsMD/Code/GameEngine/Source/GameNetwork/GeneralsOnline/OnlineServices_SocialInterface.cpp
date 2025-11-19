@@ -4,6 +4,7 @@
 #include "../../RankPointValue.h"
 #include "../OnlineServices_Init.h"
 #include "../HTTP/HTTPManager.h"
+#include "GameClient/GameText.h"
 
 NGMP_OnlineServices_SocialInterface::NGMP_OnlineServices_SocialInterface()
 {
@@ -28,6 +29,9 @@ void NGMP_OnlineServices_SocialInterface::GetFriendsList(std::function<void(Frie
 
 			try
 			{
+				m_mapFriends.clear();
+				m_mapPendingRequests.clear();
+
 				nlohmann::json jsonObject = nlohmann::json::parse(strBody);
 
 				// friends
@@ -42,6 +46,9 @@ void NGMP_OnlineServices_SocialInterface::GetFriendsList(std::function<void(Frie
 
 
 					friendsResult.vecFriends.push_back(newFriend);
+
+					// cache
+					m_mapFriends[newFriend.user_id] = newFriend;
 				}
 
 				// pending requests
@@ -54,6 +61,9 @@ void NGMP_OnlineServices_SocialInterface::GetFriendsList(std::function<void(Frie
 
 
 					friendsResult.vecPendingRequests.push_back(newEntry);
+
+					// cache
+					m_mapPendingRequests[newEntry.user_id] = newEntry;
 				}
 			}
 			catch (...)
@@ -81,6 +91,8 @@ void NGMP_OnlineServices_SocialInterface::GetBlockList(std::function<void(Blocke
 		{
 			BlockedResult blockedResult;
 
+			m_mapBlocked.clear();
+
 			try
 			{
 				nlohmann::json jsonObject = nlohmann::json::parse(strBody);
@@ -94,6 +106,9 @@ void NGMP_OnlineServices_SocialInterface::GetBlockList(std::function<void(Blocke
 
 
 					blockedResult.vecBlocked.push_back(newEntry);
+
+					// cache
+					m_mapBlocked[newEntry.user_id] = newEntry;
 				}
 			}
 			catch (...)
@@ -209,4 +224,31 @@ void NGMP_OnlineServices_SocialInterface::OnChatMessage(int64_t source_user_id, 
 
 		m_mapCachedMessages[user_id_to_store].push_back(unicodeStr);
 	}
+}
+
+// From WOLBuddyOverlay.cpp
+static Bool lastNotificationWasStatus = FALSE;
+static Int numOnlineInNotification = 0;
+void showNotificationBox(AsciiString nick, UnicodeString message);
+void NGMP_OnlineServices_SocialInterface::OnOnlineStatusChanged(std::string strDisplayName, bool bOnline)
+{
+	lastNotificationWasStatus = FALSE;
+	numOnlineInNotification = 0;
+
+	showNotificationBox(AsciiString(strDisplayName.c_str()), bOnline ? TheGameText->fetch("Buddy:OnlineNotification") : UnicodeString(L"%hs went offline"));
+}
+
+bool NGMP_OnlineServices_SocialInterface::IsUserIgnored(int64_t target_user_id)
+{
+	return m_mapBlocked.contains(target_user_id);
+}
+
+void NGMP_OnlineServices_SocialInterface::RegisterForRealtimeServiceUpdates()
+{
+	// TODO_SOCIAL
+}
+
+void NGMP_OnlineServices_SocialInterface::DeregisterForRealtimeServiceUpdates()
+{
+	// TODO_SOCIAL
 }

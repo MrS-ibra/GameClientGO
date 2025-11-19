@@ -178,6 +178,16 @@ void InitBuddyControls(Int type)
 		buddyControls.listboxChat = TheWindowManager->winGetWindowFromId( NULL,  buddyControls.listboxChatID);
 		GadgetTextEntrySetText(buddyControls.textEntryEdit, UnicodeString::TheEmptyString);
 		buddyControls.isInit = TRUE;
+
+#if defined(GENERALS_ONLINE)
+		{
+			// clear current box contents
+			GadgetListBoxReset(buddyControls.listboxChat);
+
+			Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString(L"Select a friend to start chatting"), GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
+			GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString::TheEmptyString, GameSpyColor[GSCOLOR_DEFAULT], index, 1);
+		}
+#endif
 		break;
 	case BUDDY_WINDOW_DIPLOMACY:
 		buddyControls.textEntryEditID = TheNameKeyGenerator->nameToKey( AsciiString( "Diplomacy.wnd:TextEntryChat" ) );
@@ -479,6 +489,7 @@ void updateBuddyInfo( void )
 				UnicodeString formatStr = strName;
 				//formatStr.translate(strName.str());
 
+				// NOTE: Gamespy let you be friends with someone AND have them ignored. We don't.
 				bool isSavedIgnored = false;
 				Color nameColor = (isSavedIgnored) ?
 					GameSpyColor[GSCOLOR_PLAYER_IGNORED] : GameSpyColor[GSCOLOR_PLAYER_BUDDY];
@@ -917,6 +928,8 @@ void WOLBuddyOverlayInit( WindowLayout *layout, void *userData )
 	NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
 	if (pSocialInterface != nullptr)
 	{
+		pSocialInterface->RegisterForRealtimeServiceUpdates();
+
 		pSocialInterface->RegisterForCallback_NewFriendRequest([](std::string strDisplayName)
 			{
 				updateBuddyInfo();
@@ -1012,6 +1025,12 @@ void WOLBuddyOverlayInit( WindowLayout *layout, void *userData )
 //-------------------------------------------------------------------------------------------------
 void WOLBuddyOverlayShutdown( WindowLayout *layout, void *userData )
 {
+	NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+	if (pSocialInterface != nullptr)
+	{
+		pSocialInterface->DeregisterForRealtimeServiceUpdates();
+	}
+
 	listboxIgnore = NULL;
 
 	// hide menu
@@ -1150,7 +1169,21 @@ WindowMsgHandledType WOLBuddyOverlaySystem( GameWindow *window, UnsignedInt msg,
 							Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, unicodeStr, GameSpyColor[GSCOLOR_PLAYER_BUDDY], -1, -1);
 							GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString::TheEmptyString, GameSpyColor[GSCOLOR_PLAYER_BUDDY], index, 1);
 						}
+
+						if (vecMessages.empty())
+						{
+							Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString(L"This chat is empty. Send a message to start a conversation"), GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
+							GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString::TheEmptyString, GameSpyColor[GSCOLOR_DEFAULT], index, 1);
+						}
 					}
+				}
+				else
+				{
+					// clear current box contents
+					GadgetListBoxReset(buddyControls.listboxChat);
+
+					Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString(L"Select a friend to start chatting"), GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
+					GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString::TheEmptyString, GameSpyColor[GSCOLOR_DEFAULT], index, 1);
 				}
 			}
 			break;
@@ -1836,9 +1869,14 @@ void setUnignoreText( WindowLayout *layout, AsciiString nick, GPProfile id)
 	GameWindow *win = TheWindowManager->winGetWindowFromId(layout->getFirstWindow(), ID);
 	if(win)
 	{
-		// TODO_SOCIAL
 #if defined(GENERALS_ONLINE)
-		bool bIgnored = false;
+		NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+		if (pSocialInterface == nullptr)
+		{
+			return;
+		}
+
+		bool bIgnored = pSocialInterface->IsUserIgnored(id);
 		if (bIgnored)
 			GadgetButtonSetText(win, TheGameText->fetch("GUI:Unignore"));
 #else
@@ -1878,8 +1916,8 @@ void refreshIgnoreList( void )
 					//AsciiString aName = *iListIt;
 				UnicodeString name;
 				name.translate(strName);
-				Int pos = GadgetListBoxAddEntryText(listboxIgnore, name, GameMakeColor(255, 100, 100, 255), -1);
-				GadgetListBoxSetItemData(listboxIgnore, 0, pos);
+				Int index = GadgetListBoxAddEntryText(listboxIgnore, name, GameMakeColor(255, 100, 100, 255), -1);
+				GadgetListBoxSetItemData(listboxIgnore, (void*)(blockedEntry.user_id), index, 0);
 				//++iListIt;
 			}
 		});

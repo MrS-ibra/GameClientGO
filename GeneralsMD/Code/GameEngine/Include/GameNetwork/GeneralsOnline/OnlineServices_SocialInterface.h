@@ -44,7 +44,16 @@ public:
 	void RejectPendingRequest(int64_t target_user_id);
 
 	void OnChatMessage(int64_t source_user_id, int64_t target_user_id, UnicodeString unicodeStr);
+	void OnOnlineStatusChanged(std::string strDisplayName, bool bOnline);
 
+	bool IsUserIgnored(int64_t target_user_id);
+
+	// NOTE: If we aren't registered for indepth notifications (only when UI is visible), we will just get online/offline status changes.
+	//	     This cuts down on server traffic, and we don't need the additional info like presence etc unless the UI is visible
+	void RegisterForRealtimeServiceUpdates();
+	void DeregisterForRealtimeServiceUpdates();
+
+	// TODO_SOCIAL: Store unread messages in DB so data isnt lost if user logs out or crashes etc without reading them?
 	std::vector<UnicodeString> GetChatMessagesForUser(int64_t target_user_id)
 	{
 		if (m_mapCachedMessages.contains(target_user_id))
@@ -84,4 +93,9 @@ private:
 	std::function<void(std::string strDisplayName)> m_cbOnNewFriendRequest = nullptr;
 
 	std::function<void(int64_t source_user_id, int64_t target_user_id, UnicodeString unicodeStr)> m_cbOnChatMessage = nullptr;
+
+	// Cached, may be out of date if friends UI isnt active, optimized for lookup
+	std::unordered_map<int64_t, FriendsEntry> m_mapFriends;
+	std::unordered_map<int64_t, FriendsEntry> m_mapPendingRequests;
+	std::unordered_map<int64_t, FriendsEntry> m_mapBlocked;
 };
