@@ -243,6 +243,14 @@ public:
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_Social_FriendStatusChanged, display_name, online)
 };
 
+class WebSocketMessage_Social_FriendRequestAccepted : public WebSocketMessageBase
+{
+public:
+	std::string display_name;
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(WebSocketMessage_Social_FriendRequestAccepted, display_name)
+};
+
 class WebSocketMessage_FriendsOverallStatusUpdate : public WebSocketMessageBase
 {
 public:
@@ -516,6 +524,22 @@ void WebSocket::Tick()
 											if (pSocialInterface != nullptr)
 											{
 												pSocialInterface->OnOnlineStatusChanged(statusChangedData.display_name, statusChangedData.online);
+											}
+										}
+									}
+									break;
+
+									case EWebSocketMessageID::SOCIAL_FRIEND_FRIEND_REQUEST_ACCEPTED_BY_TARGET:
+									{
+										WebSocketMessage_Social_FriendRequestAccepted statusChangedData;
+										bool bParsed = JSONGetAsObject(jsonObject, &statusChangedData);
+
+										if (bParsed)
+										{
+											NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+											if (pSocialInterface != nullptr)
+											{
+												pSocialInterface->OnFriendRequestAccepted(statusChangedData.display_name);
 											}
 										}
 									}

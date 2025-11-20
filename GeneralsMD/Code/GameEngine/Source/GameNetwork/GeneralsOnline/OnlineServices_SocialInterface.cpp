@@ -238,6 +238,14 @@ void NGMP_OnlineServices_SocialInterface::OnOnlineStatusChanged(std::string strD
 	showNotificationBox(AsciiString(strDisplayName.c_str()), bOnline ? TheGameText->fetch("Buddy:OnlineNotification") : UnicodeString(L"%hs went offline"));
 }
 
+void NGMP_OnlineServices_SocialInterface::OnFriendRequestAccepted(std::string strDisplayName)
+{
+	lastNotificationWasStatus = FALSE;
+	numOnlineInNotification = 0;
+
+	showNotificationBox(AsciiString(strDisplayName.c_str()), UnicodeString(L"%hs accepted your friend request."));
+}
+
 bool NGMP_OnlineServices_SocialInterface::IsUserIgnored(int64_t target_user_id)
 {
 	return m_mapBlocked.contains(target_user_id);
@@ -259,4 +267,17 @@ void NGMP_OnlineServices_SocialInterface::DeregisterForRealtimeServiceUpdates()
 	{
 		pWS->SendData_UnsubscribeRealtimeUpdates();
 	}
+}
+
+void NGMP_OnlineServices_SocialInterface::InvokeCallback_NewFriendRequest(std::string strDisplayName)
+{
+	if (m_cbOnNewFriendRequest != nullptr)
+	{
+		m_cbOnNewFriendRequest(strDisplayName);
+	}
+
+	lastNotificationWasStatus = FALSE;
+	numOnlineInNotification = 0;
+
+	showNotificationBox(AsciiString(strDisplayName.c_str()), UnicodeString(L"%hs sent you a friend request."));
 }

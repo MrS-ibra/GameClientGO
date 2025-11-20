@@ -46,6 +46,8 @@ public:
 	void OnChatMessage(int64_t source_user_id, int64_t target_user_id, UnicodeString unicodeStr);
 	void OnOnlineStatusChanged(std::string strDisplayName, bool bOnline);
 
+	void OnFriendRequestAccepted(std::string strDisplayName);
+
 	bool IsUserIgnored(int64_t target_user_id);
 
 	// NOTE: If we aren't registered for indepth notifications (only when UI is visible), we will just get online/offline status changes.
@@ -65,13 +67,7 @@ public:
 	}
 
 	// Callbacks
-	void InvokeCallback_NewFriendRequest(std::string strDisplayName)
-	{
-		if (m_cbOnNewFriendRequest != nullptr)
-		{
-			m_cbOnNewFriendRequest(strDisplayName);
-		}
-	}
+	void InvokeCallback_NewFriendRequest(std::string strDisplayName);
 	void RegisterForCallback_NewFriendRequest(std::function<void(std::string strDisplayName)> cbOnNewFriendRequest)
 	{
 		m_cbOnNewFriendRequest = cbOnNewFriendRequest;
