@@ -1800,7 +1800,14 @@ WindowMsgHandledType WOLBuddyOverlayRCMenuSystem( GameWindow *window, UnsignedIn
 					NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
 					if (pSocialInterface != nullptr)
 					{
-						pSocialInterface->IgnoreUser(profileID);
+						if (pSocialInterface->IsUserIgnored(profileID))
+						{
+							pSocialInterface->UnignoreUser(profileID);
+						}
+						else
+						{
+							pSocialInterface->IgnoreUser(profileID);
+						}
 					}
 #else
 					DEBUG_LOG(("%s is isGameSpyUser %d", nick.str(), isGameSpyUser));
