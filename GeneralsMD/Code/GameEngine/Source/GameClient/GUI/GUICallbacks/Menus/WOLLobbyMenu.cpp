@@ -301,7 +301,8 @@ static void playerTooltip(GameWindow *window,
 	NGMP_OnlineServices_RoomsInterface* pRoomsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_RoomsInterface>();
 	NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
 	NGMP_OnlineServices_StatsInterface* pStatsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_StatsInterface>();
-	if (pRoomsInterface != nullptr && pAuthInterface != nullptr && pStatsInterface != nullptr)
+	NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+	if (pRoomsInterface != nullptr && pAuthInterface != nullptr && pStatsInterface != nullptr && pSocialInterface != nullptr)
 	{
 		int profileID = (int)GadgetListBoxGetItemData(listboxLobbyPlayers, row, 0);
 		NetworkRoomMember* roomMember = pRoomsInterface->GetRoomMemberFromID(profileID);
@@ -327,8 +328,7 @@ static void playerTooltip(GameWindow *window,
 							else
 							{
 								// not us
-								// TODO_SOCIAL
-								bool bIsFriend = false;
+								bool bIsFriend = pSocialInterface->IsUserFriend(roomMember->user_id);
 								if (bIsFriend)
 								{
 									// buddy
@@ -343,8 +343,7 @@ static void playerTooltip(GameWindow *window,
 								}
 							}
 
-							// TODO_SOCIAL
-							bool bIgnored = false;
+							bool bIgnored = pSocialInterface->IsUserIgnored(roomMember->user_id);
 							if (bIgnored)
 							{
 								tooltip.concat(TheGameText->fetch("TOOLTIP:IgnoredModifier"));
@@ -2552,7 +2551,8 @@ WindowMsgHandledType WOLLobbyMenuSystem( GameWindow *window, UnsignedInt msg,
 					NGMP_OnlineServices_RoomsInterface* pRoomsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_RoomsInterface>();
 					NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
 					NGMP_OnlineServices_StatsInterface* pStatsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_StatsInterface>();
-					if (pRoomsInterface != nullptr && pAuthInterface != nullptr && pStatsInterface != nullptr)
+					NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+					if (pRoomsInterface != nullptr && pAuthInterface != nullptr && pStatsInterface != nullptr && pSocialInterface != nullptr)
 					{
 						int profileID = (int)GadgetListBoxGetItemData(listboxLobbyPlayers, rc->pos, 0);
 						NetworkRoomMember* roomMember = pRoomsInterface->GetRoomMemberFromID(profileID);
@@ -2564,8 +2564,7 @@ WindowMsgHandledType WOLLobbyMenuSystem( GameWindow *window, UnsignedInt msg,
 								AsciiString aName = AsciiString(roomMember->display_name.c_str());
 								int64_t localuserID = pAuthInterface->GetUserID();
 
-								// TODO_SOCIAL: Detect this
-								Bool isBuddy = FALSE;
+								Bool isBuddy = pSocialInterface->IsUserFriend(profileID);
 								if (profileID <= 0)
 									rcLayout = TheWindowManager->winCreateLayout(AsciiString("Menus/RCNoProfileMenu.wnd"));
 								else

@@ -251,6 +251,12 @@ bool NGMP_OnlineServices_SocialInterface::IsUserIgnored(int64_t target_user_id)
 	return m_mapBlocked.contains(target_user_id);
 }
 
+bool NGMP_OnlineServices_SocialInterface::IsUserFriend(int64_t target_user_id)
+{
+	// TODO_SOCIAL: These maps arent filled out until the user brings up communicator, should be done at login
+	return m_mapFriends.contains(target_user_id);
+}
+
 void NGMP_OnlineServices_SocialInterface::RegisterForRealtimeServiceUpdates()
 {
 	std::shared_ptr<WebSocket> pWS = NGMP_OnlineServicesManager::GetWebSocket();
