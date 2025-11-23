@@ -538,10 +538,49 @@ void ReleaseWindowInfo( void )
 	windowSortBuddies = NULL;
 }
 
-typedef std::set<GameSpyStagingRoom *> BuddyGameSet;
+#if defined(GENERALS_ONLINE)
+typedef std::set<int64_t> BuddyGameSet;
+#else
+typedef std::set<GameSpyStagingRoom*> BuddyGameSet;
+#endif
+
 static BuddyGameSet *theBuddyGames = NULL;
+#if defined(GENERALS_ONLINE)
+static void populateBuddyGames(std::vector<LobbyEntry>& vecLobbies)
+#else
 static void populateBuddyGames(void)
+#endif
 {
+#if defined(GENERALS_ONLINE)
+	theBuddyGames = NEW BuddyGameSet;
+
+	NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+	if (pSocialInterface == nullptr)
+	{
+		return;
+	}
+
+	for (LobbyEntry& lobby : vecLobbies)
+	{
+		// is host our friend?
+		if (pSocialInterface->IsUserFriend(lobby.owner))
+		{
+			theBuddyGames->insert(lobby.lobbyID);
+			break; // its binary, we don't care how many friends
+		}
+		else // does the lobby contain any of our friends
+		{
+			for (auto member : lobby.members)
+			{
+				if (pSocialInterface->IsUserFriend(member.user_id))
+				{
+					theBuddyGames->insert(lobby.lobbyID);
+					break; // its binary, we don't care how many friends
+				}
+			}
+		}
+	}
+#else
 	BuddyInfoMap *m = TheGameSpyInfo->getBuddyMap();
 	theBuddyGames = NEW BuddyGameSet;
 	if (!m)
@@ -567,6 +606,7 @@ static void populateBuddyGames(void)
 			}
 		}
 	}
+#endif
 }
 
 static void clearBuddyGames(void)
@@ -575,6 +615,67 @@ static void clearBuddyGames(void)
 	theBuddyGames = NULL;
 }
 
+#if defined(GENERALS_ONLINE)
+struct GameSortStruct
+{
+	bool operator()(const LobbyEntry& g1, const LobbyEntry& g2) const
+	{
+		// sort CRC mismatches to the bottom
+		Bool g1Good = (g1.exe_crc != TheGlobalData->m_exeCRC || g1.ini_crc != TheGlobalData->m_iniCRC);
+		Bool g2Good = (g1.exe_crc != TheGlobalData->m_exeCRC || g1.ini_crc != TheGlobalData->m_iniCRC);
+		if (g1Good ^ g2Good)
+		{
+			return g1Good;
+		}
+
+		// NOTE: GO currently does not have private ladders, so this check is moot
+		/*
+		// sort games with private ladders to the bottom
+		Bool g1UnknownLadder = (g1->getLadderPort() && TheLadderList->findLadder(g1->getLadderIP(), g1->getLadderPort()) == NULL);
+		Bool g2UnknownLadder = (g2->getLadderPort() && TheLadderList->findLadder(g2->getLadderIP(), g2->getLadderPort()) == NULL);
+		if (g1UnknownLadder ^ g2UnknownLadder)
+		{
+			return g2UnknownLadder;
+		}
+		*/
+
+		// sort full games to the bottom
+		Bool g1Full = (g1.current_players == g1.max_players || g1.current_players == MAX_SLOTS);
+		Bool g2Full = (g2.current_players == g2.max_players || g2.current_players == MAX_SLOTS);
+		if (g1Full ^ g2Full)
+		{
+			return g2Full;
+		}
+
+		if (sortBuddies)
+		{
+			Bool g1HasBuddies = (theBuddyGames->find(g1.lobbyID) != theBuddyGames->end());
+			Bool g2HasBuddies = (theBuddyGames->find(g2.lobbyID) != theBuddyGames->end());
+			if (g1HasBuddies ^ g2HasBuddies)
+			{
+				return g1HasBuddies;
+			}
+		}
+
+		switch (theGameSortType)
+		{
+		case GAMESORT_ALPHA_ASCENDING:
+			return wcsicmp(from_utf8(g1.name).c_str(), from_utf8(g2.name).c_str()) < 0;
+			break;
+		case GAMESORT_ALPHA_DESCENDING:
+			return wcsicmp(from_utf8(g1.name).c_str(), from_utf8(g2.name).c_str()) > 0;
+			break;
+		case GAMESORT_PING_ASCENDING:
+			return g1.latency < g2.latency;
+			break;
+		case GAMESORT_PING_DESCENDING:
+			return g1.latency > g2.latency;
+			break;
+		}
+		return false;
+	}
+};
+#else
 struct GameSortStruct
 {
 	bool operator()(GameSpyStagingRoom *g1, GameSpyStagingRoom *g2) const
@@ -631,6 +732,7 @@ struct GameSortStruct
 		return false;
 	}
 };
+#endif
 
 static Int insertGame(GameWindow* win, LobbyEntry& lobbyInfo, Bool showMap)
 {
@@ -981,7 +1083,7 @@ static Int insertGame(GameWindow* win, LobbyEntry& lobbyInfo, Bool showMap)
 
 }
 
-void RefreshGameListBox( GameWindow *win, Bool showMap )
+void RefreshGameListBox(GameWindow* win, Bool showMap)
 {
 	if (!win)
 		return;
@@ -996,11 +1098,11 @@ void RefreshGameListBox( GameWindow *win, Bool showMap )
 	Int selectedIndex = -1;
 	Int selectedID = 0;
 	GadgetListBoxGetSelected(win, &selectedIndex);
-	if (selectedIndex != -1 )
+	if (selectedIndex != -1)
 	{
 		selectedID = (Int)GadgetListBoxGetItemData(win, selectedIndex);
 	}
-	int prevPos = GadgetListBoxGetTopVisibleEntry( win );
+	int prevPos = GadgetListBoxGetTopVisibleEntry(win);
 
 	pLobbyInterface->SearchForLobbies(
 		[=]()
@@ -1026,11 +1128,24 @@ void RefreshGameListBox( GameWindow *win, Bool showMap )
 			{
 				win->winEnable(true);
 
+				// sort our games
+				typedef std::multiset<LobbyEntry, GameSortStruct> SortedGameList;
+				SortedGameList sgl;
+				populateBuddyGames(vecLobbies);
+				for (LobbyEntry& lobby : vecLobbies)
+				{
+					sgl.insert(lobby);
+				}
+
+				// now add the games
 				Int indexToSelect = -1;
 
 				int i = 0;
-				for (LobbyEntry lobby : vecLobbies)
+				//for (LobbyEntry lobby : vecLobbies)
+				for (SortedGameList::iterator sglIt = sgl.begin(); sglIt != sgl.end(); ++sglIt)
 				{
+					LobbyEntry lobby = *sglIt;
+
 					Int index = insertGame(win, lobby, showMap);
 					if (lobby.lobbyID == selectedID)
 					{
@@ -1051,34 +1166,6 @@ void RefreshGameListBox( GameWindow *win, Bool showMap )
 				}
 			}
 		});
-
-	// TODO_NGMP: Impl below again + support buddy games
-	/*
-	// sort our games
-	typedef std::multiset<GameSpyStagingRoom *, GameSortStruct> SortedGameList;
-	SortedGameList sgl;
-	StagingRoomMap *srm = TheGameSpyInfo->getStagingRoomList();
-	populateBuddyGames();
-	for (StagingRoomMap::iterator srmIt = srm->begin(); srmIt != srm->end(); ++srmIt)
-	{
-		sgl.insert(srmIt->second);
-	}
-
-	// populate listbox
-	
-	for (SortedGameList::iterator sglIt = sgl.begin(); sglIt != sgl.end(); ++sglIt)
-	{
-		GameSpyStagingRoom *game = *sglIt;
-		if (game)
-		{
-			Int index = insertGame(win, game, showMap);
-			if (game->getID() == selectedID)
-			{
-				indexToSelect = index;
-			}
-		}
-	}
-	*/
 
 	// Note: clearBuddyGames(), GadgetListBoxSetSelected(), and GadgetListBoxSetTopVisibleEntry()
 	// are now handled inside the SearchForLobbies callback above (after async operation completes).
