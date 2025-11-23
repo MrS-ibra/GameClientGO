@@ -1190,7 +1190,7 @@ void initInternetMultiPlayer(void)
 	else
 		buttonBuddies->winHide(FALSE);
 #else
-	buttonBuddies->winHide(TRUE);
+	buttonBuddies->winHide(FALSE);
 #endif
 
 	g_bNeedToTakeDoneEOGScreenshot = true;

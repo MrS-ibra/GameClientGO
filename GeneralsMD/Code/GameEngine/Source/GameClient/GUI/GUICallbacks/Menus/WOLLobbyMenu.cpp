@@ -1114,14 +1114,6 @@ void WOLLobbyMenuInit( WindowLayout *layout, void *userData )
 		pLobbyInterface->LeaveCurrentLobby();
 	}
 	
-
-	// TODO_SOCIAL: re-enable
-#if !defined(_DEBUG)
-	GameWindow* buttonBuddy = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("WOLCustomLobby.wnd:ButtonBuddy"));
-	if (buttonBuddy)
-		buttonBuddy->winEnable(FALSE);
-#endif
-
 	nextScreen = NULL;
 	buttonPushed = false;
 	isShuttingDown = false;
@@ -2532,11 +2524,6 @@ WindowMsgHandledType WOLLobbyMenuSystem( GameWindow *window, UnsignedInt msg,
 
 				if (controlID == listboxLobbyPlayersID)
 				{
-					// TODO_SOCIAL: enable this
-#if !defined(_DEBUG)
-					break;
-#endif
-
 #if defined(GENERALS_ONLINE)
 					RightClickStruct* rc = (RightClickStruct*)mData2;
 					WindowLayout* rcLayout = NULL;

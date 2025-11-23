@@ -1069,7 +1069,6 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 	buttonStart->winEnable(TRUE);
 	buttonStart->winSetText(UnicodeString(L"START MATCHMAKING"));
 	buttonStop->winSetText(UnicodeString(L"CANCEL MATCHMAKING"));
-	buttonBuddies->winEnable(FALSE);
 	buttonBack->winEnable(TRUE);
 
 	// not supported in GO

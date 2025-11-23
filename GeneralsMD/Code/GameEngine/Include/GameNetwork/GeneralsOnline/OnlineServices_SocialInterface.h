@@ -50,6 +50,7 @@ public:
 
 	bool IsUserIgnored(int64_t target_user_id);
 	bool IsUserFriend(int64_t target_user_id);
+	bool IsUserPendingRequest(int64_t target_user_id);
 
 	// NOTE: If we aren't registered for indepth notifications (only when UI is visible), we will just get online/offline status changes.
 	//	     This cuts down on server traffic, and we don't need the additional info like presence etc unless the UI is visible

@@ -1202,36 +1202,17 @@ WindowMsgHandledType WOLBuddyOverlaySystem( GameWindow *window, UnsignedInt msg,
 					if (rc->pos < 0)
 						break;
 
-					// TODO_SOCIAL: Set isbuddy, isRequest etc again
-					Bool isBuddy = false, isRequest = false;
-
 					GPProfile profileID = (GPProfile)GadgetListBoxGetItemData(control, rc->pos);
 					UnicodeString nick = GadgetListBoxGetText(control, rc->pos);
 
-					/*
-					
-					BuddyInfoMap* buddies = TheGameSpyInfo->getBuddyMap();
-					BuddyInfoMap::iterator bIt;
-					bIt = buddies->find(profileID);
-					if (bIt != buddies->end())
+                    NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+					if (pSocialInterface == nullptr)
 					{
-						isBuddy = true;
+						break;
 					}
-					else
-					{
-						buddies = TheGameSpyInfo->getBuddyRequestMap();
-						bIt = buddies->find(profileID);
-						if (bIt != buddies->end())
-						{
-							isRequest = true;
-						}
-						else
-						{
-							// neither buddy nor request
-							//break;
-						}
-					}
-					*/
+
+					bool isBuddy = pSocialInterface->IsUserFriend(profileID);
+					bool isRequest = pSocialInterface->IsUserPendingRequest(profileID);
 
 					GadgetListBoxSetSelected(control, rc->pos);
 					if (isBuddy)
@@ -1895,7 +1876,6 @@ void setUnignoreText( WindowLayout *layout, AsciiString nick, GPProfile id)
 
 void refreshIgnoreList( void )
 {
-	// TODO_SOCIAL
 #if defined(GENERALS_ONLINE)
 	// Get friends
 	NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
@@ -1915,17 +1895,12 @@ void refreshIgnoreList( void )
 
 			for (FriendsEntry& blockedEntry : blockResult.vecBlocked)
 			{
-				//int64_t profileID = blockedEntry.user_id;
 				AsciiString strName = AsciiString(blockedEntry.display_name.c_str());
 
-				//void* pUserData = nullptr;
-
-					//AsciiString aName = *iListIt;
 				UnicodeString name;
 				name.translate(strName);
 				Int index = GadgetListBoxAddEntryText(listboxIgnore, name, GameMakeColor(255, 100, 100, 255), -1);
 				GadgetListBoxSetItemData(listboxIgnore, (void*)(blockedEntry.user_id), index, 0);
-				//++iListIt;
 			}
 		});
 #else

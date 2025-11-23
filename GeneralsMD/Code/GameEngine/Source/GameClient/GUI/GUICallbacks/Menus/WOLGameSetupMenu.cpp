@@ -1126,15 +1126,6 @@ static void StartPressed(void)
 						}
 #endif
 
-						// TODO_NGMP
-						//SendStatsToOtherPlayers(myGame);
-
-						GameWindow* buttonBuddy = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("GameSpyGameOptionsMenu.wnd:ButtonCommunicator"));
-						if (buttonBuddy != nullptr)
-						{
-							buttonBuddy->winEnable(FALSE);
-						}
-
 						GameSpyCloseOverlay(GSOVERLAY_BUDDY);
 					}
 					else
@@ -1700,11 +1691,6 @@ void WOLGameSetupMenuInit( WindowLayout *layout, void *userData )
 	{
 		return;
 	}
-
-	// TODO_NGMP: impl this again
-	GameWindow* buttonBuddy = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("GameSpyGameOptionsMenu.wnd:ButtonCommunicator"));
-	if (buttonBuddy)
-		buttonBuddy->winEnable(FALSE);
 
 	// register for chat events
 	pLobbyInterface->RegisterForChatCallback([](UnicodeString strMessage, Color color)
