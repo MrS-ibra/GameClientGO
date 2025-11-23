@@ -545,6 +545,14 @@ void WebSocket::Tick()
 									}
 									break;
 
+									case EWebSocketMessageID::SOCIAL_FRIENDS_LIST_DIRTY:
+									{
+										// nothing to parse here, it's just an event only
+										extern void updateBuddyInfo(bool bIsAutoRefresh = false);
+										updateBuddyInfo(true);
+									}
+									break;
+
 									case EWebSocketMessageID::SOCIAL_FRIENDS_OVERALL_STATUS_UPDATE:
 									{
 										// From WOLBuddyOverlay.cpp
