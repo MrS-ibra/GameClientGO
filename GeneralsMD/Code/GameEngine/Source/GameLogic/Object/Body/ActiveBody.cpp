@@ -1318,7 +1318,7 @@ void ActiveBody::onSubdualChange( Bool isNowSubdued )
 //-------------------------------------------------------------------------------------------------
 Bool ActiveBody::isSubdued() const
 {
-#if RETAIL_COMPATIBLE_CRC
+#if RETAIL_COMPATIBLE_BUG || RETAIL_COMPATIBLE_CRC
 	return m_maxHealth <= m_currentSubdualDamage;
 #else
 	return getObject()->isDisabledByType(DISABLED_SUBDUED);
