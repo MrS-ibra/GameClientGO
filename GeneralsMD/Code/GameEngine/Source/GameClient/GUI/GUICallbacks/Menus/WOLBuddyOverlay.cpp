@@ -424,7 +424,6 @@ void updateBuddyInfo( bool bIsAutoRefresh = false )
 void updateBuddyInfo( void )
 #endif
 {
-	// TODO_SOCIAL
 #if defined(GENERALS_ONLINE)
 	if (!buddyControls.isInit)
 		return;

@@ -748,8 +748,10 @@ void PopulateLobbyPlayerListbox(void)
 
 	NGMP_OnlineServices_RoomsInterface* pRoomsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_RoomsInterface>();
 	NGMP_OnlineServices_StatsInterface* pStatsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_StatsInterface>();
-	if (pRoomsInterface != nullptr && pStatsInterface != nullptr)
+	NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
+	if (pRoomsInterface != nullptr && pStatsInterface != nullptr && pAuthInterface != nullptr)
 	{
+		int64_t localUserID = pAuthInterface->GetUserID();
 
 		for (auto kvPair :pRoomsInterface->GetMembersListForCurrentRoom())
 		{
@@ -857,10 +859,32 @@ void PopulateLobbyPlayerListbox(void)
 					// restore top visible entry
 					GadgetListBoxSetTopVisibleEntry(listboxLobbyPlayers, previousTopIndex);
 
+					NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
 					
 					bool bIsAdmin = wcsncmp(pi.m_nameUni.str(), L"[\u2605\u2605GO STAFF\u2605\u2605]", 14) == 0; // TODO_NGMP: determine by service flag, not name
+					bool bFriend = pSocialInterface != nullptr ? pSocialInterface->IsUserFriend(netRoomMember.user_id) : false;
+					bool bIgnored = pSocialInterface != nullptr ? pSocialInterface->IsUserIgnored(netRoomMember.user_id) : false;
+					bool bLocal = localUserID == netRoomMember.user_id;
 
-					Int index = insertPlayerInListbox(pi, bIsAdmin ? GameMakeColor(0, 162, 232, 255) : GameSpyColor[GSCOLOR_PLAYER_NORMAL]);
+					Color colorToUse = GameSpyColor[GSCOLOR_PLAYER_NORMAL];
+					if (bIsAdmin)
+					{
+						colorToUse = GameSpyColor[GSCOLOR_PLAYER_OWNER];;// GameMakeColor(0, 162, 232, 255);
+					}
+					else if (bFriend)
+					{
+						colorToUse = GameSpyColor[GSCOLOR_PLAYER_BUDDY];
+					}
+					else if (bIgnored)
+					{
+						colorToUse = GameSpyColor[GSCOLOR_PLAYER_IGNORED];
+					}
+					else if (bLocal)
+					{
+						colorToUse = GameSpyColor[GSCOLOR_PLAYER_SELF];
+					}
+
+					Int index = insertPlayerInListbox(pi, colorToUse);
 
 					// TODO_NGMP: Use int for user ID like gamespy did, or move everything to uint64
 					std::set<Int> indicesToSelect;

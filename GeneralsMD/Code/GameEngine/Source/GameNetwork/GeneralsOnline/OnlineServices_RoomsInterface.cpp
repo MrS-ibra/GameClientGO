@@ -553,6 +553,18 @@ void WebSocket::Tick()
 									}
 									break;
 
+									case EWebSocketMessageID::SOCIAL_CANT_ADD_FRIEND_LIST_FULL:
+									{
+                                        static Bool lastNotificationWasStatus = FALSE;
+                                        static Int numOnlineInNotification = 0;
+                                        void showNotificationBox(AsciiString nick, UnicodeString message);
+                                        lastNotificationWasStatus = FALSE;
+                                        numOnlineInNotification = 0;
+
+										showNotificationBox(AsciiString::TheEmptyString, UnicodeString(L"Cannot sent friends request. Your friends list is full."));
+									}
+									break;
+
 									case EWebSocketMessageID::SOCIAL_FRIENDS_OVERALL_STATUS_UPDATE:
 									{
 										// From WOLBuddyOverlay.cpp
