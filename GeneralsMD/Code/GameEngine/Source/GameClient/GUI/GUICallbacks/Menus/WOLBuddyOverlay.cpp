@@ -930,7 +930,6 @@ void PopulateOldBuddyMessages(void)
 //-------------------------------------------------------------------------------------------------
 void WOLBuddyOverlayInit( WindowLayout *layout, void *userData )
 {
-	// TODO_SOCIAL: In lobby member list, flag friends
 	// TODO_SOCIAL: Lobby sort list by member
 	// GO: register for callbacks
 	NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
@@ -1059,8 +1058,13 @@ void WOLBuddyOverlayShutdown( WindowLayout *layout, void *userData )
 //-------------------------------------------------------------------------------------------------
 void WOLBuddyOverlayUpdate( WindowLayout * layout, void *userData)
 {
-	// TODO_SOCIAL: Hide overlay if we lose connection
-#if !defined(GENERALS_ONLINE)
+#if defined(GENERALS_ONLINE)
+	NGMP_OnlineServicesManager* pOnlineServicesManager = NGMP_OnlineServicesManager::GetInstance();
+	if (pOnlineServicesManager == nullptr || pOnlineServicesManager->IsPendingFullTeardown())
+	{
+		GameSpyCloseOverlay(GSOVERLAY_BUDDY);
+	}
+#else
 	if (!TheGameSpyBuddyMessageQueue || !TheGameSpyBuddyMessageQueue->isConnected())
 		GameSpyCloseOverlay(GSOVERLAY_BUDDY);
 #endif
