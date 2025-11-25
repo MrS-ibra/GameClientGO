@@ -253,13 +253,11 @@ bool NGMP_OnlineServices_SocialInterface::IsUserIgnored(int64_t target_user_id)
 
 bool NGMP_OnlineServices_SocialInterface::IsUserFriend(int64_t target_user_id)
 {
-	// TODO_SOCIAL: These maps arent filled out until the user brings up communicator, should be done at login
 	return m_mapFriends.contains(target_user_id);
 }
 
 bool NGMP_OnlineServices_SocialInterface::IsUserPendingRequest(int64_t target_user_id)
 {
-    // TODO_SOCIAL: These maps arent filled out until the user brings up communicator, should be done at login
     return m_mapPendingRequests.contains(target_user_id);
 }
 

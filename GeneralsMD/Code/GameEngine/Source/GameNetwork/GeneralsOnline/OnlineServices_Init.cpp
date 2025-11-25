@@ -734,6 +734,17 @@ void NGMP_OnlineServicesManager::OnLogin(bool bSuccess, const char* szWSAddr)
 		m_pWebSocket->Connect(szWSAddr);
 
 		// TODO_NGMP: This hangs forever if it fails to connect
+
+		// Get friends list and blocked list
+        // get our friends list once
+        NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+        if (pSocialInterface == nullptr)
+        {
+            return;
+        }
+
+		pSocialInterface->GetFriendsList(nullptr);
+		pSocialInterface->GetBlockList(nullptr);
 	}
 }
 

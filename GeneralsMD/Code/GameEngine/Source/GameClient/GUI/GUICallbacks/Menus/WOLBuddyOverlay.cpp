@@ -424,16 +424,22 @@ void updateBuddyInfo( bool bIsAutoRefresh = false )
 void updateBuddyInfo( void )
 #endif
 {
+    NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+    if (pSocialInterface == nullptr)
+    {
+        return;
+    }
+
 #if defined(GENERALS_ONLINE)
 	if (!buddyControls.isInit)
-		return;
-
-	// Get friends
-	NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
-	if (pSocialInterface == nullptr)
 	{
+		// If the UI isn't visible, still get our friends list and block list because we want to update our cache, but dont process it here
+		pSocialInterface->GetFriendsList(nullptr);
+		pSocialInterface->GetBlockList(nullptr); // TODO_SOCIA: Consider combining friends and block, original game didn't but we could for efficiency
 		return;
 	}
+
+	// Get friends
 
 	// If it's the first time in, show loading, otherwise, on refreshes, we already have some list we can use
 	if (!bIsAutoRefresh)
@@ -441,6 +447,9 @@ void updateBuddyInfo( void )
 		GadgetListBoxReset(buddyControls.listboxBuddies);
 		GadgetListBoxAddEntryText(buddyControls.listboxBuddies, UnicodeString(L"Loading..."), GameMakeColor(255, 194, 15, 255), -1);
 	}
+
+	// refresh block list too (but no UI to process here)
+	pSocialInterface->GetBlockList(nullptr);
 
 	pSocialInterface->GetFriendsList([](FriendsResult friendsResult)
 		{
