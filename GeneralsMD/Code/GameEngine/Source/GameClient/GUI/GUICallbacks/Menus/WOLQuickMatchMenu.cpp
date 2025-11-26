@@ -620,6 +620,7 @@ static void populateQuickMatchMapSelectListbox( QuickMatchPreferences& pref )
 					// custom maps need the full path
 					if (mapEntry.Custom)
 					{
+						// TODO_QUICKMATCH: How did the original gamespy service handle this?
 						correctedMapPath = std::format("{}maps\\{}\\{}.map", TheGlobalData->getPath_UserData().str(), mapEntry.Path, mapEntry.Path);
 					}
 					else
@@ -627,7 +628,9 @@ static void populateQuickMatchMapSelectListbox( QuickMatchPreferences& pref )
 						correctedMapPath = std::format("maps\\{}\\{}.map", mapEntry.Path, mapEntry.Path);
 					}
 
-					maps.push_back(AsciiString(correctedMapPath.c_str()));
+					AsciiString mapPath = correctedMapPath.c_str();
+					mapPath.toLower();
+					maps.push_back(mapPath);
 				}
 			}
 			else
