@@ -3352,6 +3352,46 @@ Bool handleGameSetupSlashCommands(UnicodeString uText)
 		GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"/maxcameraheight <value> - Sets the maximum camera zoom out level - Example: /maxcameraheight 650"), GameSpyColor[GSCOLOR_CHAT_NORMAL], -1, -1);
 		return TRUE; // was a slash command
 	}
+	else if (token == "friendsonly")
+    {
+        NGMP_OnlineServicesManager* pOnlineServicesMgr = NGMP_OnlineServicesManager::GetInstance();
+		if (pOnlineServicesMgr != nullptr)
+		{
+			NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+
+			if (pLobbyInterface != nullptr)
+			{
+				if (pLobbyInterface->IsInLobby())
+				{
+					if (pLobbyInterface->IsHost()) // NOTE: this is checked service side too, but we might as well not make the call to reduce resource usage
+					{
+						pLobbyInterface->SetJoinability(ELobbyJoinability::LobbyJoinability_FriendsOnly);
+					}
+				}
+			}
+		}
+		return TRUE; // was a slash command
+	}
+    else if (token == "public")
+    {
+        NGMP_OnlineServicesManager* pOnlineServicesMgr = NGMP_OnlineServicesManager::GetInstance();
+        if (pOnlineServicesMgr != nullptr)
+        {
+            NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+
+            if (pLobbyInterface != nullptr)
+            {
+                if (pLobbyInterface->IsInLobby())
+                {
+					if (pLobbyInterface->IsHost()) // NOTE: this is checked service side too, but we might as well not make the call to reduce resource usage
+                    {
+						pLobbyInterface->SetJoinability(ELobbyJoinability::LobbyJoinability_Public);
+                    }
+                }
+            }
+        }
+		return TRUE; // was a slash command
+    }
 	else if (token == "maxcameraheight" && uText.getLength() > 17)
 	{
 		NGMP_OnlineServicesManager* pOnlineServicesMgr = NGMP_OnlineServicesManager::GetInstance();
@@ -3399,11 +3439,7 @@ Bool handleGameSetupSlashCommands(UnicodeString uText)
 								NGMP_OnlineServicesManager::Settings.Save_Camera_MaxHeight_WhenLobbyHost((float)newCameraHeight);
 
 								// update lobby
-								
-								if (pLobbyInterface != nullptr)
-								{
-									pLobbyInterface->UpdateCurrentLobbyMaxCameraHeight((uint16_t)newCameraHeight);
-								}
+								pLobbyInterface->UpdateCurrentLobbyMaxCameraHeight((uint16_t)newCameraHeight);
 							}
 						}
 						else

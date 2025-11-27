@@ -86,6 +86,12 @@ enum class EJoinLobbyResult
 	JoinLobbyResult_JoinFailed // Generic failure.
 };
 
+enum class ELobbyJoinability
+{
+	LobbyJoinability_Public,
+	LobbyJoinability_FriendsOnly,
+};
+
 struct LobbyMemberEntry;
 struct LobbyEntry;
 
@@ -178,6 +184,8 @@ public:
 	void UpdateCurrentLobby_AIStartPos(int slot, int startpos);
 
 	void UpdateCurrentLobbyMaxCameraHeight(uint16_t maxCameraHeight);
+
+	void SetJoinability(ELobbyJoinability joinabilityFlag);
 
 	void UpdateCurrentLobby_KickUser(int64_t userID, UnicodeString name);
 	void UpdateCurrentLobby_SetSlotState(uint16_t slotIndex, uint16_t slotState);

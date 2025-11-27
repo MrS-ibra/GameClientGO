@@ -73,7 +73,8 @@ enum class ELobbyUpdateField
 	AI_COLOR = 14,
 	AI_TEAM = 15,
 	AI_START_POS = 16,
-	MAX_CAMERA_HEIGHT = 17
+	MAX_CAMERA_HEIGHT = 17,
+	JOINABILITY = 18
 };
 
 void NGMP_OnlineServices_LobbyInterface::UpdateCurrentLobby_Map(AsciiString strMap, AsciiString strMapPath, bool bIsOfficial, int newMaxPlayers)
@@ -240,11 +241,7 @@ void NGMP_OnlineServices_LobbyInterface::UpdateCurrentLobbyMaxCameraHeight(uint1
 		UnicodeString strInform;
 		strInform.format(L"The host has set the maximum camera height to %lu.", maxCameraHeight);
 
-		NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
-		if (pLobbyInterface != nullptr)
-		{
-			pLobbyInterface->SendAnnouncementMessageToCurrentLobby(strInform, true);
-		}
+		SendAnnouncementMessageToCurrentLobby(strInform, true);
 
 		// reset autostart if host changes anything (because ready flag will reset too)
 		ClearAutoReadyCountdown();
@@ -263,6 +260,31 @@ void NGMP_OnlineServices_LobbyInterface::UpdateCurrentLobbyMaxCameraHeight(uint1
 
 			});
 	}
+}
+
+
+void NGMP_OnlineServices_LobbyInterface::SetJoinability(ELobbyJoinability joinabilityFlag)
+{
+    if (IsHost())
+    {
+        UnicodeString strInform(joinabilityFlag == ELobbyJoinability::LobbyJoinability_FriendsOnly ? L"The host has set the lobby joinability to friends only" : L"The host has set the lobby joinability to public");
+
+		SendAnnouncementMessageToCurrentLobby(strInform, true);
+
+        std::string strURI = std::format("{}/{}", NGMP_OnlineServicesManager::GetAPIEndpoint("Lobby"), m_CurrentLobby.lobbyID);
+        std::map<std::string, std::string> mapHeaders;
+
+        nlohmann::json j;
+        j["field"] = ELobbyUpdateField::JOINABILITY;
+		j["joinability"] = (int)joinabilityFlag;
+        std::string strPostData = j.dump();
+
+        // convert
+        NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPOSTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, strPostData.c_str(), [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
+            {
+
+            });
+    }
 }
 
 void NGMP_OnlineServices_LobbyInterface::UpdateCurrentLobby_AIColor(int slot, int color)
