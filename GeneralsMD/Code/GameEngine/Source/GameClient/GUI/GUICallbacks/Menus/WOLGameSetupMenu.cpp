@@ -3350,6 +3350,8 @@ Bool handleGameSetupSlashCommands(UnicodeString uText)
 	{
 		GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"The following commands are available:"), GameSpyColor[GSCOLOR_CHAT_NORMAL], -1, -1);
 		GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"/maxcameraheight <value> - Sets the maximum camera zoom out level - Example: /maxcameraheight 650"), GameSpyColor[GSCOLOR_CHAT_NORMAL], -1, -1);
+		GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"/friendsonly - Sets the lobby to only be joinable by friends"), GameSpyColor[GSCOLOR_CHAT_NORMAL], -1, -1);
+		GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"/public - Sets the lobby to be joinable by anyone"), GameSpyColor[GSCOLOR_CHAT_NORMAL], -1, -1);
 		return TRUE; // was a slash command
 	}
 	else if (token == "friendsonly")
