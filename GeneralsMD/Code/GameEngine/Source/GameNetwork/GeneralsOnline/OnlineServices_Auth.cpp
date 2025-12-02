@@ -85,14 +85,14 @@ void NGMP_OnlineServices_AuthInterface::GoToDetermineNetworkCaps()
 
 				NGMP_OnlineServicesManager::GetInstance()->ProcessMOTD(motdResp.MOTD.c_str());
 
-				bool bResult = true;
+				ELoginResult loginResult = ELoginResult::Success;
 
 				// WS should be connected by this point
 				std::shared_ptr<WebSocket>  pWS = NGMP_OnlineServicesManager::GetWebSocket();
 				bool bWSConnected = pWS == nullptr ? false : pWS->IsConnected();
 				if (!bWSConnected)
 				{
-					bResult = bWSConnected;
+					loginResult = ELoginResult::Failed;
 				}
 
 				// NOTE: Don't need to get stats here, PopulatePlayerInfoWindows is called as part of going to MP...
@@ -103,7 +103,7 @@ void NGMP_OnlineServices_AuthInterface::GoToDetermineNetworkCaps()
 
 				if (m_cb_LoginPendingCallback != nullptr)
 				{
-					m_cb_LoginPendingCallback(bResult);
+					m_cb_LoginPendingCallback(loginResult);
 				}
 
 
@@ -115,14 +115,14 @@ void NGMP_OnlineServices_AuthInterface::GoToDetermineNetworkCaps()
 				// if MOTD was bad, still proceed, its a soft error
 				NGMP_OnlineServicesManager::GetInstance()->ProcessMOTD("Error retrieving MOTD");
 
-				bool bResult = true;
+				ELoginResult loginResult = ELoginResult::Success;
 
 				// WS should be connected by this point
 				std::shared_ptr<WebSocket>  pWS = NGMP_OnlineServicesManager::GetWebSocket();;
 				bool bWSConnected = pWS == nullptr ? false : pWS->IsConnected();
 				if (!bWSConnected)
 				{
-					bResult = bWSConnected;
+					loginResult = ELoginResult::Failed;
 				}
 
 				// NOTE: Don't need to get stats here, PopulatePlayerInfoWindows is called as part of going to MP...
@@ -133,7 +133,7 @@ void NGMP_OnlineServices_AuthInterface::GoToDetermineNetworkCaps()
 
 				if (m_cb_LoginPendingCallback != nullptr)
 				{
-					m_cb_LoginPendingCallback(bResult);
+					m_cb_LoginPendingCallback(loginResult);
 				}
 			}
 		});
@@ -200,7 +200,7 @@ void NGMP_OnlineServices_AuthInterface::BeginLogin()
 							m_strDisplayName = authResp.display_name;
 
 							// trigger callback
-							OnLoginComplete(true, authResp.ws_uri.c_str());
+							OnLoginComplete(ELoginResult::Success, authResp.ws_uri.c_str());
 						}
 						else if (authResp.result == EAuthResponseResult::FAILED)
 						{
@@ -231,7 +231,19 @@ void NGMP_OnlineServices_AuthInterface::BeginLogin()
 #endif
 
 		ClearGSMessageBoxes();
-		GSMessageBoxNoButtons(UnicodeString(L"Logging In"), UnicodeString(L"Please continue in your web browser"), true);
+		GSMessageBoxCancel(UnicodeString(L"Logging In"), UnicodeString(L"Please continue in your web browser"), []()
+			{
+                if (NGMP_OnlineServicesManager::GetInstance() != nullptr)
+                {
+                    NGMP_OnlineServicesManager::GetInstance()->SetPendingFullTeardown(EGOTearDownReason::USER_REQUESTED_SILENT);
+                }
+
+				NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
+				if (pAuthInterface != nullptr)
+				{
+					pAuthInterface->OnLoginComplete(ELoginResult::UserCancelled, "");
+				}
+			});
 
 #if !defined(_DEBUG) || defined(USE_TEST_ENV) || defined(USE_DEBUG_ON_LIVE_SERVER)
 		ShellExecuteA(NULL, "open", strURI.c_str(), NULL, NULL, SW_SHOWNORMAL);
@@ -246,7 +258,19 @@ void NGMP_OnlineServices_AuthInterface::DoReAuth()
 {
 	NetworkLog(ELogVerbosity::LOG_RELEASE, "LOGIN: DoReAuth");
 	ClearGSMessageBoxes();
-	GSMessageBoxNoButtons(UnicodeString(L"Logging In"), UnicodeString(L"Please continue in your web browser"), true);
+    GSMessageBoxCancel(UnicodeString(L"Logging In"), UnicodeString(L"Please continue in your web browser"), []()
+        {
+            if (NGMP_OnlineServicesManager::GetInstance() != nullptr)
+            {
+                NGMP_OnlineServicesManager::GetInstance()->SetPendingFullTeardown(EGOTearDownReason::USER_REQUESTED_SILENT);
+            }
+
+            NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
+            if (pAuthInterface != nullptr)
+            {
+				pAuthInterface->OnLoginComplete(ELoginResult::UserCancelled , "");
+            }
+        });
 
 	// do normal login flow, token is bad or expired etc
 	m_bWaitingLogin = true;
@@ -324,7 +348,7 @@ void NGMP_OnlineServices_AuthInterface::Tick()
 							m_strDisplayName = authResp.display_name;
 
 							// trigger callback
-							OnLoginComplete(true, authResp.ws_uri.c_str());
+							OnLoginComplete(ELoginResult::Success, authResp.ws_uri.c_str());
 						}
 						else if (authResp.result == EAuthResponseResult::FAILED)
 						{
@@ -332,7 +356,7 @@ void NGMP_OnlineServices_AuthInterface::Tick()
 							m_bWaitingLogin = false;
 
 							// trigger callback
-							OnLoginComplete(false, "");
+							OnLoginComplete(ELoginResult::Failed, "");
 						}
 					}
 					catch (...)
@@ -345,11 +369,11 @@ void NGMP_OnlineServices_AuthInterface::Tick()
 	}
 }
 
-void NGMP_OnlineServices_AuthInterface::OnLoginComplete(bool bSuccess, const char* szWSAddr)
+void NGMP_OnlineServices_AuthInterface::OnLoginComplete(ELoginResult loginResult, const char* szWSAddr)
 {
-	if (bSuccess)
+	if (loginResult == ELoginResult::Success)
 	{
-		NGMP_OnlineServicesManager::GetInstance()->OnLogin(bSuccess, szWSAddr);
+		NGMP_OnlineServicesManager::GetInstance()->OnLogin(loginResult, szWSAddr);
 
 		// move on to network capabilities section
 		ClearGSMessageBoxes();
@@ -359,7 +383,7 @@ void NGMP_OnlineServices_AuthInterface::OnLoginComplete(bool bSuccess, const cha
 	{
 		if (m_cb_LoginPendingCallback != nullptr)
 		{
-			m_cb_LoginPendingCallback(false);
+			m_cb_LoginPendingCallback(loginResult);
 		}
 
 		TheShell->pop();

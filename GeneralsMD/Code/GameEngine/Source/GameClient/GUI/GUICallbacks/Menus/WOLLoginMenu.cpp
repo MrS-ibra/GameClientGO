@@ -32,8 +32,9 @@
 #include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/STLTypedefs.h"
+#include "../NGMP_types.h"
 
-void NGMP_WOLLoginMenu_LoginCallback(bool bSuccess);
+void NGMP_WOLLoginMenu_LoginCallback(ELoginResult loginResult);
 
 #include "Common/file.h"
 #include "Common/FileSystem.h"
@@ -638,12 +639,12 @@ static void checkLogin( void )
 	*/
 }
 
-void NGMP_WOLLoginMenu_LoginCallback(bool bSuccess)
+void NGMP_WOLLoginMenu_LoginCallback(ELoginResult loginResult)
 {
 	if (!buttonPushed)
 	{
 		// TODO_NGMP: Handle failure properly
-		if (bSuccess)
+		if (loginResult == ELoginResult::Success)
 		{
 			ClearGSMessageBoxes();
 			loggedInOK = true;
@@ -652,10 +653,17 @@ void NGMP_WOLLoginMenu_LoginCallback(bool bSuccess)
 		}
 		else
 		{
-			GSMessageBoxOk(UnicodeString(L"Logging In"), UnicodeString(L"Login failed."), []()
-				{
-					TheShell->pop();
-				});
+			if (loginResult == ELoginResult::Failed)
+			{
+                GSMessageBoxOk(UnicodeString(L"Logging In"), UnicodeString(L"Login failed."), []()
+                    {
+                        TheShell->pop();
+                    });
+			}
+            else if (loginResult == ELoginResult::UserCancelled)
+            {
+                // User requested, nothing to do here
+            }
 
 			
 		}

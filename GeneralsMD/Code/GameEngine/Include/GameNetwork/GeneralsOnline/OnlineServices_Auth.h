@@ -1,4 +1,5 @@
 #pragma once
+#include "NGMP_types.h"
 
 class NGMP_OnlineServices_AuthInterface
 {
@@ -23,9 +24,9 @@ public:
 
 	void Tick();
 
-	void OnLoginComplete(bool bSuccess, const char* szWSAddr);
+	void OnLoginComplete(ELoginResult loginResult, const char* szWSAddr);
 
-	void RegisterForLoginCallback(std::function<void(bool)> callback)
+	void RegisterForLoginCallback(std::function<void(ELoginResult)> callback)
 	{
 		m_cb_LoginPendingCallback = callback;
 	}
@@ -61,5 +62,5 @@ private:
 	int64_t m_userID = -1;
 	std::string m_strDisplayName = "NO_USER";
 
-	std::function<void(bool)> m_cb_LoginPendingCallback = nullptr;
+	std::function<void(ELoginResult)> m_cb_LoginPendingCallback = nullptr;
 };

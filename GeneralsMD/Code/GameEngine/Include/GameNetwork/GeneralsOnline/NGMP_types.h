@@ -18,3 +18,10 @@ public:
 
 	bool m_bIsReady = false;
 };
+
+enum class ELoginResult
+{
+    Success,
+    Failed,
+    UserCancelled
+};
