@@ -382,7 +382,6 @@ public:
 
 	NetworkMesh* GetNetworkMeshForLobby() { return m_pLobbyMesh; }
 
-	void JoinLobby(int index, std::string strPassword);
 	void JoinLobby(LobbyEntry lobby, std::string strPassword);
 
 	void LeaveCurrentLobby();
@@ -394,7 +393,6 @@ public:
 	}
 
 	LobbyEntry GetLobbyFromID(int64_t lobbyID);
-	LobbyEntry GetLobbyFromIndex(int index);
 
 	std::vector<LobbyEntry> m_vecLobbies;
 

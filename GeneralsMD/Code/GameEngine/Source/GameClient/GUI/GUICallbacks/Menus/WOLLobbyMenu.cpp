@@ -2273,10 +2273,10 @@ WindowMsgHandledType WOLLobbyMenuSystem( GameWindow *window, UnsignedInt msg,
 					GadgetListBoxGetSelected(GetGameListBox(), &selected);
 					if (selected >= 0)
 					{
-						//Int selectedID = (Int)GadgetListBoxGetItemData(GetGameListBox(), selected);
-						//if (selectedID > 0)
+						Int selectedID = (Int)GadgetListBoxGetItemData(GetGameListBox(), selected);
+						if (selectedID > 0)
 						{
-							auto Lobby = pLobbyInterface->GetLobbyFromIndex(selected);
+							auto Lobby = pLobbyInterface->GetLobbyFromID(selectedID);
 
 							if (Lobby.lobbyID == -1) // -1 is invalid
 							{
@@ -2312,7 +2312,7 @@ WindowMsgHandledType WOLLobbyMenuSystem( GameWindow *window, UnsignedInt msg,
 							}
 							else
 							{
-								pLobbyInterface->JoinLobby(selected, std::string());
+								pLobbyInterface->JoinLobby(Lobby, std::string());
 
 								SetLobbyAttemptHostJoin(TRUE);
 							}

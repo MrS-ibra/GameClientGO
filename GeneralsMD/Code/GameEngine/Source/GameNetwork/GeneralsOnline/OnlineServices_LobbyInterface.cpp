@@ -973,16 +973,6 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 	return;
 }
 
-void NGMP_OnlineServices_LobbyInterface::JoinLobby(int index, std::string strPassword)
-{
-	LobbyEntry lobbyInfo = GetLobbyFromIndex(index);
-
-	if (lobbyInfo.lobbyID != -1) // -1 is invalid
-	{
-		JoinLobby(lobbyInfo, strPassword);
-	}
-}
-
 void NGMP_OnlineServices_LobbyInterface::JoinLobby(LobbyEntry lobbyInfo, std::string strPassword)
 {
 	if (m_bAttemptingToJoinLobby)
@@ -1196,15 +1186,7 @@ LobbyEntry NGMP_OnlineServices_LobbyInterface::GetLobbyFromID(int64_t lobbyID)
 	return LobbyEntry();
 }
 
-LobbyEntry NGMP_OnlineServices_LobbyInterface::GetLobbyFromIndex(int index)
-{
-	if (index < m_vecLobbies.size())
-	{
-		return m_vecLobbies.at(index);
-	}
 
-	return LobbyEntry();
-}
 
 enum class ECreateLobbyResponseResult : int
 {
