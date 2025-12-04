@@ -637,11 +637,6 @@ void WOLWelcomeMenuInit( WindowLayout *layout, void *userData )
 
 #if defined(GENERALS_ONLINE)
 	enableControls( true );
-
-	// TODO_NGMP: disable things we havent implemented yet
-#if !_DEBUG
-	buttonBuddies->winEnable(false);
-#endif
 #else
 	enableControls(TheGameSpyInfo->gotGroupRoomList());
 #endif

@@ -467,7 +467,12 @@ public:
 	}
 
 	void findPlayerStatsByID(int64_t userID, std::function<void(bool, PSPlayerStats)> cb, EStatsRequestPolicy requestPolicy);
+	void findPlayerStatsByBatch(std::vector<int64_t> vecUserIDs, std::function<void(bool)> cb);
 	bool getPlayerStatsFromCache(int64_t userID, PSPlayerStats* outStats);
+	bool ArePlayerStatsCached(int64_t userID)
+	{
+		return m_mapCachedStats.contains(userID);
+	}
 
 	void UpdateMyStats(PSPlayerStats stats);
 
@@ -482,5 +487,5 @@ private:
 
 	std::map<int64_t, int64_t> m_mapStatsLastRefresh;
 	std::map<int64_t, PSPlayerStats> m_mapCachedStats;
-	const static int64_t m_cacheTTL = 300000; // 5 minutes
+	const static int64_t m_cacheTTL = 600000; // 10 minutes
 };

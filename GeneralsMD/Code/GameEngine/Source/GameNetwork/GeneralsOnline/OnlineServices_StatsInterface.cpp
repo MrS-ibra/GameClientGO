@@ -148,7 +148,7 @@ void NGMP_OnlineServices_StatsInterface::findPlayerStatsByID(int64_t userID, std
 							// parse json
 							int i = 0;
 
-#define PROCESS_JSON_PER_GENERAL_RESULT(name) i = 0; for (const auto& iter : jsonObjectRoot[#name]) { iter.get_to(stats.##name[i++]); }
+							#define PROCESS_JSON_PER_GENERAL_RESULT(name) i = 0; for (const auto& iter : jsonObjectRoot[#name]) { iter.get_to(stats.##name[i++]); }
 							PROCESS_JSON_PER_GENERAL_RESULT(wins);
 							PROCESS_JSON_PER_GENERAL_RESULT(losses);
 							PROCESS_JSON_PER_GENERAL_RESULT(games);
@@ -157,7 +157,6 @@ void NGMP_OnlineServices_StatsInterface::findPlayerStatsByID(int64_t userID, std
 							PROCESS_JSON_PER_GENERAL_RESULT(unitsLost);
 							PROCESS_JSON_PER_GENERAL_RESULT(unitsBuilt);
 							PROCESS_JSON_PER_GENERAL_RESULT(buildingsKilled);
-							PROCESS_JSON_PER_GENERAL_RESULT(wins);
 							PROCESS_JSON_PER_GENERAL_RESULT(buildingsLost);
 							PROCESS_JSON_PER_GENERAL_RESULT(buildingsBuilt);
 							PROCESS_JSON_PER_GENERAL_RESULT(earnings);
@@ -232,6 +231,133 @@ void NGMP_OnlineServices_StatsInterface::findPlayerStatsByID(int64_t userID, std
 		}
 		
 	}
+}
+
+void NGMP_OnlineServices_StatsInterface::findPlayerStatsByBatch(std::vector<int64_t> vecUserIDs, std::function<void(bool)> cb)
+{
+	// If they asked for nothing, just invoke the callback
+	if (vecUserIDs.empty())
+	{
+		cb(true);
+		return;
+	}
+
+	std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("PlayerStats/Batch");
+
+    std::map<std::string, std::string> mapHeaders;
+
+    nlohmann::json j;
+    j["user_ids"] = vecUserIDs;
+    std::string strPostData = j.dump();
+
+    NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPOSTRequest(strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, strPostData.c_str(), [=](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq)
+        {
+			if (!bSuccess)
+			{
+				cb(false);
+			}
+			else
+			{
+				// returns an array of PlayerStats
+				try
+				{
+					nlohmann::json jsonObject = nlohmann::json::parse(strBody);
+
+					std::list<std::pair<int64_t, int64_t>> missingConnections;
+					for (const auto& statsUserIter : jsonObject["stats"])
+					{
+						try
+						{
+							PSPlayerStats stats;
+
+							// get user id
+							statsUserIter["userID"].get_to(stats.id);
+
+							// now get stats
+							int i = 0;
+
+#define PROCESS_JSON_PER_GENERAL_RESULT(name) i = 0; for (const auto& iter : statsUserIter[#name]) { iter.get_to(stats.##name[i++]); }
+							PROCESS_JSON_PER_GENERAL_RESULT(wins);
+							PROCESS_JSON_PER_GENERAL_RESULT(losses);
+							PROCESS_JSON_PER_GENERAL_RESULT(games);
+							PROCESS_JSON_PER_GENERAL_RESULT(duration);
+							PROCESS_JSON_PER_GENERAL_RESULT(unitsKilled);
+							PROCESS_JSON_PER_GENERAL_RESULT(unitsLost);
+							PROCESS_JSON_PER_GENERAL_RESULT(unitsBuilt);
+							PROCESS_JSON_PER_GENERAL_RESULT(buildingsKilled);
+							PROCESS_JSON_PER_GENERAL_RESULT(buildingsLost);
+							PROCESS_JSON_PER_GENERAL_RESULT(buildingsBuilt);
+							PROCESS_JSON_PER_GENERAL_RESULT(earnings);
+							PROCESS_JSON_PER_GENERAL_RESULT(techCaptured);
+							PROCESS_JSON_PER_GENERAL_RESULT(discons);
+							PROCESS_JSON_PER_GENERAL_RESULT(desyncs);
+							PROCESS_JSON_PER_GENERAL_RESULT(surrenders);
+							PROCESS_JSON_PER_GENERAL_RESULT(gamesOf2p);
+							PROCESS_JSON_PER_GENERAL_RESULT(gamesOf3p);
+							PROCESS_JSON_PER_GENERAL_RESULT(gamesOf4p);
+							PROCESS_JSON_PER_GENERAL_RESULT(gamesOf5p);
+							PROCESS_JSON_PER_GENERAL_RESULT(gamesOf6p);
+							PROCESS_JSON_PER_GENERAL_RESULT(gamesOf7p);
+							PROCESS_JSON_PER_GENERAL_RESULT(gamesOf8p);
+							PROCESS_JSON_PER_GENERAL_RESULT(customGames);
+							PROCESS_JSON_PER_GENERAL_RESULT(QMGames);
+
+#define PROCESS_JSON_STANDARD_RESULT(name) statsUserIter[#name].get_to(stats.##name)
+							PROCESS_JSON_STANDARD_RESULT(locale);
+							PROCESS_JSON_STANDARD_RESULT(gamesAsRandom);
+							PROCESS_JSON_STANDARD_RESULT(options);
+							PROCESS_JSON_STANDARD_RESULT(systemSpec);
+							PROCESS_JSON_STANDARD_RESULT(lastFPS);
+							PROCESS_JSON_STANDARD_RESULT(lastGeneral);
+							PROCESS_JSON_STANDARD_RESULT(gamesInRowWithLastGeneral);
+							PROCESS_JSON_STANDARD_RESULT(challengeMedals);
+							PROCESS_JSON_STANDARD_RESULT(battleHonors);
+							PROCESS_JSON_STANDARD_RESULT(QMwinsInARow);
+							PROCESS_JSON_STANDARD_RESULT(maxQMwinsInARow);
+							PROCESS_JSON_STANDARD_RESULT(winsInARow);
+							PROCESS_JSON_STANDARD_RESULT(maxWinsInARow);
+							PROCESS_JSON_STANDARD_RESULT(lossesInARow);
+							PROCESS_JSON_STANDARD_RESULT(maxLossesInARow);
+							PROCESS_JSON_STANDARD_RESULT(disconsInARow);
+							PROCESS_JSON_STANDARD_RESULT(maxDisconsInARow);
+							PROCESS_JSON_STANDARD_RESULT(desyncsInARow);
+							PROCESS_JSON_STANDARD_RESULT(maxDesyncsInARow);
+							PROCESS_JSON_STANDARD_RESULT(builtParticleCannon);
+							PROCESS_JSON_STANDARD_RESULT(builtNuke);
+							PROCESS_JSON_STANDARD_RESULT(builtSCUD);
+							PROCESS_JSON_STANDARD_RESULT(lastLadderPort);
+							PROCESS_JSON_STANDARD_RESULT(lastLadderHost);
+
+							NetworkLog(ELogVerbosity::LOG_RELEASE, "Cached stats for user %lld", stats.id);
+							m_mapCachedStats[stats.id] = stats;
+							m_mapStatsLastRefresh[stats.id] = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::utc_clock::now().time_since_epoch()).count();
+						}
+						catch (nlohmann::json::exception& jsonException)
+						{
+							NetworkLog(ELogVerbosity::LOG_RELEASE, "StatsBatch: Unparsable JSON 1: %s (%s)", strBody.c_str(), jsonException.what());
+						}
+						catch (...)
+						{
+							NetworkLog(ELogVerbosity::LOG_RELEASE, "StatsBatch: Unparsable JSON 2: %s", strBody.c_str());
+						}
+					}
+
+					cb(true);
+				}
+				catch (nlohmann::json::exception& jsonException)
+				{
+					NetworkLog(ELogVerbosity::LOG_RELEASE, "StatsBatchParent: Unparsable JSON 1: %s (%s)", strBody.c_str(), jsonException.what());
+
+					cb(false);
+				}
+				catch (...)
+				{
+					NetworkLog(ELogVerbosity::LOG_RELEASE, "StatsBatchParent: Unparsable JSON 2: %s", strBody.c_str());
+
+					cb(false);
+				}
+			}
+        });
 }
 
 bool NGMP_OnlineServices_StatsInterface::getPlayerStatsFromCache(int64_t userID, PSPlayerStats* outStats)
