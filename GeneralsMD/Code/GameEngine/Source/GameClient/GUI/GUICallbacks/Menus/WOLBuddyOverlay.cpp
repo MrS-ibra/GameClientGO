@@ -56,6 +56,7 @@
 #include "GameNetwork/GameSpy/ThreadUtils.h"
 #include "../OnlineServices_SocialInterface.h"
 #include "../OnlineServices_Init.h"
+#include "../OnlineServices_LobbyInterface.h"
 
 // PRIVATE DATA ///////////////////////////////////////////////////////////////////////////////////
 
@@ -470,6 +471,31 @@ void updateBuddyInfo( void )
 			GadgetListBoxReset(buddyControls.listboxBuddies);
 
 			// TODO_SOCIAL: De-register callback when buddy list exits, otherwise half of these UI elements probably wont exist anymore
+
+			// CURRENT GAME
+			if (TheNGMPGame != nullptr)
+			{
+				for (Int i = 0; i < MAX_SLOTS; ++i)
+				{
+					NGMPGameSlot* slot = TheNGMPGame->getGameSpySlot(i);
+					if (slot && slot->isHuman())
+					{
+						int64_t profileID = slot->m_userID;
+						UnicodeString strName = slot->getName();
+
+                        // insert name into box
+                        int index = GadgetListBoxAddEntryText(buddyControls.listboxBuddies, strName, GameSpyColor[GSCOLOR_CHAT_EMOTE], -1, -1);
+                        GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(profileID), index, 0);
+
+                        // insert status into box
+                        GadgetListBoxAddEntryText(buddyControls.listboxBuddies, UnicodeString(L"In Your Current Lobby"), GameSpyColor[GSCOLOR_CHAT_EMOTE], index, 1);
+                        GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(ITEM_NONBUDDY), index, 1);
+
+                        if (profileID == selectedProfile)
+                            selected = index;
+					}
+				}
+			}
 
 			// FRIENDS
 			int i = 0;
@@ -1176,18 +1202,27 @@ WindowMsgHandledType WOLBuddyOverlaySystem( GameWindow *window, UnsignedInt msg,
 					NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
 					if (pSocialInterface != nullptr)
 					{
-						std::vector<UnicodeString> vecMessages = pSocialInterface->GetChatMessagesForUser(profileID);
-
-						for (const UnicodeString& unicodeStr : vecMessages)
+						// If it's the "current lobby" list, the user wont be a friend, so we cant chat to them
+						if (!pSocialInterface->IsUserFriend(profileID))
 						{
-							Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, unicodeStr, GameSpyColor[GSCOLOR_PLAYER_BUDDY], -1, -1);
-							GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString::TheEmptyString, GameSpyColor[GSCOLOR_PLAYER_BUDDY], index, 1);
+                            Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString(L"This person is in your lobby but is not a friend yet and cannot be chatted with. You can right click them to add or ignore them."), GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
+                            GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString::TheEmptyString, GameSpyColor[GSCOLOR_DEFAULT], index, 1);
 						}
-
-						if (vecMessages.empty())
+						else
 						{
-							Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString(L"This chat is empty. Send a message to start a conversation"), GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
-							GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString::TheEmptyString, GameSpyColor[GSCOLOR_DEFAULT], index, 1);
+                            std::vector<UnicodeString> vecMessages = pSocialInterface->GetChatMessagesForUser(profileID);
+
+                            for (const UnicodeString& unicodeStr : vecMessages)
+                            {
+                                Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, unicodeStr, GameSpyColor[GSCOLOR_PLAYER_BUDDY], -1, -1);
+                                GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString::TheEmptyString, GameSpyColor[GSCOLOR_PLAYER_BUDDY], index, 1);
+                            }
+
+                            if (vecMessages.empty())
+                            {
+                                Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString(L"This chat is empty. Send a message to start a conversation"), GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
+                                GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString::TheEmptyString, GameSpyColor[GSCOLOR_DEFAULT], index, 1);
+                            }
 						}
 					}
 				}
