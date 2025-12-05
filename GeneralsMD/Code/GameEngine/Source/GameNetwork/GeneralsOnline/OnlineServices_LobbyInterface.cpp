@@ -269,7 +269,7 @@ void NGMP_OnlineServices_LobbyInterface::SetJoinability(ELobbyJoinability joinab
     {
         UnicodeString strInform(joinabilityFlag == ELobbyJoinability::LobbyJoinability_FriendsOnly ? L"The host has set the lobby joinability to friends only" : L"The host has set the lobby joinability to public");
 
-		SendAnnouncementMessageToCurrentLobby(strInform, true);
+		SendAnnouncementMessageToCurrentLobby(strInform, false);
 
         std::string strURI = std::format("{}/{}", NGMP_OnlineServicesManager::GetAPIEndpoint("Lobby"), m_CurrentLobby.lobbyID);
         std::map<std::string, std::string> mapHeaders;

@@ -2101,6 +2101,14 @@ void WOLGameSetupMenuInit( WindowLayout *layout, void *userData )
 
 		}
 	}
+
+    if (pLobbyInterface != nullptr)
+    {
+        if (pLobbyInterface->IsHost())
+        {
+            GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"This lobby is open to the public. Use /friendsonly to make it only open to friends."), GameMakeColor(255, 194, 15, 255), -1, -1);
+        }
+    }
 #endif
 }
 
@@ -3367,6 +3375,7 @@ Bool handleGameSetupSlashCommands(UnicodeString uText)
 				{
 					if (pLobbyInterface->IsHost()) // NOTE: this is checked service side too, but we might as well not make the call to reduce resource usage
 					{
+						GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"This lobby is now only open to friends. Use /public to make it open to the public."), GameMakeColor(255, 194, 15, 255), -1, -1);
 						pLobbyInterface->SetJoinability(ELobbyJoinability::LobbyJoinability_FriendsOnly);
 					}
 				}
@@ -3387,6 +3396,7 @@ Bool handleGameSetupSlashCommands(UnicodeString uText)
                 {
 					if (pLobbyInterface->IsHost()) // NOTE: this is checked service side too, but we might as well not make the call to reduce resource usage
                     {
+						GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"This lobby is now only open to the public. Use /friendsonly to make it open to friends only."), GameMakeColor(255, 194, 15, 255), -1, -1);
 						pLobbyInterface->SetJoinability(ELobbyJoinability::LobbyJoinability_Public);
                     }
                 }

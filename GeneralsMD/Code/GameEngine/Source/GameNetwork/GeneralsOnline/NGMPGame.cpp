@@ -528,7 +528,7 @@ void NGMPGame::launchGame(void)
     static Bool lastNotificationWasStatus = FALSE;
     static Int numOnlineInNotification = 0;
     void showNotificationBox(AsciiString nick, UnicodeString message);
-    showNotificationBox(AsciiString::TheEmptyString, UnicodeString(L"Press F5 or INSERT to bring up the communicator at any time (including in-game)."));
+    showNotificationBox(AsciiString::TheEmptyString, UnicodeString(L"Press F5 or INSERT to bring up the communicator at any time."));
 }
 
 void NGMPGame::reset(void)
