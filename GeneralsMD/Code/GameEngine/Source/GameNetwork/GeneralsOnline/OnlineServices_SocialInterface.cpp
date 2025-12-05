@@ -235,7 +235,34 @@ void NGMP_OnlineServices_SocialInterface::OnOnlineStatusChanged(std::string strD
 	lastNotificationWasStatus = FALSE;
 	numOnlineInNotification = 0;
 
-	showNotificationBox(AsciiString(strDisplayName.c_str()), bOnline ? TheGameText->fetch("Buddy:OnlineNotification") : UnicodeString(L"%hs went offline"));
+	bool bShowNotification = false;
+	if (bOnline)
+	{
+		if (TheNGMPGame != nullptr && TheNGMPGame->isGameInProgress())
+		{
+			bShowNotification = NGMP_OnlineServicesManager::Settings.Social_Notifications_FriendComesOnline_Gameplay();
+		}
+		else
+		{
+			bShowNotification = NGMP_OnlineServicesManager::Settings.Social_Notifications_FriendComesOnline_Menus();
+		}
+	}
+	else
+	{
+        if (TheNGMPGame != nullptr && TheNGMPGame->isGameInProgress())
+        {
+            bShowNotification = NGMP_OnlineServicesManager::Settings.Social_Notifications_FriendGoesOffline_Gameplay();
+        }
+        else
+        {
+            bShowNotification = NGMP_OnlineServicesManager::Settings.Social_Notifications_FriendGoesOffline_Menus();
+        }
+	}
+
+	if (bShowNotification)
+	{
+		showNotificationBox(AsciiString(strDisplayName.c_str()), bOnline ? TheGameText->fetch("Buddy:OnlineNotification") : UnicodeString(L"%hs went offline"));
+	}
 }
 
 void NGMP_OnlineServices_SocialInterface::OnFriendRequestAccepted(std::string strDisplayName)
@@ -243,7 +270,20 @@ void NGMP_OnlineServices_SocialInterface::OnFriendRequestAccepted(std::string st
 	lastNotificationWasStatus = FALSE;
 	numOnlineInNotification = 0;
 
-	showNotificationBox(AsciiString(strDisplayName.c_str()), UnicodeString(L"%hs accepted your friend request."));
+	bool bShowNotification = true;
+    if (TheNGMPGame != nullptr && TheNGMPGame->isGameInProgress())
+    {
+        bShowNotification = NGMP_OnlineServicesManager::Settings.Social_Notifications_PlayerAcceptsRequest_Gameplay();
+    }
+    else
+    {
+        bShowNotification = NGMP_OnlineServicesManager::Settings.Social_Notifications_PlayerAcceptsRequest_Menus();
+    }
+
+	if (bShowNotification)
+	{
+		showNotificationBox(AsciiString(strDisplayName.c_str()), UnicodeString(L"%hs accepted your friend request."));
+	}
 }
 
 bool NGMP_OnlineServices_SocialInterface::IsUserIgnored(int64_t target_user_id)
@@ -289,5 +329,18 @@ void NGMP_OnlineServices_SocialInterface::InvokeCallback_NewFriendRequest(std::s
 	lastNotificationWasStatus = FALSE;
 	numOnlineInNotification = 0;
 
-	showNotificationBox(AsciiString(strDisplayName.c_str()), UnicodeString(L"%hs sent you a friend request."));
+    bool bShowNotification = true;
+    if (TheNGMPGame != nullptr && TheNGMPGame->isGameInProgress())
+    {
+        bShowNotification = NGMP_OnlineServicesManager::Settings.Social_Notifications_PlayerSendsRequest_Gameplay();
+    }
+    else
+    {
+        bShowNotification = NGMP_OnlineServicesManager::Settings.Social_Notifications_PlayerSendsRequest_Menus();
+    }
+
+	if (bShowNotification)
+	{
+		showNotificationBox(AsciiString(strDisplayName.c_str()), UnicodeString(L"%hs sent you a friend request."));
+	}
 }

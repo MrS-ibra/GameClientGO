@@ -39,6 +39,15 @@ public:
 		return m_Render_FramerateLimit_FPSVal;
 	}
 
+	bool Social_Notifications_FriendComesOnline_Menus() { return m_Social_Notification_FriendComesOnline_Menus; }
+	bool Social_Notifications_FriendComesOnline_Gameplay() { return m_Social_Notification_FriendComesOnline_Gameplay; }
+	bool Social_Notifications_FriendGoesOffline_Menus() { return m_Social_Notification_FriendGoesOffline_Menus; }
+	bool Social_Notifications_FriendGoesOffline_Gameplay() { return m_Social_Notification_FriendGoesOffline_Gameplay; }
+	bool Social_Notifications_PlayerAcceptsRequest_Menus() { return m_Social_Notification_PlayerAcceptsRequest_Menus; }
+	bool Social_Notifications_PlayerAcceptsRequest_Gameplay() { return m_Social_Notification_PlayerAcceptsRequest_Gameplay; }
+    bool Social_Notifications_PlayerSendsRequest_Menus() { return m_Social_Notification_PlayerSendsRequest_Menus; }
+    bool Social_Notifications_PlayerSendsRequest_Gameplay() { return m_Social_Notification_PlayerSendsRequest_Gameplay; }
+
 
 	bool Debug_VerboseLogging() const { return m_bVerbose; }
 
@@ -72,4 +81,13 @@ private:
 	bool m_Render_LimitFramerate = true;
 	int m_Render_FramerateLimit_FPSVal = 60;
 	int m_Chat_LifeSeconds = 30;
+
+	bool m_Social_Notification_FriendComesOnline_Menus = true;
+	bool m_Social_Notification_FriendComesOnline_Gameplay = true;
+	bool m_Social_Notification_FriendGoesOffline_Menus = true;
+	bool m_Social_Notification_FriendGoesOffline_Gameplay = true;
+	bool m_Social_Notification_PlayerAcceptsRequest_Menus = true;
+	bool m_Social_Notification_PlayerAcceptsRequest_Gameplay = true;
+	bool m_Social_Notification_PlayerSendsRequest_Menus = true;
+	bool m_Social_Notification_PlayerSendsRequest_Gameplay = true;
 };

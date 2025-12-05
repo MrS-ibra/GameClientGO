@@ -561,6 +561,7 @@ void WebSocket::Tick()
                                         lastNotificationWasStatus = FALSE;
                                         numOnlineInNotification = 0;
 
+										// always show this notification, it's tied to a local user action
 										showNotificationBox(AsciiString::TheEmptyString, UnicodeString(L"Cannot sent friends request. Your friends list is full."));
 									}
 									break;
@@ -595,6 +596,7 @@ void WebSocket::Tick()
 
 											if (!strFormat.isEmpty())
 											{
+												// always show this notification
 												showNotificationBox(AsciiString::TheEmptyString, strFormat);
 											}
 										}
