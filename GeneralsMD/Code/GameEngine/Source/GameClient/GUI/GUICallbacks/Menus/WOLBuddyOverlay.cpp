@@ -931,6 +931,8 @@ void PopulateOldBuddyMessages(void)
 void WOLBuddyOverlayInit( WindowLayout *layout, void *userData )
 {
 	// TODO_SOCIAL: Lobby sort list by member
+	//
+	// NOTE Init is only called when the UI is visible, so don't register for callbacks that you want to occur anytime
 	// GO: register for callbacks
 	NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
 	if (pSocialInterface != nullptr)
@@ -940,16 +942,11 @@ void WOLBuddyOverlayInit( WindowLayout *layout, void *userData )
 		pSocialInterface->RegisterForCallback_NewFriendRequest([](std::string strDisplayName)
 			{
 				updateBuddyInfo();
-				// insert status into box
-				lastNotificationWasStatus = FALSE;
-				numOnlineInNotification = 0;
-				showNotificationBox(AsciiString(strDisplayName.c_str()), TheGameText->fetch("Buddy:AddNotification"));
 			});
 
 		pSocialInterface->RegisterForCallback_OnChatMessage([](int64_t source_user_id, int64_t target_user_id, UnicodeString unicodeStr)
 			{
 				// Only add if the user is currently selected, otherwise show notification and just rely on the cache
-
 				Int selected = -1;
 				GadgetListBoxGetSelected(buddyControls.listboxBuddies, &selected);
 				if (selected >= 0)
@@ -1596,7 +1593,6 @@ void RequestBuddyAdd(Int profileID, AsciiString nick)
 
 	lastNotificationWasStatus = FALSE;
 	numOnlineInNotification = 0;
-	//showNotificationBox(AsciiString::TheEmptyString, s);
 	showNotificationBox(nick, UnicodeString(L"Invite Sent to %hs"));
 #else
 	// request to add a buddy

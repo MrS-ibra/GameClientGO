@@ -321,6 +321,7 @@ void NGMP_OnlineServices_SocialInterface::DeregisterForRealtimeServiceUpdates()
 
 void NGMP_OnlineServices_SocialInterface::InvokeCallback_NewFriendRequest(std::string strDisplayName)
 {
+
 	if (m_cbOnNewFriendRequest != nullptr)
 	{
 		m_cbOnNewFriendRequest(strDisplayName);
@@ -341,6 +342,6 @@ void NGMP_OnlineServices_SocialInterface::InvokeCallback_NewFriendRequest(std::s
 
 	if (bShowNotification)
 	{
-		showNotificationBox(AsciiString(strDisplayName.c_str()), UnicodeString(L"%hs sent you a friend request."));
+		showNotificationBox(AsciiString(strDisplayName.c_str()), TheGameText->fetch("Buddy:AddNotification"));
 	}
 }

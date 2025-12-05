@@ -3776,6 +3776,19 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 
 			disp = DESTROY_MESSAGE;
 		}
+		else if (key == KEY_F5 || key == KEY_INS)
+		{
+			if (GameSpyIsOverlayOpen(GSOVERLAY_BUDDY))
+			{
+				GameSpyCloseOverlay(GSOVERLAY_BUDDY);
+			}
+			else
+			{
+				GameSpyOpenOverlay(GSOVERLAY_BUDDY);
+			}
+
+            disp = DESTROY_MESSAGE;
+		}
 
 		break;
 	}
