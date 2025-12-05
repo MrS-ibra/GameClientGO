@@ -110,7 +110,12 @@ static UnsignedInt noticeExpires = 0;
 
 void setUnignoreText( WindowLayout *layout, AsciiString nick, GPProfile id);
 void refreshIgnoreList( void );
-void showNotificationBox( AsciiString nick, UnicodeString message);
+
+#if defined(GENERALS_ONLINE)
+void showNotificationBox( AsciiString nick, UnicodeString message, bool bPlaySound);
+#else
+void showNotificationBox(AsciiString nick, UnicodeString message);
+#endif
 void deleteNotificationBox( void );
 static Bool lastNotificationWasStatus = FALSE;
 static Int numOnlineInNotification = 0;
@@ -891,7 +896,11 @@ void HandleBuddyResponses( void )
 	}
 }
 
-void showNotificationBox( AsciiString nick, UnicodeString message)
+#if defined(GENERALS_ONLINE)
+void showNotificationBox(AsciiString nick, UnicodeString message, bool bPlaySound)
+#else
+void showNotificationBox(AsciiString nick, UnicodeString message)
+#endif
 {
 //	if(!GameSpyIsOverlayOpen(GSOVERLAY_BUDDY))
 //		return;
@@ -923,7 +932,11 @@ void showNotificationBox( AsciiString nick, UnicodeString message)
 
 	AudioEventRTS buttonClick("GUICommunicatorIncoming");
 
+#if defined(GENERALS_ONLINE)
+	if (TheAudio && bPlaySound)
+#else
 	if( TheAudio )
+#endif
 	{
 		TheAudio->addAudioEvent( &buttonClick );
 	}

@@ -555,12 +555,6 @@ void WebSocket::Tick()
 
 									case EWebSocketMessageID::SOCIAL_CANT_ADD_FRIEND_LIST_FULL:
 									{
-                                        static Bool lastNotificationWasStatus = FALSE;
-                                        static Int numOnlineInNotification = 0;
-                                        void showNotificationBox(AsciiString nick, UnicodeString message);
-                                        lastNotificationWasStatus = FALSE;
-                                        numOnlineInNotification = 0;
-
 										// always show this notification, it's tied to a local user action
 										showNotificationBox(AsciiString::TheEmptyString, UnicodeString(L"Cannot sent friends request. Your friends list is full."));
 									}
@@ -568,13 +562,6 @@ void WebSocket::Tick()
 
 									case EWebSocketMessageID::SOCIAL_FRIENDS_OVERALL_STATUS_UPDATE:
 									{
-										// From WOLBuddyOverlay.cpp
-										static Bool lastNotificationWasStatus = FALSE;
-										static Int numOnlineInNotification = 0;
-										void showNotificationBox(AsciiString nick, UnicodeString message);
-										lastNotificationWasStatus = FALSE;
-										numOnlineInNotification = 0;
-
 										WebSocketMessage_FriendsOverallStatusUpdate statusUpdateData;
 										bool bParsed = JSONGetAsObject(jsonObject, &statusUpdateData);
 

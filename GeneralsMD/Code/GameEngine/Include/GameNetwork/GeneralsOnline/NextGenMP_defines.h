@@ -36,6 +36,9 @@
 #define RTS_MULTI_INSTANCE 1
 #endif
 
+class UnicodeString;
+void showNotificationBox(AsciiString nick, UnicodeString message, bool bPlaySound = true);
+
 #define ALLOW_NON_PROFILED_LOGIN 1
 
 #define GENERALS_ONLINE_ENABLE_MATCH_START_COUNTDOWN

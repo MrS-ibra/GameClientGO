@@ -11,6 +11,7 @@
 #include "GameNetwork/NetworkInterface.h"
 #include "Common/GlobalData.h"
 #include "GameClient/View.h"
+#include "../NextGenMP_defines.h"
 
 NGMPGameSlot::NGMPGameSlot()
 {
@@ -525,10 +526,7 @@ void NGMPGame::launchGame(void)
 	TheGameSpyBuddyMessageQueue->addRequest(req);
 	*/
 
-    static Bool lastNotificationWasStatus = FALSE;
-    static Int numOnlineInNotification = 0;
-    void showNotificationBox(AsciiString nick, UnicodeString message);
-    showNotificationBox(AsciiString::TheEmptyString, UnicodeString(L"Press F5 or INSERT to bring up the communicator at any time."));
+    showNotificationBox(AsciiString::TheEmptyString, UnicodeString(L"Press F5 or INSERT to bring up the communicator at any time."), false);
 }
 
 void NGMPGame::reset(void)

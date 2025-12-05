@@ -226,15 +226,8 @@ void NGMP_OnlineServices_SocialInterface::OnChatMessage(int64_t source_user_id, 
 	}
 }
 
-// From WOLBuddyOverlay.cpp
-static Bool lastNotificationWasStatus = FALSE;
-static Int numOnlineInNotification = 0;
-void showNotificationBox(AsciiString nick, UnicodeString message);
 void NGMP_OnlineServices_SocialInterface::OnOnlineStatusChanged(std::string strDisplayName, bool bOnline)
 {
-	lastNotificationWasStatus = FALSE;
-	numOnlineInNotification = 0;
-
 	bool bShowNotification = false;
 	if (bOnline)
 	{
@@ -267,9 +260,6 @@ void NGMP_OnlineServices_SocialInterface::OnOnlineStatusChanged(std::string strD
 
 void NGMP_OnlineServices_SocialInterface::OnFriendRequestAccepted(std::string strDisplayName)
 {
-	lastNotificationWasStatus = FALSE;
-	numOnlineInNotification = 0;
-
 	bool bShowNotification = true;
     if (TheNGMPGame != nullptr && TheNGMPGame->isGameInProgress())
     {
@@ -326,9 +316,6 @@ void NGMP_OnlineServices_SocialInterface::InvokeCallback_NewFriendRequest(std::s
 	{
 		m_cbOnNewFriendRequest(strDisplayName);
 	}
-
-	lastNotificationWasStatus = FALSE;
-	numOnlineInNotification = 0;
 
     bool bShowNotification = true;
     if (TheNGMPGame != nullptr && TheNGMPGame->isGameInProgress())
