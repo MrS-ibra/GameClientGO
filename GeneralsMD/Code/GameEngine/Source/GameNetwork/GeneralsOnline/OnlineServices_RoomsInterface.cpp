@@ -593,6 +593,10 @@ void WebSocket::Tick()
 											{
 												strFormat.format(L"You have %d pending friend request(s)", statusUpdateData.num_pending);
 											}
+											else
+											{
+												strFormat = UnicodeString(L"Press F5 or INSERT to bring up the communicator at any time (including in-game).");
+											}
 
 											if (!strFormat.isEmpty())
 											{

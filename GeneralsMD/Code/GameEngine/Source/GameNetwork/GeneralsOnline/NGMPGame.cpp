@@ -524,6 +524,11 @@ void NGMPGame::launchGame(void)
 	sprintf(req.arg.status.locationString, "%s", WideCharStringToMultiByte(TheGameSpyGame->getGameName().str()).c_str());
 	TheGameSpyBuddyMessageQueue->addRequest(req);
 	*/
+
+    static Bool lastNotificationWasStatus = FALSE;
+    static Int numOnlineInNotification = 0;
+    void showNotificationBox(AsciiString nick, UnicodeString message);
+    showNotificationBox(AsciiString::TheEmptyString, UnicodeString(L"Press F5 or INSERT to bring up the communicator at any time (including in-game)."));
 }
 
 void NGMPGame::reset(void)

@@ -73,13 +73,6 @@ std::string GenerateGamecode()
 
 void NGMP_OnlineServices_AuthInterface::GoToDetermineNetworkCaps()
 {
-#if defined(GENERALS_ONLINE)
-    static Bool lastNotificationWasStatus = FALSE;
-    static Int numOnlineInNotification = 0;
-    void showNotificationBox(AsciiString nick, UnicodeString message);
-    showNotificationBox(AsciiString::TheEmptyString, UnicodeString(L"Press F5 or INSERT to bring up the communicator at any time (including in-game)."));
-#endif
-
 	// GET MOTD
 	std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("MOTD");
 	std::map<std::string, std::string> mapHeaders;

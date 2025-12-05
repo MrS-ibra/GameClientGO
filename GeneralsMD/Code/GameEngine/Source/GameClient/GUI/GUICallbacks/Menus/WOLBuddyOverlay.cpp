@@ -100,7 +100,12 @@ void insertChat( BuddyMessage msg );
 static GameWindow *rcMenu = NULL;
 static WindowLayout *noticeLayout = NULL;
 static UnsignedInt noticeExpires = 0;
-enum { NOTIFICATION_EXPIRES = 3000 };
+
+#if defined(GENERALS_ONLINE)
+	enum { NOTIFICATION_EXPIRES = 5000 };
+#else
+	enum { NOTIFICATION_EXPIRES = 3000 };
+#endif
 
 void setUnignoreText( WindowLayout *layout, AsciiString nick, GPProfile id);
 void refreshIgnoreList( void );
