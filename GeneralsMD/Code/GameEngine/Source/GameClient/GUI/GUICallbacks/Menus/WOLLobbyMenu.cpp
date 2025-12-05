@@ -778,162 +778,158 @@ void PopulateLobbyPlayerListbox(void)
 					}
 
                     PSPlayerStats stats = PSPlayerStats();
-                    NGMP_OnlineServices_StatsInterface* pStatsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_StatsInterface>();
-                    if (pStatsInterface != nullptr)
-                    {
-						// we dont care about result here - always add them, with empty stats if we dont get stats
-						pStatsInterface->getPlayerStatsFromCache(netRoomMember.user_id, &stats);
-						
-						m_vecUsersProcessed.push_back(netRoomMember.user_id);
-						PlayerInfo pi;
+					// we dont care about result here - always add them, with empty stats if we dont get stats
+					pStatsInterface->getPlayerStatsFromCache(netRoomMember.user_id, &stats);
 
-						pi.m_name = AsciiString(netRoomMember.display_name.c_str());
-						pi.m_nameUni = UnicodeString(from_utf8(netRoomMember.display_name).c_str());
+					m_vecUsersProcessed.push_back(netRoomMember.user_id);
+					PlayerInfo pi;
 
-						// if we don't have the stats from the server, just add us without any stats
-						//if (bSuccess)
+					pi.m_name = AsciiString(netRoomMember.display_name.c_str());
+					pi.m_nameUni = UnicodeString(from_utf8(netRoomMember.display_name).c_str());
+
+					// if we don't have the stats from the server, just add us without any stats
+					//if (bSuccess)
+					{
+						Int currentRank = 0;
+						Int rankPoints = CalculateRank(stats);
+						Int i = 0;
+						while (rankPoints >= TheRankPointValues->m_ranks[i + 1])
+							++i;
+						currentRank = i;
+
+						PerGeneralMap::iterator it;
+						Int numWins = 0;
+						Int numLosses = 0;
+						Int numDiscons = 0;
+						Int numGamesTotal = 0;
+						for (it = stats.wins.begin(); it != stats.wins.end(); ++it)
 						{
-							Int currentRank = 0;
-							Int rankPoints = CalculateRank(stats);
-							Int i = 0;
-							while (rankPoints >= TheRankPointValues->m_ranks[i + 1])
-								++i;
-							currentRank = i;
-
-							PerGeneralMap::iterator it;
-							Int numWins = 0;
-							Int numLosses = 0;
-							Int numDiscons = 0;
-							Int numGamesTotal = 0;
-							for (it = stats.wins.begin(); it != stats.wins.end(); ++it)
-							{
-								numWins += it->second;
-							}
-							for (it = stats.losses.begin(); it != stats.losses.end(); ++it)
-							{
-								numLosses += it->second;
-							}
-							for (it = stats.discons.begin(); it != stats.discons.end(); ++it)
-							{
-								numDiscons += it->second;
-							}
-							for (it = stats.desyncs.begin(); it != stats.desyncs.end(); ++it)
-							{
-								numDiscons += it->second;
-							}
-
-							numDiscons += GetAdditionalDisconnectsFromUserFile(netRoomMember.user_id);
-
-							numGamesTotal = numWins + numLosses + numDiscons;
-
-							// determine favorite army
-							Int numGamesThisArmy = 0;
-							Int favorite = 0;
-							for (it = stats.games.begin(); it != stats.games.end(); ++it)
-							{
-								if (it->second >= numGamesThisArmy)
-								{
-									numGamesThisArmy = it->second;
-									favorite = it->first;
-								}
-							}
-
-							int favoriteSide = PLAYERTEMPLATE_RANDOM;
-							if (numGamesThisArmy == 0)
-							{
-								favoriteSide = 0; // this isnt a real army, but they also havent played any games so they cant possibly have a rank
-							}
-							else if (stats.gamesAsRandom >= numGamesThisArmy)
-							{
-								favoriteSide = PLAYERTEMPLATE_RANDOM;
-							}
-							else
-							{
-								favoriteSide = favorite;
-
-								/*
-								const PlayerTemplate* fac = ThePlayerTemplateStore->getNthPlayerTemplate(favorite);
-								if (fac)
-								{
-									AsciiString side;
-									side.format("SIDE:%s", fac->getSide().str());
-
-									favoriteSide = TheGameText->fetch(side);
-								}
-								*/
-							}
-
-							// store on playerinfo object
-							pi.m_wins = numWins;
-							pi.m_losses = numLosses;
-							pi.m_profileID = netRoomMember.user_id; // TODO_NGMP: Downcast... we need to use int64_t everywhere really
-							pi.m_flags = 0;
-							pi.m_rankPoints = rankPoints;
-							pi.m_side = favorite;
-							pi.m_preorder = 0;
+							numWins += it->second;
+						}
+						for (it = stats.losses.begin(); it != stats.losses.end(); ++it)
+						{
+							numLosses += it->second;
+						}
+						for (it = stats.discons.begin(); it != stats.discons.end(); ++it)
+						{
+							numDiscons += it->second;
+						}
+						for (it = stats.desyncs.begin(); it != stats.desyncs.end(); ++it)
+						{
+							numDiscons += it->second;
 						}
 
-						// restore top visible entry
-						GadgetListBoxSetTopVisibleEntry(listboxLobbyPlayers, previousTopIndex);
+						numDiscons += GetAdditionalDisconnectsFromUserFile(netRoomMember.user_id);
 
-						NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+						numGamesTotal = numWins + numLosses + numDiscons;
 
-						bool bIsAdmin = wcsncmp(pi.m_nameUni.str(), L"[\u2605\u2605GO STAFF\u2605\u2605]", 14) == 0; // TODO_NGMP: determine by service flag, not name
-						bool bFriend = pSocialInterface != nullptr ? pSocialInterface->IsUserFriend(netRoomMember.user_id) : false;
-						bool bIgnored = pSocialInterface != nullptr ? pSocialInterface->IsUserIgnored(netRoomMember.user_id) : false;
-						bool bLocal = localUserID == netRoomMember.user_id;
-
-						Color colorToUse = GameSpyColor[GSCOLOR_PLAYER_NORMAL];
-						if (bIsAdmin)
+						// determine favorite army
+						Int numGamesThisArmy = 0;
+						Int favorite = 0;
+						for (it = stats.games.begin(); it != stats.games.end(); ++it)
 						{
-							colorToUse = GameSpyColor[GSCOLOR_PLAYER_OWNER];;// GameMakeColor(0, 162, 232, 255);
-						}
-						else if (bFriend)
-						{
-							colorToUse = GameSpyColor[GSCOLOR_PLAYER_BUDDY];
-						}
-						else if (bIgnored)
-						{
-							colorToUse = GameSpyColor[GSCOLOR_PLAYER_IGNORED];
-						}
-						else if (bLocal)
-						{
-							colorToUse = GameSpyColor[GSCOLOR_PLAYER_SELF];
-						}
-
-						Int index = insertPlayerInListbox(pi, colorToUse);
-
-						// TODO_NGMP: Use int for user ID like gamespy did, or move everything to uint64
-						std::set<Int> indicesToSelect;
-						std::set<int>::const_iterator selIt = selectedUserIDs.find(netRoomMember.user_id);
-						if (selIt != selectedUserIDs.end())
-						{
-							indicesToSelect.insert(index);
-						}
-
-						// restore selection
-						if (indicesToSelect.size())
-						{
-							std::set<Int>::const_iterator indexIt = indicesToSelect.begin();
-							const size_t count = indicesToSelect.size();
-							size_t index = 0;
-							Int* newIndices = NEW Int[count];
-							while (index < count)
+							if (it->second >= numGamesThisArmy)
 							{
-								newIndices[index] = *indexIt;
-								DEBUG_LOG(("Queueing up index %d to re-select", *indexIt));
-								++index;
-								++indexIt;
+								numGamesThisArmy = it->second;
+								favorite = it->first;
 							}
-							GadgetListBoxSetSelected(listboxLobbyPlayers, newIndices, count);
-							delete[] newIndices;
 						}
 
-						if (indicesToSelect.size() != numSelected)
+						int favoriteSide = PLAYERTEMPLATE_RANDOM;
+						if (numGamesThisArmy == 0)
 						{
-							TheWindowManager->winSetLoneWindow(NULL);
+							favoriteSide = 0; // this isnt a real army, but they also havent played any games so they cant possibly have a rank
 						}
-                    }
+						else if (stats.gamesAsRandom >= numGamesThisArmy)
+						{
+							favoriteSide = PLAYERTEMPLATE_RANDOM;
+						}
+						else
+						{
+							favoriteSide = favorite;
+
+							/*
+							const PlayerTemplate* fac = ThePlayerTemplateStore->getNthPlayerTemplate(favorite);
+							if (fac)
+							{
+								AsciiString side;
+								side.format("SIDE:%s", fac->getSide().str());
+
+								favoriteSide = TheGameText->fetch(side);
+							}
+							*/
+						}
+
+						// store on playerinfo object
+						pi.m_wins = numWins;
+						pi.m_losses = numLosses;
+						pi.m_profileID = netRoomMember.user_id; // TODO_NGMP: Downcast... we need to use int64_t everywhere really
+						pi.m_flags = 0;
+						pi.m_rankPoints = rankPoints;
+						pi.m_side = favorite;
+						pi.m_preorder = 0;
+					}
+
+					// restore top visible entry
+					GadgetListBoxSetTopVisibleEntry(listboxLobbyPlayers, previousTopIndex);
+
+					NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+
+					bool bIsAdmin = wcsncmp(pi.m_nameUni.str(), L"[\u2605\u2605GO STAFF\u2605\u2605]", 14) == 0; // TODO_NGMP: determine by service flag, not name
+					bool bFriend = pSocialInterface != nullptr ? pSocialInterface->IsUserFriend(netRoomMember.user_id) : false;
+					bool bIgnored = pSocialInterface != nullptr ? pSocialInterface->IsUserIgnored(netRoomMember.user_id) : false;
+					bool bLocal = localUserID == netRoomMember.user_id;
+
+					Color colorToUse = GameSpyColor[GSCOLOR_PLAYER_NORMAL];
+					if (bIsAdmin)
+					{
+						colorToUse = GameSpyColor[GSCOLOR_PLAYER_OWNER];;// GameMakeColor(0, 162, 232, 255);
+					}
+					else if (bFriend)
+					{
+						colorToUse = GameSpyColor[GSCOLOR_PLAYER_BUDDY];
+					}
+					else if (bIgnored)
+					{
+						colorToUse = GameSpyColor[GSCOLOR_PLAYER_IGNORED];
+					}
+					else if (bLocal)
+					{
+						colorToUse = GameSpyColor[GSCOLOR_PLAYER_SELF];
+					}
+
+					Int index = insertPlayerInListbox(pi, colorToUse);
+
+					// TODO_NGMP: Use int for user ID like gamespy did, or move everything to uint64
+					std::set<Int> indicesToSelect;
+					std::set<int>::const_iterator selIt = selectedUserIDs.find(netRoomMember.user_id);
+					if (selIt != selectedUserIDs.end())
+					{
+						indicesToSelect.insert(index);
+					}
+
+					// restore selection
+					if (indicesToSelect.size())
+					{
+						std::set<Int>::const_iterator indexIt = indicesToSelect.begin();
+						const size_t count = indicesToSelect.size();
+						size_t index = 0;
+						Int* newIndices = NEW Int[count];
+						while (index < count)
+						{
+							newIndices[index] = *indexIt;
+							DEBUG_LOG(("Queueing up index %d to re-select", *indexIt));
+							++index;
+							++indexIt;
+						}
+						GadgetListBoxSetSelected(listboxLobbyPlayers, newIndices, count);
+						delete[] newIndices;
+					}
+
+					if (indicesToSelect.size() != numSelected)
+					{
+						TheWindowManager->winSetLoneWindow(NULL);
+					}
 				}
 			});
 
