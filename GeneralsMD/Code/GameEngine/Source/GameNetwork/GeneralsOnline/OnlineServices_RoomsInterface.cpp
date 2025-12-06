@@ -547,8 +547,8 @@ void WebSocket::Tick()
 
 									case EWebSocketMessageID::SOCIAL_FRIENDS_LIST_DIRTY:
 									{
-										// nothing to parse here, it's just an event only
-										extern void updateBuddyInfo(bool bIsAutoRefresh = false);
+                                        // nothing to parse here, it's just an event only
+                                        extern void updateBuddyInfo(bool bIsAutoRefresh = false, bool bUseCache = false);
 										updateBuddyInfo(true);
 									}
 									break;
@@ -583,6 +583,16 @@ void WebSocket::Tick()
 											else
 											{
 												strFormat = UnicodeString(L"Press F5 or INSERT to bring up the communicator at any time (including in-game).");
+											}
+
+											// show it on the communicator too
+											if (statusUpdateData.num_pending > 0)
+											{
+                                                NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+                                                if (pSocialInterface != nullptr)
+                                                {
+													pSocialInterface->RegisterInitialPendingRequestsUponLogin(statusUpdateData.num_pending);
+                                                }
 											}
 
 											if (!strFormat.isEmpty())

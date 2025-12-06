@@ -94,7 +94,7 @@ WindowMsgHandledType BuddyControlSystem( GameWindow *window, UnsignedInt msg,
 void InitBuddyControls(Int type);
 
 #if defined(GENERALS_ONLINE)
-void updateBuddyInfo(bool bIsAutoRefresh = false);
+void updateBuddyInfo(bool bIsAutoRefresh = false, bool bUseCache = false);
 #else
 void updateBuddyInfo( void );
 #endif

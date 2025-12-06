@@ -240,16 +240,9 @@ void ScoreScreenEnableControls(Bool enable)
 		buttonContinue->winEnable(enable);
 	}
 
-	// TODO_NGMP: Implement communicator again
-#if defined(GENERALS_ONLINE)
-	if ((buttonBuddies != NULL) && (buttonBuddies->winIsHidden() == FALSE)) {
-		buttonBuddies->winEnable(false);
-	}
-#else
 	if ((buttonBuddies != NULL) && (buttonBuddies->winIsHidden() == FALSE)) {
 		buttonBuddies->winEnable(enable);
 	}
-#endif
 
 	GameWindow *buttonSaveReplay = TheWindowManager->winGetWindowFromId( parent, buttonSaveReplayID );
 	if ((buttonSaveReplay != NULL) && (buttonSaveReplay->winIsHidden() == FALSE)) {
@@ -392,7 +385,41 @@ void ScoreScreenInit( WindowLayout *layout, void *userData )
 		s_blankLayout->hide(FALSE);
 		s_blankLayout->bringForward();
 	}
-	
+
+#if defined(GENERALS_ONLINE)
+    // Update the communicator button anytime we get notifications
+    NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+    if (pSocialInterface != nullptr)
+    {
+        // notifiactions callback
+        pSocialInterface->RegisterForCallback_OnNumberGlobalNotificationsChanged([](int numNotifications)
+            {
+                // update communicator button
+                if (buttonBuddies != nullptr)
+                {
+                    UnicodeString buttonText;
+
+					if (numNotifications > 0)
+					{
+						buttonText.format(L"%s [%d]", TheGameText->fetch("GUI:Buddies").str(), numNotifications);
+					}
+					else
+					{
+						buttonText.format(L"%s", TheGameText->fetch("GUI:Buddies").str());
+					}
+					buttonBuddies->winSetText(buttonText);
+                }
+            });
+    }
+
+    // And also initialize it
+    if (buttonBuddies != nullptr && pSocialInterface->GetNumTotalNotifications() > 0)
+    {
+        UnicodeString buttonText;
+        buttonText.format(L"%s [%d]", TheGameText->fetch("GUI:Buddies").str(), pSocialInterface->GetNumTotalNotifications());
+		buttonBuddies->winSetText(buttonText);
+    }
+#endif
 }
 
 void FixupScoreScreenMovieWindow( void )

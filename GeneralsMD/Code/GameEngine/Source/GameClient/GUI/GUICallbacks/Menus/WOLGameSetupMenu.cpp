@@ -2110,6 +2110,42 @@ void WOLGameSetupMenuInit( WindowLayout *layout, void *userData )
         }
     }
 #endif
+
+#if defined(GENERALS_ONLINE)
+    // Update the communicator button anytime we get notifications
+    NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+    if (pSocialInterface != nullptr)
+    {
+        // notifiactions callback
+        pSocialInterface->RegisterForCallback_OnNumberGlobalNotificationsChanged([](int numNotifications)
+            {
+                // update communicator button
+                GameWindow* buttonBuddy = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("GameSpyGameOptionsMenu.wnd:ButtonCommunicator"));
+                if (buttonBuddy != nullptr)
+                {
+                    UnicodeString buttonText;
+                    if (numNotifications > 0)
+                    {
+                        buttonText.format(L"%s [%d]", TheGameText->fetch("GUI:Buddies").str(), numNotifications);
+                    }
+                    else
+                    {
+                        buttonText.format(L"%s", TheGameText->fetch("GUI:Buddies").str());
+                    }
+                    buttonBuddy->winSetText(buttonText);
+                }
+            });
+    }
+
+    // And also initialize it
+    GameWindow* buttonBuddy = TheWindowManager->winGetWindowFromId(NULL, NAMEKEY("GameSpyGameOptionsMenu.wnd:ButtonCommunicator"));
+    if (buttonBuddy != nullptr && pSocialInterface->GetNumTotalNotifications() > 0)
+    {
+        UnicodeString buttonText;
+        buttonText.format(L"%s [%d]", TheGameText->fetch("GUI:Buddies").str(), pSocialInterface->GetNumTotalNotifications());
+        buttonBuddy->winSetText(buttonText);
+    }
+#endif
 }
 
 //-------------------------------------------------------------------------------------------------

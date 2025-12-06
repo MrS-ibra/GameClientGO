@@ -743,7 +743,7 @@ void NGMP_OnlineServicesManager::OnLogin(ELoginResult loginResult, const char* s
             return;
         }
 
-		pSocialInterface->GetFriendsList(nullptr);
+		pSocialInterface->GetFriendsList(false, nullptr);
 		pSocialInterface->GetBlockList(nullptr);
 	}
 }

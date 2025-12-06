@@ -393,6 +393,7 @@ WindowMsgHandledType BuddyControlSystem( GameWindow *window, UnsignedInt msg,
 	return MSG_HANDLED;
 }
 
+bool g_bIsProcessingRefresh = false;
 
 static void insertChat( BuddyMessage msg )
 {
@@ -430,11 +431,16 @@ static void insertChat( BuddyMessage msg )
 }
 
 #if defined(GENERALS_ONLINE)
-void updateBuddyInfo( bool bIsAutoRefresh = false )
+void updateBuddyInfo( bool bIsAutoRefresh = false, bool bUseCache = false)
 #else
 void updateBuddyInfo( void )
 #endif
 {
+	if (g_bIsProcessingRefresh)
+	{
+		return;
+	}
+
     NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
     if (pSocialInterface == nullptr)
     {
@@ -445,7 +451,7 @@ void updateBuddyInfo( void )
 	if (!buddyControls.isInit)
 	{
 		// If the UI isn't visible, still get our friends list and block list because we want to update our cache, but dont process it here
-		pSocialInterface->GetFriendsList(nullptr);
+		pSocialInterface->GetFriendsList(false, nullptr);
 		pSocialInterface->GetBlockList(nullptr); // TODO_SOCIA: Consider combining friends and block, original game didn't but we could for efficiency
 		return;
 	}
@@ -460,33 +466,44 @@ void updateBuddyInfo( void )
 	}
 
 	// refresh block list too (but no UI to process here)
-	pSocialInterface->GetBlockList(nullptr);
+    if (!bUseCache)
+    {
+        pSocialInterface->GetBlockList(nullptr);
+    }
 
-	pSocialInterface->GetFriendsList([](FriendsResult friendsResult)
-		{
-			int selected;
-			GPProfile selectedProfile = 0;
-			int visiblePos = GadgetListBoxGetTopVisibleEntry(buddyControls.listboxBuddies);
-
-			GadgetListBoxGetSelected(buddyControls.listboxBuddies, &selected);
-			if (selected >= 0)
-				selectedProfile = (GPProfile)GadgetListBoxGetItemData(buddyControls.listboxBuddies, selected);
-
-			selected = -1;
-			GadgetListBoxReset(buddyControls.listboxBuddies);
-
-			// TODO_SOCIAL: De-register callback when buddy list exits, otherwise half of these UI elements probably wont exist anymore
-
-			// CURRENT GAME
-			if (TheNGMPGame != nullptr)
+    pSocialInterface->GetFriendsList(bUseCache, []()
+        {
+            NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+			if (pSocialInterface == nullptr)
 			{
-				for (Int i = 0; i < MAX_SLOTS; ++i)
-				{
-					NGMPGameSlot* slot = TheNGMPGame->getGameSpySlot(i);
-					if (slot && slot->isHuman())
-					{
-						int64_t profileID = slot->m_userID;
-						UnicodeString strName = slot->getName();
+				return;
+			}
+
+			g_bIsProcessingRefresh = true;
+
+            int selected;
+            GPProfile selectedProfile = 0;
+            int visiblePos = GadgetListBoxGetTopVisibleEntry(buddyControls.listboxBuddies);
+
+            GadgetListBoxGetSelected(buddyControls.listboxBuddies, &selected);
+            if (selected >= 0)
+                selectedProfile = (GPProfile)GadgetListBoxGetItemData(buddyControls.listboxBuddies, selected);
+
+            selected = -1;
+            GadgetListBoxReset(buddyControls.listboxBuddies);
+
+            // TODO_SOCIAL: De-register callback when buddy list exits, otherwise half of these UI elements probably wont exist anymore
+
+            // CURRENT GAME
+            if (TheNGMPGame != nullptr)
+            {
+                for (Int i = 0; i < MAX_SLOTS; ++i)
+                {
+                    NGMPGameSlot* slot = TheNGMPGame->getGameSpySlot(i);
+                    if (slot && slot->isHuman())
+                    {
+                        int64_t profileID = slot->m_userID;
+                        UnicodeString strName = slot->getName();
 
                         // insert name into box
                         int index = GadgetListBoxAddEntryText(buddyControls.listboxBuddies, strName, GameSpyColor[GSCOLOR_CHAT_EMOTE], -1, -1);
@@ -498,134 +515,109 @@ void updateBuddyInfo( void )
 
                         if (profileID == selectedProfile)
                             selected = index;
-					}
-				}
-			}
+                    }
+                }
+            }
 
-			// FRIENDS
-			int i = 0;
-			for (FriendsEntry& friendsEntry : friendsResult.vecFriends)
-			{
-				int64_t profileID = friendsEntry.user_id;
+            // FRIENDS
+            int i = 0;
+            for (auto& kvPair : pSocialInterface->GetCachedFriendsList())
+            {
+				FriendsEntry friendsEntry = kvPair.second;
+                int64_t profileID = friendsEntry.user_id;
 
-				//AsciiString strName;
+                //AsciiString strName;
 
-				UnicodeString strName;
-				if (friendsEntry.online)
-				{
-					strName.format(L"\u25CF %hs", friendsEntry.display_name.c_str());
-				}
-				else
-				{
-					strName.format(L"\u25CC %hs", friendsEntry.display_name.c_str());
-				}
-				//else
-				{
-					//strName.format(L"\u26D4 %hs", friendsEntry.display_name.c_str());
-				}
+                int numUnreadMessages = 0;
+                NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+                if (pSocialInterface != nullptr)
+                {
+                    numUnreadMessages = pSocialInterface->GetNumberUnreadChatMessagesForUser(profileID);
+                }
 
-				++i;
-				//AsciiString strName = AsciiString();
-				UnicodeString strStatus = UnicodeString(L"Online");
-				UnicodeString strLocation = UnicodeString(L"Location!");
+                UnicodeString strName;
+                if (friendsEntry.online)
+                {
+                    strName.format(L"\u25CF %hs", friendsEntry.display_name.c_str());
+                }
+                else
+                {
+                    strName.format(L"\u25CC %hs", friendsEntry.display_name.c_str());
+                }
 
-				// insert name into box
-				UnicodeString formatStr = strName;
-				//formatStr.translate(strName.str());
+                if (numUnreadMessages > 0)
+                {
+                    strName.format(L"%s [%d]", strName.str(), numUnreadMessages);
+                }
 
-				// NOTE: Gamespy let you be friends with someone AND have them ignored. We don't.
-				bool isSavedIgnored = false;
-				Color nameColor = (isSavedIgnored) ?
-					GameSpyColor[GSCOLOR_PLAYER_IGNORED] : GameSpyColor[GSCOLOR_PLAYER_BUDDY];
-				int index = GadgetListBoxAddEntryText(buddyControls.listboxBuddies, formatStr, nameColor, -1, -1);
+                ++i;
+                //AsciiString strName = AsciiString();
+                UnicodeString strStatus = UnicodeString(L"Online");
+                UnicodeString strLocation = UnicodeString(L"Location!");
 
-				// insert status into box
-				/*
-				AsciiString marker;
-				marker.format("Buddy:%ls", strStatus.str());
-				if (!strStatus.compareNoCase(L"Offline") ||
-					!strStatus.compareNoCase(L"Online") ||
-					!strStatus.compareNoCase(L"Matching"))
-				{
-					formatStr = TheGameText->fetch(marker);
-				}
-				else if (!strStatus.compareNoCase(L"Staging") ||
-					!strStatus.compareNoCase(L"Loading") ||
-					!strStatus.compareNoCase(L"Playing"))
-				{
-					formatStr.format(TheGameText->fetch(marker), strLocation.str());
-				}
-				else if (!strStatus.compareNoCase(L"Chatting"))
-				{
-					UnicodeString roomName;
+                // insert name into box
+                UnicodeString formatStr = strName;
+                //formatStr.translate(strName.str());
 
-					AsciiString strCurrentRoomName = "Room Name";
+                // NOTE: Gamespy let you be friends with someone AND have them ignored. We don't.
+                bool isSavedIgnored = false;
+                Color nameColor = (isSavedIgnored) ?
+                    GameSpyColor[GSCOLOR_PLAYER_IGNORED] : GameSpyColor[GSCOLOR_PLAYER_BUDDY];
+                int index = GadgetListBoxAddEntryText(buddyControls.listboxBuddies, formatStr, nameColor, -1, -1);
 
-					//GroupRoomMap::iterator gIt = TheGameSpyInfo->getGroupRoomList()->find(_wtoi(strLocation.str()));
-					//if (gIt != TheGameSpyInfo->getGroupRoomList()->end())
-					{
-						AsciiString s;
-						s.format("GUI:%s", strCurrentRoomName.str());
-						roomName = TheGameText->fetch(s);
-					}
-					formatStr.format(TheGameText->fetch(marker), roomName.str());
-				}
-				else
-				{
-					formatStr = strStatus;
-				}
-				*/
+                if (friendsEntry.online)
+                {
+                    UnicodeString strGameState = TheGameText->fetch("Buddy:Online");
+                    formatStr.format(L"%s - %hs", strGameState.str(), friendsEntry.presence.c_str());
+                }
+                else
+                {
+                    // TODO_SOCIAL: Show last online
+                    UnicodeString strGameState = TheGameText->fetch("Buddy:Offline");
+                    formatStr.format(L"%s", strGameState.str());
+                }
 
-				if (friendsEntry.online)
-				{
-					UnicodeString strGameState = TheGameText->fetch("Buddy:Online");
-					formatStr.format(L"%s - %hs", strGameState.str(), friendsEntry.presence.c_str());
-				}
-				else
-				{
-					// TODO_SOCIAL: Show last online
-					UnicodeString strGameState = TheGameText->fetch("Buddy:Offline");
-					formatStr.format(L"%s", strGameState.str());
-				}
+                GadgetListBoxAddEntryText(buddyControls.listboxBuddies, formatStr, GameSpyColor[GSCOLOR_DEFAULT], index, 1);
+                GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(profileID), index, 0);
+                GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(ITEM_BUDDY), index, 1);
 
-				GadgetListBoxAddEntryText(buddyControls.listboxBuddies, formatStr, GameSpyColor[GSCOLOR_DEFAULT], index, 1);
-				GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(profileID), index, 0);
-				GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(ITEM_BUDDY), index, 1);
+                if (profileID == selectedProfile)
+                    selected = index;
+            }
 
-				if (profileID == selectedProfile)
-					selected = index;
-			}
+            // REQUESTS
+            for (auto& kvPair : pSocialInterface->GetCachedRequestsList())
+            {
+                FriendsEntry friendsEntry = kvPair.second;
+                int64_t profileID = friendsEntry.user_id;
+                AsciiString strName = AsciiString(friendsEntry.display_name.c_str());
 
-			// REQUESTS
-			for (FriendsEntry& friendsEntry : friendsResult.vecPendingRequests)
-			{
-				int64_t profileID = friendsEntry.user_id;
-				AsciiString strName = AsciiString(friendsEntry.display_name.c_str());
+                // insert name into box
+                UnicodeString formatStr;
+                formatStr.translate(strName.str());
+                int index = GadgetListBoxAddEntryText(buddyControls.listboxBuddies, formatStr, GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
+                GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(profileID), index, 0);
 
-				// insert name into box
-				UnicodeString formatStr;
-				formatStr.translate(strName.str());
-				int index = GadgetListBoxAddEntryText(buddyControls.listboxBuddies, formatStr, GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
-				GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(profileID), index, 0);
+                // insert status into box
+                formatStr = TheGameText->fetch("GUI:BuddyAddReq");
+                GadgetListBoxAddEntryText(buddyControls.listboxBuddies, formatStr, GameSpyColor[GSCOLOR_DEFAULT], index, 1);
+                GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(ITEM_REQUEST), index, 1);
 
-				// insert status into box
-				formatStr = TheGameText->fetch("GUI:BuddyAddReq");
-				GadgetListBoxAddEntryText(buddyControls.listboxBuddies, formatStr, GameSpyColor[GSCOLOR_DEFAULT], index, 1);
-				GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(ITEM_REQUEST), index, 1);
+                if (profileID == selectedProfile)
+                    selected = index;
+            }
 
-				if (profileID == selectedProfile)
-					selected = index;
-			}
+            // select the same guy
+            if (selected >= 0)
+            {
+                GadgetListBoxSetSelected(buddyControls.listboxBuddies, selected);
+            }
 
-			// select the same guy
-			if (selected >= 0)
-			{
-				GadgetListBoxSetSelected(buddyControls.listboxBuddies, selected);
-			}
+            // view the same spot
+            GadgetListBoxSetTopVisibleEntry(buddyControls.listboxBuddies, visiblePos);
 
-			// view the same spot
-			GadgetListBoxSetTopVisibleEntry(buddyControls.listboxBuddies, visiblePos);
-		});
+			g_bIsProcessingRefresh = false;
+        });
 #else
 
 	if (!TheGameSpyBuddyMessageQueue->isConnected())
@@ -983,6 +975,10 @@ void WOLBuddyOverlayInit( WindowLayout *layout, void *userData )
 	{
 		pSocialInterface->RegisterForRealtimeServiceUpdates();
 
+		// TODO_SOCIAL: Maybe later dont clear chat messaages until they open the chat?
+		// we opened things, clear it
+		pSocialInterface->ClearGlobalNotificatations();
+
 		pSocialInterface->RegisterForCallback_NewFriendRequest([](std::string strDisplayName)
 			{
 				updateBuddyInfo();
@@ -1005,12 +1001,18 @@ void WOLBuddyOverlayInit( WindowLayout *layout, void *userData )
 						s.format(L"%s", unicodeStr.str());
 						Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, s, GameSpyColor[GSCOLOR_PLAYER_BUDDY], -1, -1);
 						GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString::TheEmptyString, GameSpyColor[GSCOLOR_PLAYER_BUDDY], index, 1);
-					}
-					else
-					{
-						// TODO_SOCIAL: Update name to be name [10] (notification count)
+
+						// we read the message, so clear it
+                        NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+                        if (pSocialInterface != nullptr)
+                        {
+                            pSocialInterface->ClearUnreadChatMessagesForUser(profileID);
+                        }
 					}
 				}
+
+                // always update this (from cache)
+                updateBuddyInfo(true, true);
 			});
 	}
 
@@ -1240,6 +1242,14 @@ WindowMsgHandledType WOLBuddyOverlaySystem( GameWindow *window, UnsignedInt msg,
                             {
                                 Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString(L"This chat is empty. Send a message to start a conversation"), GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
                                 GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString::TheEmptyString, GameSpyColor[GSCOLOR_DEFAULT], index, 1);
+                            }
+
+                            // we read the message, so clear it
+                            NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+                            if (pSocialInterface != nullptr)
+                            {
+                                pSocialInterface->ClearUnreadChatMessagesForUser(profileID);
+								updateBuddyInfo(true, true); // use cache
                             }
 						}
 					}

@@ -30,7 +30,7 @@ public:
 	NGMP_OnlineServices_SocialInterface();
 	~NGMP_OnlineServices_SocialInterface();
 
-	void GetFriendsList(std::function<void(FriendsResult friendsResult)> cb);
+	void GetFriendsList(bool bUseCache, std::function<void()> cb);
 
 	void GetBlockList(std::function<void(BlockedResult blockResult)> cb);
 
@@ -68,6 +68,21 @@ public:
 		return std::vector<UnicodeString>();
 	}
 
+	void ClearUnreadChatMessagesForUser(int64_t target_user_id)
+	{
+		m_mapUnreadMessagesForUser.erase(target_user_id);
+	}
+
+	int GetNumberUnreadChatMessagesForUser(int64_t target_user_id)
+	{
+        if (m_mapUnreadMessagesForUser.contains(target_user_id))
+        {
+            return m_mapUnreadMessagesForUser[target_user_id];
+        }
+
+        return 0;
+	}
+
 	// Callbacks
 	void InvokeCallback_NewFriendRequest(std::string strDisplayName);
 	void RegisterForCallback_NewFriendRequest(std::function<void(std::string strDisplayName)> cbOnNewFriendRequest)
@@ -80,12 +95,63 @@ public:
 		m_cbOnChatMessage = cbOnChatMessage;
 	}
 
+	std::unordered_map<int64_t, FriendsEntry> GetCachedFriendsList()
+	{
+		return m_mapFriends;
+	}
+
+    std::unordered_map<int64_t, FriendsEntry> GetCachedRequestsList()
+    {
+        return m_mapPendingRequests;
+    }
+
+	void RegisterForCallback_OnNumberGlobalNotificationsChanged(std::function<void(int newNumNotifications)> cb)
+	{
+		m_cbOnNumberGlobalNotificationsChanged = cb;
+	}
+
+	void ClearGlobalNotificatations()
+	{
+		m_numTotalNotifications = 0;
+	}
+
+	void RegisterInitialPendingRequestsUponLogin(int num)
+	{
+		m_numTotalNotifications = num;
+
+		if (num > 0)
+		{
+			TriggerCallback_OnNumberGlobalNotificationsChanged();
+		}
+	}
+
+	int GetNumTotalNotifications() const
+	{
+		return std::max<int>(0, m_numTotalNotifications);
+	}
+
 private:
+	void TriggerCallback_OnNumberGlobalNotificationsChanged()
+	{
+		if (m_cbOnNumberGlobalNotificationsChanged)
+		{
+			m_cbOnNumberGlobalNotificationsChanged(m_numTotalNotifications);
+		}
+	}
+
+    // This includes:
+    // - one count per player who has sent us unread messages (we dont show number of total messages)
+    // - number of pending friend requests
+	int m_numTotalNotifications = 0;
+
 	// NOTE: We cache messages here, because the UI isn't always present, but we dont want to miss messages
 	// TODO_SOCIAL: Limit this
 	std::map<int64_t, std::vector<UnicodeString>> m_mapCachedMessages; // user id here is who we are talking to / target user
+	std::map<int64_t, int> m_mapUnreadMessagesForUser; // user id here is who we are talking to / target user
 
-	std::function<void(FriendsResult friendsResult)> m_cbOnGetFriendsList = nullptr;
+	std::function<void(int newNumNotifications)> m_cbOnNumberGlobalNotificationsChanged = nullptr;
+
+	std::function<void()> m_cbOnGetFriendsList = nullptr;
 	std::function<void(BlockedResult blockResult)> m_cbOnGetBlockList = nullptr;
 
 	std::function<void(std::string strDisplayName)> m_cbOnNewFriendRequest = nullptr;

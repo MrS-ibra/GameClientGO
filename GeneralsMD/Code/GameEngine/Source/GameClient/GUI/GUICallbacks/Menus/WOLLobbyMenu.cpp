@@ -1373,6 +1373,38 @@ void WOLLobbyMenuInit( WindowLayout *layout, void *userData )
 					});
 			});
 	}
+
+	// Update the communicator button anytime we get notifications
+    NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+	if (pSocialInterface != nullptr)
+	{
+		// notifiactions callback
+		pSocialInterface->RegisterForCallback_OnNumberGlobalNotificationsChanged([](int numNotifications)
+			{
+				// update communicator button
+				if (buttonBuddy != nullptr)
+				{
+					UnicodeString buttonText;
+                    if (numNotifications > 0)
+                    {
+                        buttonText.format(L"%s [%d]", TheGameText->fetch("GUI:Buddies").str(), numNotifications);
+                    }
+                    else
+                    {
+                        buttonText.format(L"%s", TheGameText->fetch("GUI:Buddies").str());
+                    }
+					buttonBuddy->winSetText(buttonText);
+				}
+			});
+	}
+
+	// And also initialize it
+    if (buttonBuddy != nullptr && pSocialInterface->GetNumTotalNotifications() > 0)
+    {
+        UnicodeString buttonText;
+        buttonText.format(L"%s [%d]", TheGameText->fetch("GUI:Buddies").str(), pSocialInterface->GetNumTotalNotifications());
+        buttonBuddy->winSetText(buttonText);
+    }
 #endif
 }
 
@@ -2588,6 +2620,7 @@ WindowMsgHandledType WOLLobbyMenuSystem( GameWindow *window, UnsignedInt msg,
 					NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
 					if (pRoomsInterface != nullptr && pAuthInterface != nullptr && pStatsInterface != nullptr && pSocialInterface != nullptr)
 					{
+
 						int profileID = (int)GadgetListBoxGetItemData(listboxLobbyPlayers, rc->pos, 0);
 						NetworkRoomMember* roomMember = pRoomsInterface->GetRoomMemberFromID(profileID);
 

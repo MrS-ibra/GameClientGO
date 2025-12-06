@@ -16,8 +16,18 @@ NGMP_OnlineServices_SocialInterface::~NGMP_OnlineServices_SocialInterface()
 
 }
 
-void NGMP_OnlineServices_SocialInterface::GetFriendsList(std::function<void(FriendsResult friendsResult)> cb)
+void NGMP_OnlineServices_SocialInterface::GetFriendsList(bool bUseCache, std::function<void()> cb)
 {
+	if (bUseCache)
+	{
+		if (cb != nullptr)
+		{
+			cb();
+		}
+
+		return;
+	}
+
 	m_cbOnGetFriendsList = cb;
 
 	std::string strURI = NGMP_OnlineServicesManager::GetAPIEndpoint("Social/Friends");
@@ -74,7 +84,7 @@ void NGMP_OnlineServices_SocialInterface::GetFriendsList(std::function<void(Frie
 			if (m_cbOnGetFriendsList != nullptr)
 			{
 				// TODO_SOCIAL: Clean this up on exit etc
-				m_cbOnGetFriendsList(friendsResult);
+				m_cbOnGetFriendsList();
 				m_cbOnGetFriendsList = nullptr;
 			}
 		});
@@ -178,6 +188,10 @@ void NGMP_OnlineServices_SocialInterface::AcceptPendingRequest(int64_t target_us
 		{
 
 		});
+
+	// update notifications
+	--m_numTotalNotifications;
+	TriggerCallback_OnNumberGlobalNotificationsChanged();
 }
 
 void NGMP_OnlineServices_SocialInterface::RejectPendingRequest(int64_t target_user_id)
@@ -189,15 +203,14 @@ void NGMP_OnlineServices_SocialInterface::RejectPendingRequest(int64_t target_us
 		{
 
 		});
+
+    // update notifications
+    --m_numTotalNotifications;
+    TriggerCallback_OnNumberGlobalNotificationsChanged();
 }
 
 void NGMP_OnlineServices_SocialInterface::OnChatMessage(int64_t source_user_id, int64_t target_user_id, UnicodeString unicodeStr)
 {
-	if (m_cbOnChatMessage != nullptr)
-	{
-		m_cbOnChatMessage(source_user_id, target_user_id, unicodeStr);
-	}
-
 	// also cache it incase UI isnt visible
 	NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
 	if (pAuthInterface != nullptr)
@@ -217,12 +230,29 @@ void NGMP_OnlineServices_SocialInterface::OnChatMessage(int64_t source_user_id, 
 		}
 
 		// does it exist yet?
-		if (!m_mapCachedMessages.contains(target_user_id))
+		if (!m_mapCachedMessages.contains(user_id_to_store))
 		{
-			m_mapCachedMessages[target_user_id] = std::vector<UnicodeString>();
+			m_mapCachedMessages[user_id_to_store] = std::vector<UnicodeString>();
+		}
+
+		if (!m_mapUnreadMessagesForUser.contains(user_id_to_store))
+		{
+			m_mapUnreadMessagesForUser[user_id_to_store] = 1;
+
+            ++m_numTotalNotifications; // only increase this if we dont already have unread messages from the person
+			TriggerCallback_OnNumberGlobalNotificationsChanged();
+		}
+		else
+		{
+			++m_mapUnreadMessagesForUser[user_id_to_store];
 		}
 
 		m_mapCachedMessages[user_id_to_store].push_back(unicodeStr);
+
+        if (m_cbOnChatMessage != nullptr)
+        {
+            m_cbOnChatMessage(source_user_id, target_user_id, unicodeStr);
+        }
 	}
 }
 
@@ -252,6 +282,7 @@ void NGMP_OnlineServices_SocialInterface::OnOnlineStatusChanged(std::string strD
         }
 	}
 
+	// TODO_SOCIAL: Update communicator if its active
 	if (bShowNotification)
 	{
 		showNotificationBox(AsciiString(strDisplayName.c_str()), bOnline ? TheGameText->fetch("Buddy:OnlineNotification") : UnicodeString(L"%hs went offline"));
@@ -311,6 +342,8 @@ void NGMP_OnlineServices_SocialInterface::DeregisterForRealtimeServiceUpdates()
 
 void NGMP_OnlineServices_SocialInterface::InvokeCallback_NewFriendRequest(std::string strDisplayName)
 {
+	++m_numTotalNotifications;
+	TriggerCallback_OnNumberGlobalNotificationsChanged();
 
 	if (m_cbOnNewFriendRequest != nullptr)
 	{
