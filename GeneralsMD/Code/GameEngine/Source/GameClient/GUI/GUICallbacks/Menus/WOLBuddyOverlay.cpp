@@ -509,20 +509,25 @@ void updateBuddyInfo( void )
                     {
                         int64_t profileID = slot->m_userID;
 
+						// dont allow self
 						if (profileID != user_id)
 						{
-                            UnicodeString strName = slot->getName();
+							// dont show if already friends
+							if (!pSocialInterface->IsUserFriend(profileID))
+							{
+                                UnicodeString strName = slot->getName();
 
-                            // insert name into box
-                            int index = GadgetListBoxAddEntryText(buddyControls.listboxBuddies, strName, GameSpyColor[GSCOLOR_CHAT_EMOTE], -1, -1);
-                            GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(profileID), index, 0);
+                                // insert name into box
+                                int index = GadgetListBoxAddEntryText(buddyControls.listboxBuddies, strName, GameSpyColor[GSCOLOR_CHAT_EMOTE], -1, -1);
+                                GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(profileID), index, 0);
 
-                            // insert status into box
-                            GadgetListBoxAddEntryText(buddyControls.listboxBuddies, UnicodeString(L"In Your Current Lobby"), GameSpyColor[GSCOLOR_CHAT_EMOTE], index, 1);
-                            GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(ITEM_NONBUDDY), index, 1);
+                                // insert status into box
+                                GadgetListBoxAddEntryText(buddyControls.listboxBuddies, UnicodeString(L"In Your Current Lobby"), GameSpyColor[GSCOLOR_CHAT_EMOTE], index, 1);
+                                GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(ITEM_NONBUDDY), index, 1);
 
-                            if (profileID == selectedProfile)
-                                selected = index;
+                                if (profileID == selectedProfile)
+                                    selected = index;
+							}
 						}
                     }
                 }
