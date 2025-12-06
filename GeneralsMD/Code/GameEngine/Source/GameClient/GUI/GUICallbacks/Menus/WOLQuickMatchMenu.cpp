@@ -1416,6 +1416,21 @@ static const char* getMessageString(Int t)
 //-------------------------------------------------------------------------------------------------
 void WOLQuickMatchMenuUpdate( WindowLayout * layout, void *userData)
 {
+    // need to exit?
+    if (NGMP_OnlineServicesManager::GetInstance() != nullptr && NGMP_OnlineServicesManager::GetInstance()->IsPendingFullTeardown())
+    {
+        // Only if not in game and not in anim
+        if ((TheNGMPGame == nullptr || !TheNGMPGame->isGameInProgress()) && TheShell->isAnimFinished() && TheTransitionHandler->isFinished())
+        {
+            bool bForceShutdown = true;
+            WOLQuickMatchMenuShutdown(layout, (void*)&bForceShutdown); // userdata is 'force shutdown'
+            TearDownGeneralsOnline();
+
+            TheShell->pop();
+            return;
+        }
+    }
+
 	if (TheGameLogic->isInShellGame() && TheGameLogic->getFrame() == 1)
 	{
 		SignalUIInteraction(SHELL_SCRIPT_HOOK_GENERALS_ONLINE_ENTERED_FROM_GAME);
