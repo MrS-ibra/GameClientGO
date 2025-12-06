@@ -57,6 +57,7 @@
 #include "../OnlineServices_SocialInterface.h"
 #include "../OnlineServices_Init.h"
 #include "../OnlineServices_LobbyInterface.h"
+#include "../OnlineServices_Auth.h"
 
 // PRIVATE DATA ///////////////////////////////////////////////////////////////////////////////////
 
@@ -494,6 +495,10 @@ void updateBuddyInfo( void )
 
             // TODO_SOCIAL: De-register callback when buddy list exits, otherwise half of these UI elements probably wont exist anymore
 
+            NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
+
+            int64_t user_id = pAuthInterface != nullptr ? pAuthInterface->GetUserID() : -1;
+
             // CURRENT GAME
             if (TheNGMPGame != nullptr)
             {
@@ -503,18 +508,22 @@ void updateBuddyInfo( void )
                     if (slot && slot->isHuman())
                     {
                         int64_t profileID = slot->m_userID;
-                        UnicodeString strName = slot->getName();
 
-                        // insert name into box
-                        int index = GadgetListBoxAddEntryText(buddyControls.listboxBuddies, strName, GameSpyColor[GSCOLOR_CHAT_EMOTE], -1, -1);
-                        GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(profileID), index, 0);
+						if (profileID != user_id)
+						{
+                            UnicodeString strName = slot->getName();
 
-                        // insert status into box
-                        GadgetListBoxAddEntryText(buddyControls.listboxBuddies, UnicodeString(L"In Your Current Lobby"), GameSpyColor[GSCOLOR_CHAT_EMOTE], index, 1);
-                        GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(ITEM_NONBUDDY), index, 1);
+                            // insert name into box
+                            int index = GadgetListBoxAddEntryText(buddyControls.listboxBuddies, strName, GameSpyColor[GSCOLOR_CHAT_EMOTE], -1, -1);
+                            GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(profileID), index, 0);
 
-                        if (profileID == selectedProfile)
-                            selected = index;
+                            // insert status into box
+                            GadgetListBoxAddEntryText(buddyControls.listboxBuddies, UnicodeString(L"In Your Current Lobby"), GameSpyColor[GSCOLOR_CHAT_EMOTE], index, 1);
+                            GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(ITEM_NONBUDDY), index, 1);
+
+                            if (profileID == selectedProfile)
+                                selected = index;
+						}
                     }
                 }
             }
