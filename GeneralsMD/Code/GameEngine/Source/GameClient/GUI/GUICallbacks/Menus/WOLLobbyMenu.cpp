@@ -766,6 +766,8 @@ void PopulateLobbyPlayerListbox(void)
                 m_vecUsersProcessed.clear();
                 GadgetListBoxReset(listboxLobbyPlayers);
 
+				std::set<Int> indicesToSelect;
+
 				// by this point, all stats should be cached - they were either already cached, or we just got them back from the service
 				for (auto kvPair : pRoomsInterface->GetMembersListForCurrentRoom())
 				{
@@ -901,36 +903,35 @@ void PopulateLobbyPlayerListbox(void)
 					Int index = insertPlayerInListbox(pi, colorToUse);
 
 					// TODO_NGMP: Use int for user ID like gamespy did, or move everything to uint64
-					std::set<Int> indicesToSelect;
 					std::set<int>::const_iterator selIt = selectedUserIDs.find(netRoomMember.user_id);
 					if (selIt != selectedUserIDs.end())
 					{
 						indicesToSelect.insert(index);
 					}
-
-					// restore selection
-					if (indicesToSelect.size())
-					{
-						std::set<Int>::const_iterator indexIt = indicesToSelect.begin();
-						const size_t count = indicesToSelect.size();
-						size_t index = 0;
-						Int* newIndices = NEW Int[count];
-						while (index < count)
-						{
-							newIndices[index] = *indexIt;
-							DEBUG_LOG(("Queueing up index %d to re-select", *indexIt));
-							++index;
-							++indexIt;
-						}
-						GadgetListBoxSetSelected(listboxLobbyPlayers, newIndices, count);
-						delete[] newIndices;
-					}
-
-					if (indicesToSelect.size() != numSelected)
-					{
-						TheWindowManager->winSetLoneWindow(NULL);
-					}
 				}
+
+                // restore selection
+                if (indicesToSelect.size())
+                {
+                    std::set<Int>::const_iterator indexIt = indicesToSelect.begin();
+                    const size_t count = indicesToSelect.size();
+                    size_t index = 0;
+                    Int* newIndices = NEW Int[count];
+                    while (index < count)
+                    {
+                        newIndices[index] = *indexIt;
+                        DEBUG_LOG(("Queueing up index %d to re-select", *indexIt));
+                        ++index;
+                        ++indexIt;
+                    }
+                    GadgetListBoxSetSelected(listboxLobbyPlayers, newIndices, count);
+                    delete[] newIndices;
+                }
+
+                if (indicesToSelect.size() != numSelected)
+                {
+                    TheWindowManager->winSetLoneWindow(NULL);
+                }
 			});
 
 		/*
