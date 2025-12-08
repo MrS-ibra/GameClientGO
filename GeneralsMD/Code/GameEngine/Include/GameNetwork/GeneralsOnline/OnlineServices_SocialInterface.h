@@ -113,6 +113,8 @@ public:
 	void ClearGlobalNotificatations()
 	{
 		m_numTotalNotifications = 0;
+
+		TriggerCallback_OnNumberGlobalNotificationsChanged();
 	}
 
 	void RegisterInitialPendingRequestsUponLogin(int num)
@@ -162,4 +164,6 @@ private:
 	std::unordered_map<int64_t, FriendsEntry> m_mapFriends;
 	std::unordered_map<int64_t, FriendsEntry> m_mapPendingRequests;
 	std::unordered_map<int64_t, FriendsEntry> m_mapBlocked;
+
+	bool m_bOverlayActive = false;
 };

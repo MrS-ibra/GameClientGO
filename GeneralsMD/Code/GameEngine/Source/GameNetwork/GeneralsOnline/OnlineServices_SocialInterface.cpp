@@ -235,16 +235,20 @@ void NGMP_OnlineServices_SocialInterface::OnChatMessage(int64_t source_user_id, 
 			m_mapCachedMessages[user_id_to_store] = std::vector<UnicodeString>();
 		}
 
-		if (!m_mapUnreadMessagesForUser.contains(user_id_to_store))
+		// only if I am not the sender and overlay isnt active
+		if (pAuthInterface->GetUserID() != source_user_id && !m_bOverlayActive)
 		{
-			m_mapUnreadMessagesForUser[user_id_to_store] = 1;
+            if (!m_mapUnreadMessagesForUser.contains(user_id_to_store))
+            {
+                m_mapUnreadMessagesForUser[user_id_to_store] = 1;
 
-            ++m_numTotalNotifications; // only increase this if we dont already have unread messages from the person
-			TriggerCallback_OnNumberGlobalNotificationsChanged();
-		}
-		else
-		{
-			++m_mapUnreadMessagesForUser[user_id_to_store];
+                ++m_numTotalNotifications; // only increase this if we dont already have unread messages from the person
+                TriggerCallback_OnNumberGlobalNotificationsChanged();
+            }
+            else
+            {
+                ++m_mapUnreadMessagesForUser[user_id_to_store];
+            }
 		}
 
 		m_mapCachedMessages[user_id_to_store].push_back(unicodeStr);
@@ -329,6 +333,8 @@ void NGMP_OnlineServices_SocialInterface::RegisterForRealtimeServiceUpdates()
 	{
 		pWS->SendData_SubscribeRealtimeUpdates();
 	}
+
+	m_bOverlayActive = true;
 }
 
 void NGMP_OnlineServices_SocialInterface::DeregisterForRealtimeServiceUpdates()
@@ -338,12 +344,18 @@ void NGMP_OnlineServices_SocialInterface::DeregisterForRealtimeServiceUpdates()
 	{
 		pWS->SendData_UnsubscribeRealtimeUpdates();
 	}
+
+	m_bOverlayActive = false;
 }
 
 void NGMP_OnlineServices_SocialInterface::InvokeCallback_NewFriendRequest(std::string strDisplayName)
 {
-	++m_numTotalNotifications;
-	TriggerCallback_OnNumberGlobalNotificationsChanged();
+	// only if overlay isnt active
+	if (!m_bOverlayActive)
+	{
+        ++m_numTotalNotifications;
+        TriggerCallback_OnNumberGlobalNotificationsChanged();
+	}
 
 	if (m_cbOnNewFriendRequest != nullptr)
 	{
