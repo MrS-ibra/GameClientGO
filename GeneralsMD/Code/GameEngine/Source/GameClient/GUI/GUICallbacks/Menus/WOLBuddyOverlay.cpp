@@ -517,7 +517,7 @@ void updateBuddyInfo( void )
 							// dont show if already friends
 							if (!pSocialInterface->IsUserFriend(profileID))
 							{
-								setCurrentGameMembers.push_back(profileID);
+								setCurrentGameMembers.insert(profileID);
 
                                 UnicodeString strName = slot->getName();
 

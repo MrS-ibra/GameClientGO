@@ -97,6 +97,14 @@ public:
 
 	std::unordered_map<int64_t, FriendsEntry> GetRecentlyPlayedWithList()
     {
+		// is it stale? clear it out
+		const int64_t recentPlayersListLifespan = 600000; // 10 minutes
+		int64_t currTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::utc_clock::now().time_since_epoch()).count();
+		if (currTime - m_RecentlyPlayedWithTimestamp >= recentPlayersListLifespan)
+		{
+			m_mapRecentlyPlayedWith.clear();
+		}
+
         return m_mapRecentlyPlayedWith;
     }
 
@@ -174,6 +182,7 @@ private:
 
 	// managed on client / locally
 	std::unordered_map<int64_t, FriendsEntry> m_mapRecentlyPlayedWith;
+	int64_t m_RecentlyPlayedWithTimestamp = -1;
 
 	bool m_bOverlayActive = false;
 };
