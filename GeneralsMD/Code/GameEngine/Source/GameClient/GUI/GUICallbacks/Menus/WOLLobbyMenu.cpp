@@ -351,7 +351,7 @@ static void playerTooltip(GameWindow *window,
 
 							// ELO data
                             UnicodeString tmp;
-                            tmp.format(L"\n\nSkill Rating: %d (in %d matches)", stats.elo_rating, stats.elo_num_matches);
+                            tmp.format(L"\n\nElo Rating: %d (in %d matches)", stats.elo_rating, stats.elo_num_matches);
                             tooltip.concat(tmp);
 
 
