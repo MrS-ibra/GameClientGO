@@ -148,6 +148,13 @@ void NGMP_OnlineServices_StatsInterface::findPlayerStatsByID(int64_t userID, std
 							// parse json
 							int i = 0;
 
+                            // get user id
+							jsonObjectRoot["userID"].get_to(stats.id);
+
+                            // GO extra data
+							jsonObjectRoot["EloRating"].get_to(stats.elo_rating);
+							jsonObjectRoot["EloMatches"].get_to(stats.elo_num_matches);
+
 							#define PROCESS_JSON_PER_GENERAL_RESULT(name) i = 0; for (const auto& iter : jsonObjectRoot[#name]) { iter.get_to(stats.##name[i++]); }
 							PROCESS_JSON_PER_GENERAL_RESULT(wins);
 							PROCESS_JSON_PER_GENERAL_RESULT(losses);
@@ -272,6 +279,10 @@ void NGMP_OnlineServices_StatsInterface::findPlayerStatsByBatch(std::vector<int6
 
 							// get user id
 							statsUserIter["userID"].get_to(stats.id);
+
+							// GO extra data
+							statsUserIter["EloRating"].get_to(stats.elo_rating);
+							statsUserIter["EloMatches"].get_to(stats.elo_num_matches);
 
 							// now get stats
 							int i = 0;

@@ -86,6 +86,7 @@ extern NGMPGame* TheNGMPGame;
 #include "../OnlineServices_MatchmakingInterface.h"
 #include "../OnlineServices_LobbyInterface.h"
 #include "../OnlineServices_SocialInterface.h"
+#include "../OnlineServices_StatsInterface.h"
 
 // PRIVATE DATA ///////////////////////////////////////////////////////////////////////////////////
 // window ids ------------------------------------------------------------------------------
@@ -1088,6 +1089,20 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 	// welcome msg + instructions
 	GadgetListBoxAddEntryText(quickmatchTextWindow, UnicodeString(L"Welcome to QuickMatch. Choose Setup to select playlists and maps."), GameMakeColor(255, 194, 25, 255), -1, -1);
 	GadgetListBoxAddEntryText(quickmatchTextWindow, UnicodeString(L"Special thanks to map makers Tanso, ReLaX, cncHD, Specovik, Mp3, Jundiyy & Bamovich for making quickmatch possible."), GameMakeColor(255, 194, 25, 255), -1, -1);
+
+
+	// refresh out stats, needed for ELO data
+	NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
+    NGMP_OnlineServices_StatsInterface* pStatsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_StatsInterface>();
+    if (pAuthInterface != nullptr && pStatsInterface != nullptr)
+    {
+		pStatsInterface->findPlayerStatsByID(pAuthInterface->GetUserID(), [=](bool bSuccess, PSPlayerStats stats)
+			{
+                UnicodeString eloStr;
+                eloStr.format(L"Your current skill rating is %d after %d match(es)", stats.elo_rating, stats.elo_num_matches);
+                GadgetListBoxAddEntryText(quickmatchTextWindow, eloStr, GameMakeColor(255, 194, 25, 255), -1, -1);
+			}, EStatsRequestPolicy::BYPASS_CACHE_FORCE_REQUEST);
+    }
 
 #endif
 

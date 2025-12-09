@@ -349,6 +349,12 @@ static void playerTooltip(GameWindow *window,
 								tooltip.concat(TheGameText->fetch("TOOLTIP:IgnoredModifier"));
 							}
 
+							// ELO data
+                            UnicodeString tmp;
+                            tmp.format(L"\n\nSkill Rating: %d (in %d matches)", stats.elo_rating, stats.elo_num_matches);
+                            tooltip.concat(tmp);
+
+
 							Int rankPoints = CalculateRank(stats);
 							Int rank = 0;
 							Int i = 0;
@@ -383,7 +389,7 @@ static void playerTooltip(GameWindow *window,
 							AsciiString rankName;
 							rankName.format("GUI:GSRank%d", rank);
 							
-							UnicodeString tmp;
+							tmp.clear();
 							tmp.format(L"\n\nFavorite Side: %ls\nRank: %ls", TheGameText->fetch(sideName).str(), TheGameText->fetch(rankName).str());
 							tooltip.concat(tmp);
 
