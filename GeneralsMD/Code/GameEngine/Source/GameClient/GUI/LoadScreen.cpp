@@ -1679,22 +1679,32 @@ GameSlot *lSlot = game->getSlot(game->getLocalSlotNum());
 			houseImage = TheMappedImageCollection->findImageByName("LoadingBar_Progress");
 		m_progressBars[netSlot]->winSetEnabledImage( 6, houseImage );
 
+        // Get the stats for the player
+#if defined(GENERALS_ONLINE)
+        PSPlayerStats stats = PSPlayerStats();
+        NGMP_OnlineServices_StatsInterface* pStatsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_StatsInterface>();
+        if (pStatsInterface != nullptr)
+        {
+            // Data should be in cache from lobby joins, so we can do this synchronously
+            pStatsInterface->getPlayerStatsFromCache(slot->getProfileID(), &stats);
+        }
+#else
+        PSPlayerStats stats = TheGameSpyPSMessageQueue->findPlayerStatsByID(slot->getProfileID());
+#endif
+
 		UnicodeString name = slot->getName();
+
+#if defined(GENERALS_ONLINE)
+		// if QM, show ELO
+		NGMPGame* pNGMPGame = (NGMPGame*)game;
+		if (pNGMPGame->isQMGame())
+		{
+			name.format(L"%s (SR: %d)", slot->getName().str(), stats.elo_rating);
+		}
+#endif
+
 		GadgetStaticTextSetText(m_playerNames[netSlot], name );
 		m_playerNames[netSlot]->winSetEnabledTextColors(houseColor, m_playerNames[netSlot]->winGetEnabledTextBorderColor());
-
-		// Get the stats for the player
-#if defined(GENERALS_ONLINE)
-		PSPlayerStats stats = PSPlayerStats();
-		NGMP_OnlineServices_StatsInterface* pStatsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_StatsInterface>();
-		if (pStatsInterface != nullptr)
-		{
-			// Data should be in cache from lobby joins, so we can do this synchronously
-			pStatsInterface->getPlayerStatsFromCache(slot->getProfileID(), &stats);
-		}
-#else
-		PSPlayerStats stats = TheGameSpyPSMessageQueue->findPlayerStatsByID(slot->getProfileID());
-#endif
 
 		DEBUG_LOG(("LoadScreen - populating info for %ls(%d) - stats returned id %d",
 			slot->getName().str(), slot->getProfileID(), stats.id));
