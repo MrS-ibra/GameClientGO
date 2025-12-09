@@ -58,6 +58,7 @@
 #include "../OnlineServices_Init.h"
 #include "../OnlineServices_LobbyInterface.h"
 #include "../OnlineServices_Auth.h"
+#include <unordered_set>
 
 // PRIVATE DATA ///////////////////////////////////////////////////////////////////////////////////
 
@@ -500,6 +501,7 @@ void updateBuddyInfo( void )
             int64_t user_id = pAuthInterface != nullptr ? pAuthInterface->GetUserID() : -1;
 
             // CURRENT GAME
+			std::unordered_set<int64_t> setCurrentGameMembers;
             if (TheNGMPGame != nullptr)
             {
                 for (Int i = 0; i < MAX_SLOTS; ++i)
@@ -515,6 +517,8 @@ void updateBuddyInfo( void )
 							// dont show if already friends
 							if (!pSocialInterface->IsUserFriend(profileID))
 							{
+								setCurrentGameMembers.push_back(profileID);
+
                                 UnicodeString strName = slot->getName();
 
                                 // insert name into box
@@ -522,7 +526,7 @@ void updateBuddyInfo( void )
                                 GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(profileID), index, 0);
 
                                 // insert status into box
-                                GadgetListBoxAddEntryText(buddyControls.listboxBuddies, UnicodeString(L"In Your Current Lobby"), GameSpyColor[GSCOLOR_CHAT_EMOTE], index, 1);
+                                GadgetListBoxAddEntryText(buddyControls.listboxBuddies, UnicodeString(L"In Current Lobby"), GameSpyColor[GSCOLOR_CHAT_EMOTE], index, 1);
                                 GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(ITEM_NONBUDDY), index, 1);
 
                                 if (profileID == selectedProfile)
@@ -532,6 +536,37 @@ void updateBuddyInfo( void )
                     }
                 }
             }
+
+			// RECENTLY PLAYED WITH
+			for (auto& kvPair : pSocialInterface->GetRecentlyPlayedWithList())
+			{
+                FriendsEntry friendsEntry = kvPair.second;
+                int64_t profileID = friendsEntry.user_id;
+
+				// dont add if they are in current lobby
+				if (!setCurrentGameMembers.contains(profileID))
+				{
+                    // dont need to check self here as this is checked when populating the recently played list, but do need to check friend status as it could have changed since population
+
+                // dont show if already friends
+                    if (!pSocialInterface->IsUserFriend(profileID))
+                    {
+                        UnicodeString strName;
+                        strName.format(L"%hs", friendsEntry.display_name.c_str());
+
+                        // insert name into box
+                        int index = GadgetListBoxAddEntryText(buddyControls.listboxBuddies, strName, GameSpyColor[GSCOLOR_CHAT_EMOTE], -1, -1);
+                        GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(profileID), index, 0);
+
+                        // insert status into box
+                        GadgetListBoxAddEntryText(buddyControls.listboxBuddies, UnicodeString(L"Recently Played With"), GameSpyColor[GSCOLOR_CHAT_OWNER_EMOTE], index, 1);
+                        GadgetListBoxSetItemData(buddyControls.listboxBuddies, (void*)(ITEM_NONBUDDY), index, 1);
+
+                        if (profileID == selectedProfile)
+                            selected = index;
+                    }
+				}
+			}
 
             // FRIENDS
             int i = 0;
@@ -1234,7 +1269,7 @@ WindowMsgHandledType WOLBuddyOverlaySystem( GameWindow *window, UnsignedInt msg,
 						// If it's the "current lobby" list, the user wont be a friend, so we cant chat to them
 						if (!pSocialInterface->IsUserFriend(profileID) && !pSocialInterface->IsUserPendingRequest(profileID))
 						{
-                            Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString(L"This person is in your lobby but is not a friend yet and cannot be chatted with. You can right click them to add or ignore them."), GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
+                            Int index = GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString(L"This person is in your lobby or recently played with you but is not a friend yet and cannot be chatted with. You can right click them to add or ignore them."), GameSpyColor[GSCOLOR_DEFAULT], -1, -1);
                             GadgetListBoxAddEntryText(buddyControls.listboxChat, UnicodeString::TheEmptyString, GameSpyColor[GSCOLOR_DEFAULT], index, 1);
 						}
                         else if (pSocialInterface->IsUserPendingRequest(profileID))

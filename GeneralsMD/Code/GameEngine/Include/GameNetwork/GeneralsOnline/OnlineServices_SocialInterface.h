@@ -95,6 +95,11 @@ public:
 		m_cbOnChatMessage = cbOnChatMessage;
 	}
 
+	std::unordered_map<int64_t, FriendsEntry> GetRecentlyPlayedWithList()
+    {
+        return m_mapRecentlyPlayedWith;
+    }
+
 	std::unordered_map<int64_t, FriendsEntry> GetCachedFriendsList()
 	{
 		return m_mapFriends;
@@ -132,6 +137,8 @@ public:
 		return std::max<int>(0, m_numTotalNotifications);
 	}
 
+	void CommitLobbyPlayerListToRecentlyPlayedWithList();
+
 private:
 	void TriggerCallback_OnNumberGlobalNotificationsChanged()
 	{
@@ -164,6 +171,9 @@ private:
 	std::unordered_map<int64_t, FriendsEntry> m_mapFriends;
 	std::unordered_map<int64_t, FriendsEntry> m_mapPendingRequests;
 	std::unordered_map<int64_t, FriendsEntry> m_mapBlocked;
+
+	// managed on client / locally
+	std::unordered_map<int64_t, FriendsEntry> m_mapRecentlyPlayedWith;
 
 	bool m_bOverlayActive = false;
 };

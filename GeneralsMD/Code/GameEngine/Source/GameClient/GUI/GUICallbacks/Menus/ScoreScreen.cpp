@@ -508,9 +508,15 @@ void ScoreScreenUpdate( WindowLayout * layout, void *userData)
 		NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
 		if (pLobbyInterface != nullptr)
 		{
-			// populate match info
 			if (pLobbyInterface->IsInLobby())
 			{
+				// commit current lobby player list to 'recently played with'
+				NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+				if (pSocialInterface != nullptr)
+				{
+					pSocialInterface->CommitLobbyPlayerListToRecentlyPlayedWithList();
+				}
+
 				pLobbyInterface->LeaveCurrentLobby();
 
 			}

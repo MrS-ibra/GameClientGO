@@ -377,3 +377,39 @@ void NGMP_OnlineServices_SocialInterface::InvokeCallback_NewFriendRequest(std::s
 		showNotificationBox(AsciiString(strDisplayName.c_str()), TheGameText->fetch("Buddy:AddNotification"));
 	}
 }
+
+void NGMP_OnlineServices_SocialInterface::CommitLobbyPlayerListToRecentlyPlayedWithList()
+{
+    NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
+    int64_t user_id = pAuthInterface != nullptr ? pAuthInterface->GetUserID() : -1;
+
+    m_mapRecentlyPlayedWith.clear();
+
+    if (TheNGMPGame != nullptr)
+    {
+        if (TheNGMPGame != nullptr)
+        {
+            for (Int i = 0; i < MAX_SLOTS; ++i)
+            {
+                NGMPGameSlot* slot = TheNGMPGame->getGameSpySlot(i);
+                if (slot && slot->isHuman())
+                {
+                    int64_t profileID = slot->m_userID;
+
+                    // dont allow self
+                    if (profileID != user_id)
+                    {
+                        // dont show if already friends
+                        if (!IsUserFriend(profileID))
+                        {
+                            FriendsEntry newEntry;
+                            newEntry.user_id = profileID;
+                            newEntry.display_name = to_utf8(slot->getName().str());
+                            m_mapRecentlyPlayedWith.emplace(profileID, newEntry);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
