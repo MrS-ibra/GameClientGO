@@ -790,6 +790,11 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 						lobbyEntryIter["LobbyType"].get_to(lobbyEntry.lobby_type);
 						lobbyEntryIter["Region"].get_to(lobbyEntry.region);
 
+						if (lobbyEntry.lobby_type == ELobbyType::QuickMatch)
+						{
+							TheNGMPGame->markGameAsQM();
+						}
+
 						// store, we'll need it later and lobby obj gets destroyed on leave
 						m_CurrentMatchID = lobbyEntry.match_id;
 
@@ -1071,6 +1076,11 @@ void NGMP_OnlineServices_LobbyInterface::JoinLobby(LobbyEntry lobbyInfo, std::st
 						{
 							TheNGMPGame = new NGMPGame();
 
+							if (lobbyInfo.lobby_type == ELobbyType::QuickMatch)
+							{
+								TheNGMPGame->markGameAsQM();
+							}
+
 							// set in game, this actually means in lobby... not in game play, and is necessary to start the game
 							TheNGMPGame->setInGame();
 
@@ -1277,6 +1287,8 @@ void NGMP_OnlineServices_LobbyInterface::CreateLobby(UnicodeString strLobbyName,
 							if (TheNGMPGame == nullptr)
 							{
 								TheNGMPGame = new NGMPGame();
+
+								// dont need to mark as QM here, service marks it for us
 							}
 
 							// reset before copy

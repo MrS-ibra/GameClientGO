@@ -1099,7 +1099,7 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 		pStatsInterface->findPlayerStatsByID(pAuthInterface->GetUserID(), [=](bool bSuccess, PSPlayerStats stats)
 			{
                 UnicodeString eloStr;
-                eloStr.format(L"Your current skill rating is %d after %d match(es)", stats.elo_rating, stats.elo_num_matches);
+                eloStr.format(L"Your current Elo rating is %d after %d match(es)", stats.elo_rating, stats.elo_num_matches);
                 GadgetListBoxAddEntryText(quickmatchTextWindow, eloStr, GameMakeColor(255, 194, 25, 255), -1, -1);
 			}, EStatsRequestPolicy::BYPASS_CACHE_FORCE_REQUEST);
     }
@@ -1217,6 +1217,7 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 				if (TheNGMPGame == nullptr)
 				{
 					TheNGMPGame = new NGMPGame();
+					TheNGMPGame->markGameAsQM();
 				}
 				pLobbyInterface->UpdateRoomDataCache([]()
 					{

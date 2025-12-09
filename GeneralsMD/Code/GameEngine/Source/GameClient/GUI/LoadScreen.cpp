@@ -1699,7 +1699,7 @@ GameSlot *lSlot = game->getSlot(game->getLocalSlotNum());
 		NGMPGame* pNGMPGame = (NGMPGame*)game;
 		if (pNGMPGame->isQMGame())
 		{
-			name.format(L"%s (SR: %d)", slot->getName().str(), stats.elo_rating);
+			name.format(L"%s (Elo: %d)", slot->getName().str(), stats.elo_rating);
 		}
 #endif
 

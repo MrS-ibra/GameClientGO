@@ -916,13 +916,21 @@ void PopulatePlayerInfoWindows( AsciiString parentWindowName )
 			win = findWindow(NULL, parentWindowName, "StaticTextGamesPlayedValue");
 			if (win)
 			{
+#if defined(GENERALS_ONLINE)
+				uStr.format(L"%d (%d QM)", numGames, stats.elo_num_matches);
+#else
 				uStr.format(L"%d", numGames);
+#endif
 				GadgetStaticTextSetText(win, uStr);
 			}
 			win = findWindow(NULL, parentWindowName, "StaticTextWinsValue");
 			if (win)
 			{
+#if defined(GENERALS_ONLINE)
+				uStr.format(L"%d (Elo: %d)", numWins, stats.elo_rating);
+#else
 				uStr.format(L"%d", numWins);
+#endif
 				GadgetStaticTextSetText(win, uStr);
 			}
 			win = findWindow(NULL, parentWindowName, "StaticTextLossesValue");
