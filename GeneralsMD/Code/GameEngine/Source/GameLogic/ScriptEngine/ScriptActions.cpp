@@ -6115,9 +6115,8 @@ void ScriptActions::doTeamEmoticon(const AsciiString& teamName, const AsciiStrin
 	theTeam->getTeamAsAIGroup(theGroup.Peek());
 #endif
 
-	Int rawScriptFrames = (Int)std::max<Real>(0.0f, duration * 30.0f);
-    Int frames = ScaleScriptFrameCountForServer(rawScriptFrames);
-    theGroup->groupSetEmoticon(emoticonName, frames);
+	Int frames = (Int)( duration * LOGICFRAMES_PER_SECOND );
+	theGroup->groupSetEmoticon( emoticonName, frames );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -6129,9 +6128,8 @@ void ScriptActions::doNamedEmoticon(const AsciiString& unitName, const AsciiStri
 		Drawable *draw = obj->getDrawable();
 		if( draw )
 		{
-			Int rawScriptFrames = (Int)std::max<Real>(0.0f, duration * 30.0f);
-            Int frames = ScaleScriptFrameCountForServer(rawScriptFrames);
-            theGroup->groupSetEmoticon(emoticonName, frames);
+			Int frames = (Int)( duration * LOGICFRAMES_PER_SECOND );
+			draw->setEmoticon( emoticonName, frames );
 		}
 	}
 }
