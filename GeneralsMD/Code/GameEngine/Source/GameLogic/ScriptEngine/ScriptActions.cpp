@@ -2668,8 +2668,9 @@ void ScriptActions::doDisplayCinematicText(const AsciiString& displayText, const
 	TheDisplay->setCinematicFont( font );
 
 	// set time
-	Int frames = LOGICFRAMES_PER_SECOND * timeInSeconds;
-	TheDisplay->setCinematicTextFrames( frames );
+	Int rawScriptFrames = timeInSeconds * 30;
+    Int frames = ScaleScriptFrameCountForServer(rawScriptFrames);
+    TheDisplay->setCinematicTextFrames(frames);
 }
 //-------------------------------------------------------------------------------------------------
 /** doCameoFlash */
@@ -2686,9 +2687,9 @@ void ScriptActions::doCameoFlash(const AsciiString& name, Int timeInSeconds)
 		return;
 	}
 
-	Int frames = LOGICFRAMES_PER_SECOND * timeInSeconds;
-	// every time the framecount % 20 == 0,  controlbar:: update will do Cameo Flash
-	Int count = frames / DRAWABLE_FRAMES_PER_FLASH;
+	Int rawScriptFrames = timeInSeconds * 30;
+    Int frames = ScaleScriptFrameCountForServer(rawScriptFrames);
+    Int count = frames / DRAWABLE_FRAMES_PER_FLASH;
 	// make sure count is even, so the cameo will return to its original state
 	if( count % 2 == 1 )
 		count++;
@@ -2739,9 +2740,9 @@ void ScriptActions::doNamedFlash(const AsciiString& unitName, Int timeInSeconds,
 
 		/* The designer specifies how long he wants the unit to flash for.  We will
 		convert this number into a count of how many times to call the doNamedFlash method */
-		Int frames = LOGICFRAMES_PER_SECOND * timeInSeconds;
-		// every time the framecount % 20 == 0, drawable::update will call doNamedFlash
-		Int count = frames / DRAWABLE_FRAMES_PER_FLASH;
+		Int rawScriptFrames = timeInSeconds * 30;
+        Int frames = ScaleScriptFrameCountForServer(rawScriptFrames);
+        Int count = frames / DRAWABLE_FRAMES_PER_FLASH;
 		Color flashy = (color == NULL) ? obj->getIndicatorColor() : color->getAsInt();
 		drawable->setFlashColor( flashy );
 		drawable->setFlashCount( count );
@@ -4183,8 +4184,8 @@ void ScriptActions::doNamedSetSpecialPowerCountdown( const AsciiString& unit, co
 		SpecialPowerModuleInterface *mod = theObj->getSpecialPowerModule(power);
 		if (mod)
 		{
-			Int frames = LOGICFRAMES_PER_SECOND * seconds;
-			mod->setReadyFrame(TheGameLogic->getFrame() + frames);
+			Int rawScriptFrames = seconds * 30;
+            TheScriptEngine->setSequentialTimer(theObj, rawScriptFrames);
 		}
 	}
 }
@@ -6114,8 +6115,9 @@ void ScriptActions::doTeamEmoticon(const AsciiString& teamName, const AsciiStrin
 	theTeam->getTeamAsAIGroup(theGroup.Peek());
 #endif
 
-	Int frames = (Int)( duration * LOGICFRAMES_PER_SECOND );
-	theGroup->groupSetEmoticon( emoticonName, frames );
+	Int rawScriptFrames = (Int)std::max<Real>(0.0f, duration * 30.0f);
+    Int frames = ScaleScriptFrameCountForServer(rawScriptFrames);
+    theGroup->groupSetEmoticon(emoticonName, frames);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -6127,8 +6129,9 @@ void ScriptActions::doNamedEmoticon(const AsciiString& unitName, const AsciiStri
 		Drawable *draw = obj->getDrawable();
 		if( draw )
 		{
-			Int frames = (Int)( duration * LOGICFRAMES_PER_SECOND );
-			draw->setEmoticon( emoticonName, frames );
+			Int rawScriptFrames = (Int)std::max<Real>(0.0f, duration * 30.0f);
+            Int frames = ScaleScriptFrameCountForServer(rawScriptFrames);
+            theGroup->groupSetEmoticon(emoticonName, frames);
 		}
 	}
 }
