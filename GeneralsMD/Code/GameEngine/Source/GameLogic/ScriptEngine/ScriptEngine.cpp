@@ -75,6 +75,31 @@ static HMODULE st_DebugDLL;
 #include "Common/MapObject.h"
 #include "../../GameEngineDevice/Include/W3DDevice/GameClient/W3DAssetManagerExposed.h"
 
+#include <algorithm> // for std::max
+
+Int ScaleScriptFrameCountForServer(Int frames)
+{
+#if defined(GENERALS_ONLINE) && defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
+    const Int kTargetScriptFps = 30;
+
+    if (frames <= 0)
+        return frames;
+
+    Int actualFps = LOGICFRAMES_PER_SECOND;
+    if (TheFramePacer != NULL)
+    {
+        actualFps = TheFramePacer->getLogicTimeScaleFps();
+        if (actualFps <= 0 || actualFps > 10000)
+            actualFps = LOGICFRAMES_PER_SECOND;
+    }
+
+    Int scaled = (Int)((int)frames * actualFps / kTargetScriptFps);
+    return std::max(1, scaled);
+#else
+    return frames;
+#endif
+}
+
 static void _addUpdatedParticleSystem(AsciiString particleSystemName);
 static void _appendAllParticleSystems(void);
 static void _appendAllThingTemplates(void);
