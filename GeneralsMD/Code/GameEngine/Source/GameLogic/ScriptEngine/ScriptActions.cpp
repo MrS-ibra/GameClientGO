@@ -6190,7 +6190,8 @@ void ScriptActions::doOverrideHulkLifetime( Real seconds )
 	else
 	{
 		// Convert real seconds into frames.
-		Int frames = (Int)(seconds * LOGICFRAMES_PER_SECOND);
+        Int rawScriptFrames = (Int)(seconds * 30);
+        Int frames = ScaleScriptFrameCountForServer(rawScriptFrames);
 		TheGameLogic->setHulkMaxLifetimeOverride(frames);
 	}
 }
