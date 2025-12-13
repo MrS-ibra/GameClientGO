@@ -371,7 +371,8 @@ protected:
 
 	void addActionTemplateInfo(Template* actionTemplate);
 	void addConditionTemplateInfo(Template* conditionTemplate);
-
+    // Convert script-authored frame counts (30Hz) into engine frames for the current server FPS.
+    Int ScaleScriptFrameCountForServer(Int frames);
 	Int allocateCounter(const AsciiString& name);
 	Int allocateFlag(const AsciiString& name);
 	void executeScripts(Script* pScriptHead);
