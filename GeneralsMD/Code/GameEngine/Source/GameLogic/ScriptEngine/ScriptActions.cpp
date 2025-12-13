@@ -6182,18 +6182,19 @@ void ScriptActions::doSetDynamicLODMode(Bool setEnabled)
 //-------------------------------------------------------------------------------------------------
 void ScriptActions::doOverrideHulkLifetime( Real seconds )
 {
-	if( seconds < 0.0f )
-	{
-		// Turn it off.
-		TheGameLogic->setHulkMaxLifetimeOverride(-1);
-	}
-	else
-	{
-		// Convert real seconds into frames.
-        Int rawScriptFrames = (Int)(seconds * 30);
+    if (seconds < 0.0f)
+    {
+        // Turn it off.
+        TheGameLogic->setHulkMaxLifetimeOverride(-1);
+    }
+    else
+    {
+        // Convert real seconds (script-authored) into script frames (30 fps),
+        // then scale to engine frames and apply.
+        Int rawScriptFrames = (Int)std::max<Real>(0.0f, seconds * 30.0f);
         Int frames = ScaleScriptFrameCountForServer(rawScriptFrames);
-		TheGameLogic->setHulkMaxLifetimeOverride(frames);
-	}
+        TheGameLogic->setHulkMaxLifetimeOverride(frames);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
