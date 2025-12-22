@@ -503,12 +503,12 @@ Int WeaponTemplate::getDelayBetweenShots(const WeaponBonus& bonus) const
 	else
 		delayToUse = GameLogicRandomValue( m_minDelayBetweenShots, m_maxDelayBetweenShots );
 
-// TODO_NGMP: Better solution, less hackyness
 #if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
-	if (delayToUse != 0 && delayToUse < (2*GENERALS_ONLINE_HIGH_FPS_FRAME_MULTIPLIER))
-	{
-		delayToUse = 2*GENERALS_ONLINE_HIGH_FPS_FRAME_MULTIPLIER;
-	}
+    if (delayToUse != 0 && delayToUse < GENERALS_ONLINE_HIGH_FPS_FRAME_MULTIPLIER)
+    {
+    delayToUse = GENERALS_ONLINE_HIGH_FPS_FRAME_MULTIPLIER;
+    }
+#endif
 
 	// HACK
 	// TODO_NGMP: Better solution for this, seems like an ini data bug
@@ -3623,4 +3623,5 @@ void WeaponBonusSet::appendBonuses(WeaponBonusConditionFlags flags, WeaponBonus&
 		this->m_bonus[i].appendBonuses(bonus);
 	}
 }
+
 
