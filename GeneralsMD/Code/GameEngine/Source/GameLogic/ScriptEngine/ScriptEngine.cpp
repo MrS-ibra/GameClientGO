@@ -5525,7 +5525,12 @@ void ScriptEngine::update(void)
 #endif
     
 #if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
-    const bool skipFrameDependentLogic = (!m_firstUpdate && !TheGameLogic->HasLegacyFrameAdvanced());
+    if (!m_firstUpdate && !TheGameLogic->HasLegacyFrameAdvanced()) {
+        if (TheScriptConditions) {
+            TheScriptConditions->update();
+        }
+        return;
+    }
 #endif
 	if (m_firstUpdate) {
 		createNamedCache();
@@ -5563,13 +5568,6 @@ void ScriptEngine::update(void)
 		return; // we are just timing down
 	}
 
-#if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
-    if (skipFrameDependentLogic) {
-        goto SCRIPT_ENGINE_UPDATE;
-    }
-#endif
-    
-    SCRIPT_ENGINE_UPDATE:
 	if (TheScriptActions) {
 		TheScriptActions->update();
 	}
