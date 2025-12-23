@@ -5523,12 +5523,13 @@ void ScriptEngine::update(void)
 	*/
 #endif
 #endif
-    
+
 #if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
-	if (!m_firstUpdate && !TheGameLogic->HasLegacyFrameAdvanced()) {
-		return;
-	}
+    const bool legacyFrameAdvanced = TheGameLogic->HasLegacyFrameAdvanced();
+#else
+    const bool legacyFrameAdvanced = true;
 #endif
+    
 	if (m_firstUpdate) {
 		createNamedCache();
 		particleEditorUpdate();
@@ -5578,7 +5579,9 @@ void ScriptEngine::update(void)
 		if (m_counters[i].isCountdownTimer) {
 			// If counter has any time left, decrement.  Counters go to -1 and stop.
 			if (m_counters[i].value >= 0) {
-				m_counters[i].value--;
+                if (legacyFrameAdvanced) {
+				   m_counters[i].value--;
+                }
 			}
 		}
 	}
