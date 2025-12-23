@@ -5526,10 +5526,8 @@ void ScriptEngine::update(void)
     
 #if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
     if (!m_firstUpdate && !TheGameLogic->HasLegacyFrameAdvanced()) {
-        if (TheScriptActions) {
-            TheScriptActions->update();
-        }
-        return;
+    ThePlayerList->updateTeamStates();
+    return;
     }
 #endif
 	if (m_firstUpdate) {
