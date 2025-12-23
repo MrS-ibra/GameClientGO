@@ -5525,9 +5525,12 @@ void ScriptEngine::update(void)
 #endif
     
 #if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
-	if (!m_firstUpdate && !TheGameLogic->HasLegacyFrameAdvanced()) {
-		return;
-	}
+    if (!m_firstUpdate && !TheGameLogic->HasLegacyFrameAdvanced()) {
+        if (TheScriptActions) {
+            TheScriptActions->update();
+        }
+        return;
+    }
 #endif
 	if (m_firstUpdate) {
 		createNamedCache();
