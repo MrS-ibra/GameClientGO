@@ -5540,13 +5540,17 @@ void ScriptEngine::update(void)
 	}
 
 	if (m_closeWindowTimer > 0) {
+        if (legacyFrameAdvanced) {
 		m_closeWindowTimer--;
+        }
 		if (m_closeWindowTimer < 1) {
 			TheScriptActions->closeWindows(FALSE); // Close victory or defeat windows.
 		}
 	}
 	if (m_endGameTimer > 0) {
+        if (legacyFrameAdvanced) {
 		m_endGameTimer--;
+        }
 		if (m_endGameTimer < 1) {
 			TheGameLogic->exitGame();
 			//TheScriptActions->closeWindows(FALSE); // Close victory or defeat windows.
