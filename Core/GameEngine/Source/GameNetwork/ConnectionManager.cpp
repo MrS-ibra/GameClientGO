@@ -1946,7 +1946,7 @@ void ConnectionManager::quitGame() {
 	flushConnections(); // need to do this so our packet actually gets sent before the connections are deleted.
 	//DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - done flushing connections"));
 
-	disconnectMsg->detach();
+	// disconnectMsg->detach();
 
 #if RTS_GENERALS
 	// if we get here, we hit Quit on the disconnect screen.  Mark everyone as having disconnected from us
