@@ -1931,26 +1931,26 @@ PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
 #endif
 
 void ConnectionManager::quitGame() {
+    
     NetDisconnectPlayerCommandMsg *disconnectMsg = newInstance(NetDisconnectPlayerCommandMsg);
     disconnectMsg->setDisconnectSlot(m_localSlot);
-    disconnectMsg->setDisconnectFrame(m_frameMetrics.getDisconnectFrame());
+    disconnectMsg->setDisconnectFrame(TheGameLogic->getFrame());
     disconnectMsg->setPlayerID(m_localSlot);
     if (DoesCommandRequireACommandID(disconnectMsg->getNetCommandType())) {
         disconnectMsg->setID(GenerateNextCommandID());
     }
 
-    sendLocalCommandDirect(disconnectMsg, 0xff ^ (1 << m_localSlot));
+    sendLocalCommand(disconnectMsg);
+
     flushConnections();
+
     disconnectMsg->detach();
 
 #if RTS_GENERALS
-    if (TheGameInfo)
-    {
-        for (Int i = 0; i < MAX_SLOTS; ++i)
-        {
+    if (TheGameInfo) {
+        for (Int i = 0; i < MAX_SLOTS; ++i) {
             GameSlot *gSlot = TheGameInfo->getSlot(i);
-            if (gSlot && !gSlot->lastFrameInGame())
-            {
+            if (gSlot && !gSlot->lastFrameInGame()) {
                 gSlot->markAsDisconnected();
             }
         }
