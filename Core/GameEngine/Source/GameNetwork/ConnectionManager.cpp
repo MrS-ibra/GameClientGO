@@ -1907,10 +1907,10 @@ PlayerLeaveCode ConnectionManager::disconnectPlayer(Int slot) {
 	return retval;
 }
 
-#if defined(GENERALS_ONLINE)
-PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
-{
-	return PLAYERLEAVECODE_UNKNOWN;
+// #if defined(GENERALS_ONLINE)
+// PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
+// {
+//	return PLAYERLEAVECODE_UNKNOWN;
 // 	if (TheNGMPGame != nullptr)
 // 	{
 // 		for (int slot = 0; slot < MAX_SLOTS; ++slot)
@@ -1927,8 +1927,8 @@ PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
 // 	}
 // 
 // 	return PLAYERLEAVECODE_UNKNOWN;
-}
-#endif
+// }
+// #endif
 
 void ConnectionManager::quitGame() {
 	// Need to do the NetDisconnectPlayerCommandMsg creation and sending here.
@@ -1963,7 +1963,6 @@ void ConnectionManager::quitGame() {
 		}
 	}
 #endif
-
 	disconnectLocalPlayer();
 }
 
