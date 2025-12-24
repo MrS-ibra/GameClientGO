@@ -1934,9 +1934,10 @@ void ConnectionManager::quitGame() {
     m_disconnectManager->sendLocalDisconnectForSlot(m_localSlot, this);
     flushConnections();
     disconnectLocalPlayer();
-}
 
 #if RTS_GENERALS
+    // if we get here, we hit Quit on the disconnect screen. Mark everyone as having disconnected from us
+    // so the online stats can give us appropriate feedback.
     if (TheGameInfo) {
         for (Int i = 0; i < MAX_SLOTS; ++i) {
             GameSlot *gSlot = TheGameInfo->getSlot(i);
@@ -1946,18 +1947,16 @@ void ConnectionManager::quitGame() {
         }
     }
 #endif
-
-    disconnectLocalPlayer();
 }
 
 void ConnectionManager::disconnectLocalPlayer() {
-	// kill the frame data and the connections for all the other players.
-	DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer()"));
-	for (Int i = 0; i < MAX_SLOTS; ++i) {
-		if (i != m_localSlot) {
-			disconnectPlayer(i);
-		}
-	}
+    // kill the frame data and the connections for all the other players.
+    DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer()"));
+    for (Int i = 0; i < MAX_SLOTS; ++i) {
+        if (i != m_localSlot) {
+            disconnectPlayer(i);
+        }
+    }
 }
 
 /**
