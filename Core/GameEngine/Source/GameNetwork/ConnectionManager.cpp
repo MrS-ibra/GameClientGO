@@ -1934,7 +1934,17 @@ void ConnectionManager::quitGame() {
 	// Need to do the NetDisconnectPlayerCommandMsg creation and sending here.
 	NetDisconnectPlayerCommandMsg *disconnectMsg = newInstance(NetDisconnectPlayerCommandMsg);
 	disconnectMsg->setDisconnectSlot(m_localSlot);
-	disconnectMsg->setDisconnectFrame(TheGameLogic->getFrame());
+	#if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
+    const UnsignedInt fpsMult = GENERALS_ONLINE_HIGH_FPS_FRAME_MULTIPLIER;
+#else
+    const UnsignedInt fpsMult = 1u;
+#endif
+
+    UnsignedInt currentFrame = TheGameLogic->getFrame();
+    UnsignedInt lastFrame = (currentFrame > fpsMult) ? (currentFrame - fpsMult) : 0u;
+
+    DEBUG_LOG(("quitGame: currentFrame=%u fpsMult=%u chosenDisconnectFrame=%u", currentFrame, fpsMult, lastFrame));
+    disconnectMsg->setDisconnectFrame(lastFrame);
 	disconnectMsg->setPlayerID(m_localSlot);
 	if (DoesCommandRequireACommandID(disconnectMsg->getNetCommandType())) {
 		disconnectMsg->setID(GenerateNextCommandID());
