@@ -1931,20 +1931,10 @@ PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
 #endif
 
 void ConnectionManager::quitGame() {
-    
-    NetDisconnectPlayerCommandMsg *disconnectMsg = newInstance(NetDisconnectPlayerCommandMsg);
-    disconnectMsg->setDisconnectSlot(m_localSlot);
-    disconnectMsg->setDisconnectFrame(TheGameLogic->getFrame());
-    disconnectMsg->setPlayerID(m_localSlot);
-    if (DoesCommandRequireACommandID(disconnectMsg->getNetCommandType())) {
-        disconnectMsg->setID(GenerateNextCommandID());
-    }
-
-    sendLocalCommand(disconnectMsg);
-
+    m_disconnectManager->sendLocalDisconnectForSlot(m_localSlot, this);
     flushConnections();
-
-    disconnectMsg->detach();
+    disconnectLocalPlayer();
+}
 
 #if RTS_GENERALS
     if (TheGameInfo) {
