@@ -66,6 +66,10 @@ DisconnectManager::DisconnectManager()
 DisconnectManager::~DisconnectManager() {
 }
 
+void DisconnectManager::sendLocalDisconnectForSlot(Int slot, ConnectionManager *conMgr) {
+    sendDisconnectCommand(slot, conMgr);
+}
+
 void DisconnectManager::init() {
 	TheDisconnectMenu->hideScreen(); // make sure the screen starts out hidden.
 	m_lastFrame = 0;
