@@ -6856,7 +6856,12 @@ void ScriptEngine::adjustTimer(ScriptAction* pAction, Bool millisecondTimer, Boo
 		Real value = pAction->getParameter(0)->getReal();
 		if (!add)
 			value = -value;
-		m_counters[counterNdx].value += REAL_TO_INT_CEIL(ConvertDurationFromMsecsToFrames(value * 1000));
+#if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
+    const int LEGACY_FPS_INT = BaseFps;
+    m_counters[counterNdx].value += REAL_TO_INT_CEIL(value * (Real)LEGACY_FPS_INT);
+#else
+    m_counters[counterNdx].value += REAL_TO_INT_CEIL(ConvertDurationFromMsecsToFrames(value * 1000));
+#endif
 	}
 	else {
 		Int value = pAction->getParameter(0)->getInt();
