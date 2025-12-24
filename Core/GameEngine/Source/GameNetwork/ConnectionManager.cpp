@@ -1907,10 +1907,10 @@ PlayerLeaveCode ConnectionManager::disconnectPlayer(Int slot) {
 	return retval;
 }
 
-#if defined(GENERALS_ONLINE)
-PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
-{
-	return PLAYERLEAVECODE_UNKNOWN;
+// #if defined(GENERALS_ONLINE)
+// PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
+// {
+//	return PLAYERLEAVECODE_UNKNOWN;
 // 	if (TheNGMPGame != nullptr)
 // 	{
 // 		for (int slot = 0; slot < MAX_SLOTS; ++slot)
@@ -1927,14 +1927,14 @@ PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
 // 	}
 // 
 // 	return PLAYERLEAVECODE_UNKNOWN;
-}
-#endif
+// }
+// #endif
 
 void ConnectionManager::quitGame() {
 	// Need to do the NetDisconnectPlayerCommandMsg creation and sending here.
 	NetDisconnectPlayerCommandMsg *disconnectMsg = newInstance(NetDisconnectPlayerCommandMsg);
 	disconnectMsg->setDisconnectSlot(m_localSlot);
-	disconnectMsg->setDisconnectFrame(m_disconnectManager->getCanonicalDisconnectFrame());
+	disconnectMsg->setDisconnectFrame(TheGameLogic->getFrame());
 	disconnectMsg->setPlayerID(m_localSlot);
 	if (DoesCommandRequireACommandID(disconnectMsg->getNetCommandType())) {
 		disconnectMsg->setID(GenerateNextCommandID());
