@@ -1934,14 +1934,6 @@ void ConnectionManager::quitGame() {
     m_disconnectManager->sendDisconnectCommand(m_localSlot, this);
     flushConnections();
 }
-	//DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - about to send disconnect command"));
-	sendLocalCommandDirect(disconnectMsg, 0xff ^ (1 << m_localSlot));
-
-	//DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - about to flush connections"));
-	flushConnections(); // need to do this so our packet actually gets sent before the connections are deleted.
-	//DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - done flushing connections"));
-
-	disconnectMsg->detach();
 
 #if RTS_GENERALS
 	// if we get here, we hit Quit on the disconnect screen.  Mark everyone as having disconnected from us
