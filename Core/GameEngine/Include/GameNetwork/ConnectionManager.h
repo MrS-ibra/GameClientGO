@@ -170,6 +170,8 @@ private:
 	void sendRemoteCommand(NetCommandRef *msg);
 	void ackCommand(NetCommandRef *ref, UnsignedInt localSlot);
 
+    Bool m_isQuitting = FALSE;
+
 	Bool processNetCommand(NetCommandRef *ref);
 	void processAckStage1(NetCommandMsg *msg);
 	void processAckStage2(NetCommandMsg *msg);
