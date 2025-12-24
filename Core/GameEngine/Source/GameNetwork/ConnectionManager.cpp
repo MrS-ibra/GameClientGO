@@ -1893,72 +1893,59 @@ PlayerLeaveCode ConnectionManager::disconnectPlayer(Int slot) {
 		retval = PLAYERLEAVECODE_LOCAL;
 	}
 
+
 	// Take the player out of the fallback plan
 	Int fallbackindex = 0;
 	while ((fallbackindex < MAX_SLOTS) && (m_packetRouterFallback[fallbackindex] != slot)) {
 		++fallbackindex;
 	}
-
 	for (Int i = fallbackindex; i < MAX_SLOTS-1; ++i) {
 		m_packetRouterFallback[i] = m_packetRouterFallback[i+1];
 	}
 	m_packetRouterFallback[MAX_SLOTS-1] = -1;
-
 	return retval;
 }
-
-#if defined(GENERALS_ONLINE)
-PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
-{
-	return PLAYERLEAVECODE_UNKNOWN;
-// 	if (TheNGMPGame != nullptr)
-// 	{
-// 		for (int slot = 0; slot < MAX_SLOTS; ++slot)
-// 		{
-// 			NGMPGameSlot* pSlot = (NGMPGameSlot*)TheNGMPGame->getSlot(slot);
-// 			if (pSlot)
-// 			{
-// 				if (pSlot->m_userID == userID)
-// 				{
-// 					return disconnectPlayer(slot);
-// 				}
-// 			}
-// 		}
-// 	}
-// 
-// 	return PLAYERLEAVECODE_UNKNOWN;
-}
-#endif
-
 void ConnectionManager::quitGame() {
-    m_disconnectManager->sendLocalDisconnectForSlot(m_localSlot, this);
-    flushConnections();
-    disconnectLocalPlayer();
-
+	// Need to do the NetDisconnectPlayerCommandMsg creation and sending here.
+	NetDisconnectPlayerCommandMsg *disconnectMsg = newInstance(NetDisconnectPlayerCommandMsg);
+	disconnectMsg->setDisconnectSlot(m_localSlot);
+	disconnectMsg->setDisconnectFrame(TheGameLogic->getFrame());
+	disconnectMsg->setPlayerID(m_localSlot);
+	if (DoesCommandRequireACommandID(disconnectMsg->getNetCommandType())) {
+		disconnectMsg->setID(GenerateNextCommandID());
+	}
+	//DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - about to send disconnect command"));
+	sendLocalCommandDirect(disconnectMsg, 0xff ^ (1 << m_localSlot));
+	//DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - about to flush connections"));
+	flushConnections(); // need to do this so our packet actually gets sent before the connections are deleted.
+	//DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - done flushing connections"));
+	disconnectMsg->detach();
 #if RTS_GENERALS
-    // if we get here, we hit Quit on the disconnect screen. Mark everyone as having disconnected from us
-    // so the online stats can give us appropriate feedback.
-    if (TheGameInfo) {
-        for (Int i = 0; i < MAX_SLOTS; ++i) {
-            GameSlot *gSlot = TheGameInfo->getSlot(i);
-            if (gSlot && !gSlot->lastFrameInGame()) {
-                gSlot->markAsDisconnected();
-            }
-        }
-    }
+	// if we get here, we hit Quit on the disconnect screen.  Mark everyone as having disconnected from us
+	// so the online stats can give us appropriate feedback.
+	if (TheGameInfo)
+	{
+		for (Int i = 0; i < MAX_SLOTS; ++i)
+		{
+			GameSlot *gSlot = TheGameInfo->getSlot( i );
+			if (gSlot && !gSlot->lastFrameInGame())
+			{
+				gSlot->markAsDisconnected();
+			}
+		}
+	}
 #endif
+	disconnectLocalPlayer();
 }
-
 void ConnectionManager::disconnectLocalPlayer() {
-    // kill the frame data and the connections for all the other players.
-    DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer()"));
-    for (Int i = 0; i < MAX_SLOTS; ++i) {
-        if (i != m_localSlot) {
-            disconnectPlayer(i);
-        }
-    }
+	// kill the frame data and the connections for all the other players.
+	DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer()"));
+	for (Int i = 0; i < MAX_SLOTS; ++i) {
+		if (i != m_localSlot) {
+			disconnectPlayer(i);
+		}
+	}
 }
-
 /**
  * Takes all the commands that are ready to send and sends them right now.
  */
@@ -1974,7 +1961,6 @@ void ConnectionManager::flushConnections() {
 			m_connections[i]->doSend();
 		}
 	}
-
 	if (m_transport != NULL) {
 		m_transport->doSend();
 	}
