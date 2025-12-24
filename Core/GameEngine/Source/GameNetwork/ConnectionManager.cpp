@@ -1931,27 +1931,33 @@ PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
 #endif
 
 void ConnectionManager::quitGame() {
-    disconnectLocalPlayer();
+    NetDisconnectPlayerCommandMsg *disconnectMsg = newInstance(NetDisconnectPlayerCommandMsg);
+    disconnectMsg->setDisconnectSlot(m_localSlot);
+    disconnectMsg->setDisconnectFrame(m_frameMetrics.getDisconnectFrame());
+    disconnectMsg->setPlayerID(m_localSlot);
+    if (DoesCommandRequireACommandID(disconnectMsg->getNetCommandType())) {
+        disconnectMsg->setID(GenerateNextCommandID());
+    }
+
+    sendLocalCommandDirect(disconnectMsg, 0xff ^ (1 << m_localSlot));
     flushConnections();
-}
+    disconnectMsg->detach();
 
 #if RTS_GENERALS
-	// if we get here, we hit Quit on the disconnect screen.  Mark everyone as having disconnected from us
-	// so the online stats can give us appropriate feedback.
-	if (TheGameInfo)
-	{
-		for (Int i = 0; i < MAX_SLOTS; ++i)
-		{
-			GameSlot *gSlot = TheGameInfo->getSlot( i );
-			if (gSlot && !gSlot->lastFrameInGame())
-			{
-				gSlot->markAsDisconnected();
-			}
-		}
-	}
+    if (TheGameInfo)
+    {
+        for (Int i = 0; i < MAX_SLOTS; ++i)
+        {
+            GameSlot *gSlot = TheGameInfo->getSlot(i);
+            if (gSlot && !gSlot->lastFrameInGame())
+            {
+                gSlot->markAsDisconnected();
+            }
+        }
+    }
 #endif
 
-	disconnectLocalPlayer();
+    disconnectLocalPlayer();
 }
 
 void ConnectionManager::disconnectLocalPlayer() {
