@@ -1934,7 +1934,8 @@ void ConnectionManager::quitGame() {
 	// Need to do the NetDisconnectPlayerCommandMsg creation and sending here.
 	NetDisconnectPlayerCommandMsg *disconnectMsg = newInstance(NetDisconnectPlayerCommandMsg);
 	disconnectMsg->setDisconnectSlot(m_localSlot);
-	disconnectMsg->setDisconnectFrame(TheGameLogic->getFrame() + 3);
+	UnsignedInt disconnectFrame = m_disconnectManager->getMaxDisconnectFrame();
+    disconnectMsg->setDisconnectFrame(disconnectFrame);
 	disconnectMsg->setPlayerID(m_localSlot);
 	if (DoesCommandRequireACommandID(disconnectMsg->getNetCommandType())) {
 		disconnectMsg->setID(GenerateNextCommandID());
