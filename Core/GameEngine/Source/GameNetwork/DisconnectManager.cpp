@@ -93,7 +93,7 @@ void DisconnectManager::init() {
 	m_pingsRecieved = 0;
 }
 
-UnsignedInt DisconnectManager::getCanonicalDisconnectFrame() const {
+UnsignedInt DisconnectManager::getCanonicalDisconnectFrame() {
     return getMaxDisconnectFrame();
 }
 
