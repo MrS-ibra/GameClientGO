@@ -1800,6 +1800,9 @@ void ConnectionManager::determineRouterFallbackPlan() {
 */
 
 void ConnectionManager::doKeepAlive() {
+    if (m_isQuitting) {
+    return;
+    }
 	static Int nextIndex = 0;
 	static time_t startTime = 0;
 
@@ -1931,6 +1934,7 @@ PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
 #endif
 
 void ConnectionManager::quitGame() {
+    m_isQuitting = TRUE;
 	// Need to do the NetDisconnectPlayerCommandMsg creation and sending here.
 	NetDisconnectPlayerCommandMsg *disconnectMsg = newInstance(NetDisconnectPlayerCommandMsg);
 	disconnectMsg->setDisconnectSlot(m_localSlot);
