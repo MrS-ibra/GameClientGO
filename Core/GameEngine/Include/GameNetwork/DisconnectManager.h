@@ -49,7 +49,7 @@ public:
 
 	void init();
 	void update(ConnectionManager *conMgr);
-    UnsignedInt getCanonicalDisconnectFrame() const;
+    UnsignedInt getCanonicalDisconnectFrame();
 
 	void processDisconnectCommand(NetCommandRef *ref, ConnectionManager *conMgr);
 	void allCommandsReady(UnsignedInt frame, ConnectionManager *conMgr, Bool waitForPacketRouter = TRUE);
