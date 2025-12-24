@@ -1931,7 +1931,7 @@ PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
 #endif
 
 void ConnectionManager::quitGame() {
-    m_disconnectManager->sendDisconnectCommand(m_localSlot, this);
+    disconnectLocalPlayer();
     flushConnections();
 }
 
