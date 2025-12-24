@@ -1931,15 +1931,9 @@ PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
 #endif
 
 void ConnectionManager::quitGame() {
-	// Need to do the NetDisconnectPlayerCommandMsg creation and sending here.
-	NetDisconnectPlayerCommandMsg *disconnectMsg = newInstance(NetDisconnectPlayerCommandMsg);
-	disconnectMsg->setDisconnectSlot(m_localSlot);
-	UnsignedInt disconnectFrame = m_disconnectManager->getMaxDisconnectFrame();
-    disconnectMsg->setDisconnectFrame(disconnectFrame);
-	disconnectMsg->setPlayerID(m_localSlot);
-	if (DoesCommandRequireACommandID(disconnectMsg->getNetCommandType())) {
-		disconnectMsg->setID(GenerateNextCommandID());
-	}
+    m_disconnectManager->sendDisconnectCommand(m_localSlot, this);
+    flushConnections();
+}
 	//DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - about to send disconnect command"));
 	sendLocalCommandDirect(disconnectMsg, 0xff ^ (1 << m_localSlot));
 
