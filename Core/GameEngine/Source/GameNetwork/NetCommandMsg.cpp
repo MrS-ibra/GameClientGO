@@ -600,6 +600,7 @@ NetDisconnectKeepAliveCommandMsg::~NetDisconnectKeepAliveCommandMsg() {
 NetDisconnectPlayerCommandMsg::NetDisconnectPlayerCommandMsg() : NetCommandMsg() {
 	m_commandType = NETCOMMANDTYPE_DISCONNECTPLAYER;
 	m_disconnectSlot = 0;
+    m_disconnectFrame = 0;
 }
 
 /**
@@ -1054,3 +1055,4 @@ UnsignedInt NetFrameResendRequestCommandMsg::getFrameToResend() {
 void NetFrameResendRequestCommandMsg::setFrameToResend(UnsignedInt frame) {
 	m_frameToResend = frame;
 }
+
