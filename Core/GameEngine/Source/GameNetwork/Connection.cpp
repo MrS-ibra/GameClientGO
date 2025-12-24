@@ -330,7 +330,7 @@ UnsignedInt Connection::doSend() {
 			m_lastTimeSent = curtime;
 		}
 		if (packet != NULL) {
-			deleteInstance(packet); // delete the packet now that we're done with it.
+		//	deleteInstance(packet); // delete the packet now that we're done with it.
 		}
 	}
 
