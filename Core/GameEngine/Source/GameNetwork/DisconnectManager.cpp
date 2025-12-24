@@ -93,6 +93,10 @@ void DisconnectManager::init() {
 	m_pingsRecieved = 0;
 }
 
+UnsignedInt DisconnectManager::getCanonicalDisconnectFrame() const {
+    return getMaxDisconnectFrame();
+}
+
 void DisconnectManager::update(ConnectionManager *conMgr) {
 	if (m_lastFrameTime == -1) {
 		m_lastFrameTime = timeGetTime();
