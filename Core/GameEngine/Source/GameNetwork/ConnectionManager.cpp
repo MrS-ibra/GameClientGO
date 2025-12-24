@@ -1937,6 +1937,7 @@ void ConnectionManager::quitGame() {
 	NetDisconnectPlayerCommandMsg *disconnectMsg = newInstance(NetDisconnectPlayerCommandMsg);
 	disconnectMsg->setDisconnectSlot(m_localSlot);
 	disconnectMsg->setDisconnectFrame(TheGameLogic->getFrame());
+    disconnectMsg->attach();
 	disconnectMsg->setPlayerID(m_localSlot);
 	if (DoesCommandRequireACommandID(disconnectMsg->getNetCommandType())) {
 		disconnectMsg->setID(GenerateNextCommandID());
