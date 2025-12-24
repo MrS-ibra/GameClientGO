@@ -55,6 +55,8 @@
 #include "../NextGenTransport.h"
 #include "../NetworkMesh.h"
 #include "../ngmp_interfaces.h"
+#include <thread>
+#include <chrono>
 
 extern Int MIN_LOGIC_FRAMES;
 
@@ -1675,7 +1677,7 @@ void ConnectionManager::sendLocalCommandDirect(NetCommandMsg *msg, UnsignedByte 
 		}
 	}
 
-	msg->detach();
+	// msg->detach();
 }
 
 Int commandsReadyDebugSpewage = 0;
@@ -1944,6 +1946,7 @@ void ConnectionManager::quitGame() {
 
 	//DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - about to flush connections"));
 	flushConnections(); // need to do this so our packet actually gets sent before the connections are deleted.
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	//DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - done flushing connections"));
 
 	// disconnectMsg->detach();
