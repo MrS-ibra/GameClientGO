@@ -609,6 +609,7 @@ void DisconnectManager::sendDisconnectCommand(Int slot, ConnectionManager *conMg
 	msg->setDisconnectSlot(slot);
 	msg->setDisconnectFrame(disconnectFrame);
 	msg->setPlayerID(conMgr->getLocalPlayerID());
+    msg->attach();
 	if (DoesCommandRequireACommandID(msg->getNetCommandType())) {
 		msg->setID(GenerateNextCommandID());
 	}
