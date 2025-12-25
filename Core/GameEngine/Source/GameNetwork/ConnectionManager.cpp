@@ -2517,8 +2517,6 @@ void ConnectionManager::notifyOthersOfCurrentFrame(Int frame) {
 	m_disconnectManager->processDisconnectCommand(ref, this);
 	deleteInstance(ref);
 
-	msg->detach();
-
 	DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("ConnectionManager::notifyOthersOfCurrentFrame - start screen on debug stuff"));
 #if defined(RTS_DEBUG)
 	debugPrintConnectionCommands();
@@ -2540,7 +2538,6 @@ void ConnectionManager::notifyOthersOfNewFrame(UnsignedInt frame) {
 	m_disconnectManager->processDisconnectCommand(ref, this);
 	deleteInstance(ref);
 
-	msg->detach();
 }
 
 void ConnectionManager::sendFrameDataToPlayer(UnsignedInt playerID, UnsignedInt startingFrame) {
