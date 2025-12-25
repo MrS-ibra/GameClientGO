@@ -1945,32 +1945,44 @@ void ConnectionManager::quitGame() {
 
     // Log after ID assignment so the log shows the real command id.
     DEBUG_LOG(("DBG_DISCONNECT: CREATED %s:%d id=%d slot=%d setFrame=%u localFrame=%u",
-        __FILE__, __LINE__, disconnectMsg->getID(), disconnectMsg->getDisconnectSlot(), disconnectMsg->getDisconnectFrame(), TheGameLogic->getFrame()));
+        __FILE__, __LINE__, disconnectMsg->getID(), disconnectMsg->getDisconnectSlot(),
+        disconnectMsg->getDisconnectFrame(), TheGameLogic->getFrame()));
 
     disconnectMsg->setPlayerID(m_localSlot);
 
     DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - about to send disconnect command"));
     sendLocalCommandDirect(disconnectMsg, 0xff ^ (1 << m_localSlot));
 
-    // Give the transport a chance to actually send the queued packet(s) before we tear down.
-    // Temporary test: wait up to 500ms for the outgoing queue to drain.
-    DEBUG_LOG(("DBG_LOCALDISCONNECT: waiting for send queue to drain %s:%d", __FILE__, __LINE__));
+    // Temporary test: wait up to 500ms for the outgoing queues on each connection to drain.
+    DEBUG_LOG(("DBG_LOCALDISCONNECT: waiting for send queues to drain %s:%d", __FILE__, __LINE__));
     const int kMaxWaitMs = 500;
     int waited = 0;
     while (waited < kMaxWaitMs) {
-        int pending = 0;
-        if (m_netCommandList) {
-            // getCount() should return number of queued outgoing commands; adjust if your API differs.
-            pending = m_netCommandList->getCount();
+        bool anyPending = false;
+
+        // Check each connection's outgoing queue. Use isQueueEmpty() which exists on Connection.
+        for (Int ci = 0; ci < MAX_SLOTS; ++ci) {
+            if (m_connections[ci] != NULL) {
+                if (!m_connections[ci]->isQueueEmpty()) {
+                    anyPending = true;
+                    break;
+                }
+            }
         }
-        // If no pending commands, break early.
-        if (pending == 0) {
+
+        // If transport has a send buffer, give it a chance to flush as well.
+        if (m_transport != NULL) {
+            m_transport->doSend();
+        }
+
+        if (!anyPending) {
             break;
         }
-        Sleep(10); // short sleep to yield; remove or replace with proper non-blocking wait in production.
+
+        Sleep(10); // short sleep to yield; replace with proper non-blocking wait in production.
         waited += 10;
     }
-    DEBUG_LOG(("DBG_LOCALDISCONNECT: done waiting, waited=%dms pending=%d %s:%d", waited, m_netCommandList ? m_netCommandList->getCount() : 0, __FILE__, __LINE__));
+    DEBUG_LOG(("DBG_LOCALDISCONNECT: done waiting, waited=%dms %s:%d", waited, __FILE__, __LINE__));
 
     DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - about to flush connections"));
     flushConnections(); // ensure transport flush as well
