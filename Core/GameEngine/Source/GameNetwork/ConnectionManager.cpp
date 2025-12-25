@@ -1936,7 +1936,7 @@ void ConnectionManager::quitGame() {
 	disconnectMsg->setDisconnectSlot(m_localSlot);
 	disconnectMsg->setDisconnectFrame(TheGameLogic->getFrame());
     DEBUG_LOG(("DBG_DISCONNECT: CREATED %s:%d id=%d slot=%d setFrame=%u localFrame=%u",
-    __FILE__, __LINE__, msg->getID(), msg->getDisconnectSlot(), msg->getDisconnectFrame(), TheGameLogic->getFrame()));
+    __FILE__, __LINE__, disconnectMsg->getID(), disconnectMsg->getDisconnectSlot(), disconnectMsg->getDisconnectFrame(), TheGameLogic->getFrame()));
 	disconnectMsg->setPlayerID(m_localSlot);
 	if (DoesCommandRequireACommandID(disconnectMsg->getNetCommandType())) {
 		disconnectMsg->setID(GenerateNextCommandID());
