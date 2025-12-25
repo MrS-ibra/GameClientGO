@@ -5528,12 +5528,8 @@ void ScriptEngine::update(void)
 #endif
 #endif
 
-#if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
-    const bool legacyFrameAdvanced = TheGameLogic->HasLegacyFrameAdvanced();
-#else
-    const bool legacyFrameAdvanced = true;
-#endif
-    g_cachedLegacyFrameAdvanced = legacyFrameAdvanced;
+const bool legacyFrameAdvanced = TheGameLogic->HasLegacyFrameAdvanced();
+g_cachedLegacyFrameAdvanced = legacyFrameAdvanced;
     
 	if (m_firstUpdate) {
 		createNamedCache();
