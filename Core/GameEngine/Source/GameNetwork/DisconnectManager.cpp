@@ -608,6 +608,8 @@ void DisconnectManager::sendDisconnectCommand(Int slot, ConnectionManager *conMg
 	NetDisconnectPlayerCommandMsg *msg = newInstance(NetDisconnectPlayerCommandMsg);
 	msg->setDisconnectSlot(slot);
 	msg->setDisconnectFrame(disconnectFrame);
+    DEBUG_LOG(("DBG_DISCONNECT: CREATED %s:%d id=%d slot=%d setFrame=%u localFrame=%u",
+    __FILE__, __LINE__, msg->getID(), msg->getDisconnectSlot(), msg->getDisconnectFrame(), TheGameLogic->getFrame()));
 	msg->setPlayerID(conMgr->getLocalPlayerID());
 	if (DoesCommandRequireACommandID(msg->getNetCommandType())) {
 		msg->setID(GenerateNextCommandID());
