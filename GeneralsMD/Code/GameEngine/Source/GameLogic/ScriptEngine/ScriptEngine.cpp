@@ -6858,6 +6858,7 @@ void ScriptEngine::restartTimer(ScriptAction* pAction)
 	}
 	if (m_counters[counterNdx].value > 0) {
 		m_counters[counterNdx].isCountdownTimer = true;
+        g_isLegacyCounter[counterNdx] = TRUE;
 	}
 }
 
@@ -6866,29 +6867,46 @@ void ScriptEngine::restartTimer(ScriptAction* pAction)
 //-------------------------------------------------------------------------------------------------
 void ScriptEngine::adjustTimer(ScriptAction* pAction, Bool millisecondTimer, Bool add)
 {
-	DEBUG_ASSERTCRASH(pAction->getNumParameters() >= 2, ("Not enough parameters."));
-	Int counterNdx = pAction->getParameter(1)->getInt();
-	if (counterNdx == 0) {
-		counterNdx = allocateCounter(pAction->getParameter(1)->getString());
-		pAction->getParameter(1)->friend_setInt(counterNdx);
-	}
-	if (millisecondTimer) {
-		Real value = pAction->getParameter(0)->getReal();
-		if (!add)
-			value = -value;
+    DEBUG_ASSERTCRASH(pAction->getNumParameters() >= 2, ("Not enough parameters."));
+    Int counterNdx = pAction->getParameter(1)->getInt();
+    if (counterNdx == 0) {
+        counterNdx = allocateCounter(pAction->getParameter(1)->getString());
+        pAction->getParameter(1)->friend_setInt(counterNdx);
+    }
+
+    if (millisecondTimer) {
+        Real value = pAction->getParameter(0)->getReal();
+        if (!add)
+            value = -value;
+
 #if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
-    const int LEGACY_FPS_INT = BaseFps;
-    m_counters[counterNdx].value += REAL_TO_INT_CEIL(value * (Real)LEGACY_FPS_INT);
+        const int LEGACY_FPS_INT = BaseFps;
+        Int delta = REAL_TO_INT_CEIL(value * (Real)LEGACY_FPS_INT);
 #else
-    m_counters[counterNdx].value += REAL_TO_INT_CEIL(ConvertDurationFromMsecsToFrames(value * 1000));
+        Int delta = REAL_TO_INT_CEIL(ConvertDurationFromMsecsToFrames(value * 1000));
 #endif
-	}
-	else {
-		Int value = pAction->getParameter(0)->getInt();
-		if (!add)
-			value = -value;
-		m_counters[counterNdx].value += value;
-	}
+
+        if (g_isLegacyCounter[counterNdx]) {
+            if (g_cachedLegacyFrameAdvanced) {
+                m_counters[counterNdx].value += delta;
+            }
+        } else {
+            m_counters[counterNdx].value += delta;
+        }
+    }
+    else {
+        Int value = pAction->getParameter(0)->getInt();
+        if (!add)
+            value = -value;
+
+        if (g_isLegacyCounter[counterNdx]) {
+            if (g_cachedLegacyFrameAdvanced) {
+                m_counters[counterNdx].value += value;
+            }
+        } else {
+            m_counters[counterNdx].value += value;
+        }
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
