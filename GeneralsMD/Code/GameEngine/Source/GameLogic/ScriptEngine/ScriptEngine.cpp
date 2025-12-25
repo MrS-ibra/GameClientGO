@@ -57,7 +57,7 @@
 #include "GameLogic/ScriptEngine.h"
 #include "GameLogic/SidesList.h"
 
-static Bool g_isLegacyCounter[MAX_COUNTERS];
+static Bool g_isLegacyCounter[ScriptEngine::MAX_COUNTERS];
 static Bool g_cachedLegacyFrameAdvanced = FALSE;
 
 // These are for debugger window
