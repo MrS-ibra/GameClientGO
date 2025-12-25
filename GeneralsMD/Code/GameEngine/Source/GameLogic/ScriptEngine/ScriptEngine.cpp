@@ -75,6 +75,9 @@ static HMODULE st_DebugDLL;
 #include "Common/MapObject.h"
 #include "../../GameEngineDevice/Include/W3DDevice/GameClient/W3DAssetManagerExposed.h"
 
+static Bool g_isLegacyCounter[MAX_COUNTERS];
+static Bool g_cachedLegacyFrameAdvanced = FALSE;
+
 static void _addUpdatedParticleSystem(AsciiString particleSystemName);
 static void _appendAllParticleSystems(void);
 static void _appendAllThingTemplates(void);
@@ -5298,6 +5301,7 @@ void ScriptEngine::reset(void)
 		m_counters[i].value = 0;
 		m_counters[i].isCountdownTimer = false;
 		m_counters[i].name.clear();
+        g_isLegacyCounter[i] = FALSE;
 	}
 	for (i = 0; i < MAX_FLAGS; i++) {
 		m_flags[i].value = false;
@@ -5440,6 +5444,7 @@ void ScriptEngine::newMap(void)
 		m_counters[i].value = 0;
 		m_counters[i].isCountdownTimer = false;
 		m_counters[i].name.clear();
+        g_isLegacyCounter[i] = FALSE;
 	}
 	m_numFlags = 1;
 	for (i = 0; i < MAX_FLAGS; i++) {
@@ -5529,6 +5534,7 @@ void ScriptEngine::update(void)
 #else
     const bool legacyFrameAdvanced = true;
 #endif
+    g_cachedLegacyFrameAdvanced = legacyFrameAdvanced;
     
 	if (m_firstUpdate) {
 		createNamedCache();
@@ -6413,7 +6419,13 @@ void ScriptEngine::setCounter(ScriptAction* pAction)
 		pAction->getParameter(0)->friend_setInt(counterNdx);
 	}
 	Int value = pAction->getParameter(1)->getInt();
-	m_counters[counterNdx].value = value;
+	    if (g_isLegacyCounter[counterNdx]) {
+        if (g_cachedLegacyFrameAdvanced) {
+            m_counters[counterNdx].value = value;
+        }
+    } else {
+        m_counters[counterNdx].value = value;
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -6481,7 +6493,13 @@ void ScriptEngine::addCounter(ScriptAction* pAction)
 		counterNdx = allocateCounter(pAction->getParameter(1)->getString());
 		pAction->getParameter(1)->friend_setInt(counterNdx);
 	}
-	m_counters[counterNdx].value += value;
+    if (g_isLegacyCounter[counterNdx]) {
+        if (g_cachedLegacyFrameAdvanced) {
+            m_counters[counterNdx].value += value;
+        }
+    } else {
+        m_counters[counterNdx].value += value;
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -6496,7 +6514,13 @@ void ScriptEngine::subCounter(ScriptAction* pAction)
 		counterNdx = allocateCounter(pAction->getParameter(1)->getString());
 		pAction->getParameter(1)->friend_setInt(counterNdx);
 	}
-	m_counters[counterNdx].value -= value;
+    if (g_isLegacyCounter[counterNdx]) {
+        if (g_cachedLegacyFrameAdvanced) {
+            m_counters[counterNdx].value -= value;
+        }
+    } else {
+        m_counters[counterNdx].value -= value;
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -6809,6 +6833,7 @@ void ScriptEngine::setTimer(ScriptAction* pAction, Bool millisecondTimer, Bool r
 		m_counters[counterNdx].value = value;
 	}
 	m_counters[counterNdx].isCountdownTimer = true;
+    g_isLegacyCounter[counterNdx] = TRUE;
 }
 
 //-------------------------------------------------------------------------------------------------
