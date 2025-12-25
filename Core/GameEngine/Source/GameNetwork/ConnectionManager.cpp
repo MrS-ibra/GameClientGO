@@ -2563,12 +2563,22 @@ void ConnectionManager::sendSingleFrameToPlayer(UnsignedInt playerID, UnsignedIn
 		if ((m_frameData[i] != NULL) && (i != playerID)) { // no need to send his own commands to him.
 			NetCommandList *list = m_frameData[i]->getFrameCommandList(frame);
 			if (list != NULL) {
-				NetCommandRef *ref = list->getFirstMessage();
-				while (ref != NULL) {
-					DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("ConnectionManager::sendFrameDataToPlayer - sending command %d from player %d to player %d using relay 0x%x", ref->getCommand()->getID(), i, playerID, relay));
-					sendLocalCommandDirect(ref->getCommand(), relay);
-					ref = ref->getNext();
-				}
+NetCommandRef *ref = list->getFirstMessage();
+while (ref != NULL) {
+    NetCommandRef *nextRef = ref->getNext();
+
+    // Skip re-sending disconnect-frame commands to avoid duplicate disconnect messages
+    if (ref->getCommand()->getNetCommandType() == NETCOMMANDTYPE_DISCONNECTFRAME) {
+        ref = nextRef;
+        continue;
+    }
+
+    DEBUG_LOG_LEVEL(DEBUG_LEVEL_NET, ("ConnectionManager::sendFrameDataToPlayer - sending command %d from player %d to player %d using relay 0x%x",
+        ref->getCommand()->getID(), i, playerID, relay));
+    sendLocalCommandDirect(ref->getCommand(), relay);
+
+    ref = nextRef;
+}
 			}
 			UnsignedInt frameCommandCount = m_frameData[i]->getFrameCommandCount(frame);
 			NetFrameCommandMsg *msg = newInstance(NetFrameCommandMsg);
