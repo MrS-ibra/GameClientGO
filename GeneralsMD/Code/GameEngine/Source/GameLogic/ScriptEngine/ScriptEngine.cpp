@@ -57,6 +57,8 @@
 #include "GameLogic/ScriptEngine.h"
 #include "GameLogic/SidesList.h"
 
+static Bool g_isLegacyCounter[MAX_COUNTERS];
+static Bool g_cachedLegacyFrameAdvanced = FALSE;
 
 // These are for debugger window
 static int st_LastCurrentFrame;
@@ -74,9 +76,6 @@ static HMODULE st_DebugDLL;
 #include "GameClient/ParticleSys.h"
 #include "Common/MapObject.h"
 #include "../../GameEngineDevice/Include/W3DDevice/GameClient/W3DAssetManagerExposed.h"
-
-static Bool g_isLegacyCounter[MAX_COUNTERS];
-static Bool g_cachedLegacyFrameAdvanced = FALSE;
 
 static void _addUpdatedParticleSystem(AsciiString particleSystemName);
 static void _appendAllParticleSystems(void);
