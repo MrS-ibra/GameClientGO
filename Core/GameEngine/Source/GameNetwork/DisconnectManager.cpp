@@ -559,42 +559,42 @@ void DisconnectManager::turnOnScreen(ConnectionManager *conMgr) {
 }
 
 void DisconnectManager::disconnectPlayer(Int slot, ConnectionManager *conMgr) {
-	DEBUG_LOG(("DisconnectManager::disconnectPlayer - Disconnecting slot number %d on frame %d", slot, TheGameLogic->getFrame()));
-	DEBUG_ASSERTCRASH((slot >= 0) && (slot < MAX_SLOTS), ("Attempting to disconnect an invalid slot number"));
-	if ((slot < 0) || (slot >= (MAX_SLOTS))) {
-		return;
-	}
+    DEBUG_LOG(("DisconnectManager::disconnectPlayer - Disconnecting slot number %d on frame %d", slot, TheGameLogic->getFrame()));
+    DEBUG_ASSERTCRASH((slot >= 0) && (slot < MAX_SLOTS), ("Attempting to disconnect an invalid slot number"));
+    if ((slot < 0) || (slot >= (MAX_SLOTS))) {
+        return;
+    }
 
-	if (TheGameInfo)
-	{
-		GameSlot *gSlot = TheGameInfo->getSlot( slot );
-		if (gSlot)
-		{
-			gSlot->markAsDisconnected();
-		}
-	}
+    if (TheGameInfo)
+    {
+        GameSlot *gSlot = TheGameInfo->getSlot( slot );
+        if (gSlot)
+        {
+            gSlot->markAsDisconnected();
+        }
+    }
 
-	Int transSlot = translatedSlotPosition(slot, conMgr->getLocalPlayerID());
+    Int transSlot = translatedSlotPosition(slot, conMgr->getLocalPlayerID());
     DEBUG_LOG(("DBG_DP: disconnectPlayer called %s:%d slot=%d localPlayer=%d transSlot=%d",
-    __FILE__, __LINE__, slot, conMgr->getLocalPlayerID(), transSlot));
+        __FILE__, __LINE__, slot, conMgr->getLocalPlayerID(), transSlot));
 
-	if (transSlot != -1) {
-		// Ignore any disconnect commands that tell us to disconnect ourselves.
+    if ((slot == conMgr->getLocalPlayerID()) || (transSlot == -1)) {
+        DEBUG_LOG(("DBG_DP: Ignoring disconnectPlayer for local slot %d (transSlot=%d)", slot, transSlot));
+        return;
+    }
 
-		// Get the disconnecting player off the disconnect window.
-		UnicodeString uname = conMgr->getPlayerName(slot);
-		TheRecorder->logPlayerDisconnect(uname, slot);
-		TheDisconnectMenu->removePlayer(transSlot, uname);
+    UnicodeString uname = conMgr->getPlayerName(slot);
+    TheRecorder->logPlayerDisconnect(uname, slot);
+    TheDisconnectMenu->removePlayer(transSlot, uname);
 
-		PlayerLeaveCode retcode = conMgr->disconnectPlayer(slot);
-		DEBUG_ASSERTCRASH((retcode != PLAYERLEAVECODE_UNKNOWN), ("Invalid player leave code"));
+    PlayerLeaveCode retcode = conMgr->disconnectPlayer(slot);
+    DEBUG_ASSERTCRASH((retcode != PLAYERLEAVECODE_UNKNOWN), ("Invalid player leave code"));
 
-		if (retcode == PLAYERLEAVECODE_PACKETROUTER) {
-			DEBUG_LOG(("DisconnectManager::disconnectPlayer - disconnecting player was packet router."));
+    if (retcode == PLAYERLEAVECODE_PACKETROUTER) {
+        DEBUG_LOG(("DisconnectManager::disconnectPlayer - disconnecting player was packet router."));
 
-			conMgr->resendPendingCommands();
-		}
-	}
+        conMgr->resendPendingCommands();
+    }
 }
 
 void DisconnectManager::sendDisconnectCommand(Int slot, ConnectionManager *conMgr) {
