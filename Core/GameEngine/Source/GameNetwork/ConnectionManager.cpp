@@ -1935,16 +1935,18 @@ void ConnectionManager::quitGame() {
 	NetDisconnectPlayerCommandMsg *disconnectMsg = newInstance(NetDisconnectPlayerCommandMsg);
 	disconnectMsg->setDisconnectSlot(m_localSlot);
 	disconnectMsg->setDisconnectFrame(TheGameLogic->getFrame());
+    DEBUG_LOG(("DBG_DISCONNECT: CREATED %s:%d id=%d slot=%d setFrame=%u localFrame=%u",
+    __FILE__, __LINE__, msg->getID(), msg->getDisconnectSlot(), msg->getDisconnectFrame(), TheGameLogic->getFrame()));
 	disconnectMsg->setPlayerID(m_localSlot);
 	if (DoesCommandRequireACommandID(disconnectMsg->getNetCommandType())) {
 		disconnectMsg->setID(GenerateNextCommandID());
 	}
-	//DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - about to send disconnect command"));
+	DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - about to send disconnect command"));
 	sendLocalCommandDirect(disconnectMsg, 0xff ^ (1 << m_localSlot));
 
-	//DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - about to flush connections"));
+	DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - about to flush connections"));
 	flushConnections(); // need to do this so our packet actually gets sent before the connections are deleted.
-	//DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - done flushing connections"));
+	DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - done flushing connections"));
 
 	disconnectMsg->detach();
 
