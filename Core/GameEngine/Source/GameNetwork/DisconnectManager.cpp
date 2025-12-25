@@ -575,6 +575,8 @@ void DisconnectManager::disconnectPlayer(Int slot, ConnectionManager *conMgr) {
 	}
 
 	Int transSlot = translatedSlotPosition(slot, conMgr->getLocalPlayerID());
+    DEBUG_LOG(("DBG_DP: disconnectPlayer called %s:%d slot=%d localPlayer=%d transSlot=%d",
+    __FILE__, __LINE__, slot, conMgr->getLocalPlayerID(), transSlot));
 
 	if (transSlot != -1) {
 		// Ignore any disconnect commands that tell us to disconnect ourselves.
