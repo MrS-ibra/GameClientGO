@@ -736,20 +736,29 @@ void DisconnectManager::sendPlayerDestruct(Int slot, ConnectionManager *conMgr) 
     DEBUG_LOG(("DBG_SENDDESTRUCT: Queueing DestroyPlayer slot=%d id=%d execFrame=%d localFrame=%d",
         slot, currentID, TheNetwork->getExecutionFrame()+1, TheGameLogic->getFrame()));
 
+    // Primary message for the packet-router path
     NetDestroyPlayerCommandMsg *netmsg = newInstance(NetDestroyPlayerCommandMsg);
     netmsg->setExecutionFrame(TheNetwork->getExecutionFrame()+1);
     netmsg->setPlayerID(conMgr->getLocalPlayerID());
     netmsg->setID(currentID);
     netmsg->setPlayerIndex(slot);
 
-    // Send via normal routing (packet router) so the router can include it in its frame data.
+    // Enqueue via normal routing so the packet router can include it in frame data
     conMgr->sendLocalCommand(netmsg);
 
-    // Also attempt a direct send to remaining peers to reduce the chance of the message
-    // being lost if the router path is interrupted. Use a relay that targets everyone except local.
-    UnsignedByte relay = 0xff & ~(1 << conMgr->getLocalPlayerID());
-    conMgr->sendLocalCommandDirect(netmsg, relay);
+    // Create a separate instance for a direct send to remaining peers to reduce the chance
+    // of the message being lost if the router path is interrupted. This avoids ownership/race issues.
+    NetDestroyPlayerCommandMsg *netmsgDirect = newInstance(NetDestroyPlayerCommandMsg);
+    netmsgDirect->setExecutionFrame(netmsg->getExecutionFrame());
+    netmsgDirect->setPlayerID(netmsg->getPlayerID());
+    netmsgDirect->setID(netmsg->getID());
+    netmsgDirect->setPlayerIndex(netmsg->getPlayerIndex());
 
+    UnsignedByte relay = 0xff & ~(1 << conMgr->getLocalPlayerID());
+    conMgr->sendLocalCommandDirect(netmsgDirect, relay);
+
+    // Detach both instances (balance newInstance)
+    netmsgDirect->detach();
     netmsg->detach();
 }
 
