@@ -310,10 +310,36 @@ void DisconnectManager::processDisconnectKeepAlive(NetCommandMsg *msg, Connectio
 }
 
 void DisconnectManager::processDisconnectPlayer(NetCommandMsg *msg, ConnectionManager *conMgr) {
-	NetDisconnectPlayerCommandMsg *cmdMsg = (NetDisconnectPlayerCommandMsg *)msg;
-	DEBUG_LOG(("DisconnectManager::processDisconnectPlayer - Got disconnect player command from player %d.  Disconnecting player %d on frame %d", msg->getPlayerID(), cmdMsg->getDisconnectSlot(), cmdMsg->getDisconnectFrame()));
-	DEBUG_ASSERTCRASH(TheGameLogic->getFrame() == cmdMsg->getDisconnectFrame(), ("disconnecting player on the wrong frame!!!"));
-	disconnectPlayer(cmdMsg->getDisconnectSlot(), conMgr);
+    NetDisconnectPlayerCommandMsg *cmdMsg = (NetDisconnectPlayerCommandMsg *)msg;
+    UnsignedInt playerID = cmdMsg->getPlayerID();
+    UnsignedInt disconnectSlot = cmdMsg->getDisconnectSlot();
+
+    DEBUG_LOG(("DisconnectManager::processDisconnectPlayer - Got disconnect player command from player %d.  Disconnecting player %d on frame %d",
+        playerID, disconnectSlot, cmdMsg->getDisconnectFrame()));
+
+    DEBUG_ASSERTCRASH(TheGameLogic->getFrame() == cmdMsg->getDisconnectFrame(),
+        ("disconnecting player on the wrong frame!!!"));
+
+    // Always perform the normal disconnect behavior.
+    disconnectPlayer(disconnectSlot, conMgr);
+
+    // NEW LOGIC:
+    // If this is a self-disconnect (the player who sent the command is the same as the
+    // disconnect target), treat it as a voluntary quit that should be resolved as defeat.
+    // We only want one machine to queue the DestroyPlayer command, so we let the packet
+    // router handle it.
+    if ((playerID == disconnectSlot) && (disconnectSlot != conMgr->getLocalPlayerID())) {
+        UnsignedInt localSlot = conMgr->getLocalPlayerID();
+        UnsignedInt packetRouterSlot = conMgr->getPacketRouterSlot();
+
+        if (packetRouterSlot == localSlot) {
+            DEBUG_LOG(("DisconnectManager::processDisconnectPlayer - treating quit from player %d as defeat; queueing DestroyPlayer", disconnectSlot));
+            sendPlayerDestruct(disconnectSlot, conMgr);
+        } else {
+            DEBUG_LOG(("DisconnectManager::processDisconnectPlayer - quit from player %d observed, but local slot %d is not packet router (router is %d); not queueing DestroyPlayer here",
+                disconnectSlot, localSlot, packetRouterSlot));
+        }
+    }
 }
 
 void DisconnectManager::processPacketRouterQuery(NetCommandMsg *msg, ConnectionManager *conMgr) {
