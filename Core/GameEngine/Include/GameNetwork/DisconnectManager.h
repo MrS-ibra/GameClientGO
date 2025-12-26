@@ -122,4 +122,5 @@ protected:
 	Int m_pingsSent;
 	Int m_pingsRecieved;
 	UnsignedInt m_pingFrame;
+    friend class ConnectionManager;
 };
