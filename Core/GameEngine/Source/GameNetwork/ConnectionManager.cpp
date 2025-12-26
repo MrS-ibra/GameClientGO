@@ -1931,34 +1931,41 @@ PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
 #endif
 
 // Quit the game now. This should only be called from the disconnect screen.
-void Network::quitGame() {
-    if (m_conMgr != NULL) {
-        UnsignedInt frame = TheGameLogic->getFrame();
-        UnsignedInt localSlot = m_conMgr->getLocalPlayerID();
-
-        // 1) Tell everyone, via the normal leave mechanism, that we are leaving
-        //    at this frame. This uses the same path as normal in-game quits,
-        //    which other clients already understand as "this player is gone".
-        m_conMgr->handleLocalPlayerLeaving(frame);
-
-        // 2) Locally, treat this as a self-destruct / defeat.
-        //    Push ourselves into the self-destruct queue so RelayCommandsToCommandList
-        //    can emit the appropriate MSG_SELF_DESTRUCT game message.
-        selfDestructPlayer(localSlot);
+void ConnectionManager::quitGame() {
+    // Need to do the NetDisconnectPlayerCommandMsg creation and sending here.
+    NetDisconnectPlayerCommandMsg *disconnectMsg = newInstance(NetDisconnectPlayerCommandMsg);
+    disconnectMsg->setDisconnectSlot(m_localSlot);
+    disconnectMsg->setDisconnectFrame(TheGameLogic->getFrame());
+    disconnectMsg->setPlayerID(m_localSlot);
+    if (DoesCommandRequireACommandID(disconnectMsg->getNetCommandType())) {
+        disconnectMsg->setID(GenerateNextCommandID());
     }
+    //DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - about to send disconnect command"));
+    sendLocalCommandDirect(disconnectMsg, 0xff ^ (1 << m_localSlot));
 
-    // 3) Keep existing disconnect-protocol behavior so DC state is cleaned up.
-    if (m_conMgr != NULL) {
-        m_conMgr->quitGame();
+    //DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - about to flush connections"));
+    flushConnections(); // need to do this so our packet actually gets sent before the connections are deleted.
+    //DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - done flushing connections"));
+
+    disconnectMsg->detach();
+
+#if RTS_GENERALS
+    // if we get here, we hit Quit on the disconnect screen.  Mark everyone as having disconnected from us
+    // so the online stats can give us appropriate feedback.
+    if (TheGameInfo)
+    {
+        for (Int i = 0; i < MAX_SLOTS; ++i)
+        {
+            GameSlot *gSlot = TheGameInfo->getSlot( i );
+            if (gSlot && !gSlot->lastFrameInGame())
+            {
+                gSlot->markAsDisconnected();
+            }
+        }
     }
+#endif
 
-    // 4) Also send a local self-destruct message, like a normal quit menu quit.
-    GameMessage *msg = TheMessageStream->appendMessage(GameMessage::MSG_SELF_DESTRUCT);
-    msg->appendBooleanArgument(TRUE);
-
-    TheMessageStream->appendMessage(GameMessage::MSG_CLEAR_GAME_DATA);
-    m_localStatus = NETLOCALSTATUS_POSTGAME;
-    DEBUG_LOG(("Network::quitGame - quitting game..."));
+    disconnectLocalPlayer();
 }
 
 void ConnectionManager::disconnectLocalPlayer() {
