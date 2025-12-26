@@ -960,6 +960,8 @@ void ConnectionManager::processAck(NetCommandMsg *msg) {
  */
 PlayerLeaveCode ConnectionManager::processPlayerLeave(NetPlayerLeaveCommandMsg *msg) {
     UnsignedByte playerID = msg->getLeavingPlayerID();
+    DEBUG_LOG(("ConnectionManager::processPlayerLeave() - processing leave for player %d on this client (localSlot=%d, frame=%d)",
+    msg->getLeavingPlayerID(), m_localSlot, TheGameLogic->getFrame()));
 
     if ((playerID != m_localSlot) && (m_connections[playerID] != NULL)) {
         DEBUG_LOG(("ConnectionManager::processPlayerLeave() - setQuitting() on player %d on frame %d",
