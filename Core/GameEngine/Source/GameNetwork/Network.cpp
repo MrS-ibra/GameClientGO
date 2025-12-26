@@ -621,34 +621,35 @@ Bool Network::AllCommandsReady(UnsignedInt frame) {
  * The commands need to be put on in the same order across all clients.
  */
 void Network::RelayCommandsToCommandList(UnsignedInt frame) {
-	if ((m_conMgr == NULL) || (m_localStatus == NETLOCALSTATUS_PREGAME)) {
-		return;
-	}
-	m_checkCRCsThisFrame = FALSE;
-	NetCommandList *netcmdlist = m_conMgr->getFrameCommandList(frame);
-	NetCommandRef *msg = netcmdlist->getFirstMessage();
-	while (msg != NULL) {
-		NetCommandType cmdType = msg->getCommand()->getNetCommandType();
-		if (cmdType == NETCOMMANDTYPE_GAMECOMMAND) {
-			//DEBUG_LOG(("Network::RelayCommandsToCommandList - appending command %d of type %s to command list on frame %d", msg->getCommand()->getID(), ((NetGameCommandMsg *)msg->getCommand())->constructGameMessage()->getCommandAsString(), TheGameLogic->getFrame()));
-			TheCommandList->appendMessage(((NetGameCommandMsg *)msg->getCommand())->constructGameMessage());
-		} else {
-			processFrameSynchronizedNetCommand(msg);
-		}
-		msg = msg->getNext();
-	}
+    if ((m_conMgr == NULL) || (m_localStatus == NETLOCALSTATUS_PREGAME)) {
+        return;
+    }
+    m_checkCRCsThisFrame = FALSE;
+    NetCommandList *netcmdlist = m_conMgr->getFrameCommandList(frame);
+    NetCommandRef *msg = netcmdlist->getFirstMessage();
+    while (msg != NULL) {
+        NetCommandType cmdType = msg->getCommand()->getNetCommandType();
+        if (cmdType == NETCOMMANDTYPE_GAMECOMMAND) {
+            TheCommandList->appendMessage(((NetGameCommandMsg *)msg->getCommand())->constructGameMessage());
+        } else {
+            processFrameSynchronizedNetCommand(msg);
+        }
+        msg = msg->getNext();
+    }
 
-	for (std::list<Int>::iterator selfDestructIt = m_playersToDisconnect.begin(); selfDestructIt != m_playersToDisconnect.end(); ++selfDestructIt)
-	{
-		//Int playerToDisconnect = *selfDestructIt;
-		//GameMessage *msg = newInstance(GameMessage)( GameMessage::MSG_SELF_DESTRUCT );
-		//msg->friend_setPlayerIndex(playerToDisconnect);
-		//msg->appendBooleanArgument(TRUE);
-		//TheCommandList->appendMessage(msg);
-	}
-	m_playersToDisconnect.clear();
+    // Process any queued self-destruct requests as game logic commands.
+    for (std::list<Int>::iterator selfDestructIt = m_playersToDisconnect.begin();
+         selfDestructIt != m_playersToDisconnect.end(); ++selfDestructIt)
+    {
+        Int playerToDisconnect = *selfDestructIt;
+        GameMessage *gmsg = newInstance(GameMessage)(GameMessage::MSG_SELF_DESTRUCT);
+        gmsg->friend_setPlayerIndex(playerToDisconnect);
+        gmsg->appendBooleanArgument(TRUE);
+        TheCommandList->appendMessage(gmsg);
+    }
+    m_playersToDisconnect.clear();
 
-	deleteInstance(netcmdlist);
+    deleteInstance(netcmdlist);
 }
 
 /**
@@ -1112,4 +1113,5 @@ void Network::notifyOthersOfNewFrame(UnsignedInt frame) {
 	}
 
 }
+
 
