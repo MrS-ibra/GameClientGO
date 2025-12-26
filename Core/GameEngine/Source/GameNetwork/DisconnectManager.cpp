@@ -806,6 +806,24 @@ Bool DisconnectManager::isPlayerInGame(Int slot, ConnectionManager *conMgr) {
 	return TRUE;
 }
 
+// NEW: Handle remote player disconnection → trigger DestroyPlayer
+void DisconnectManager::onRemotePlayerDisconnected(Int slot, ConnectionManager* conMgr)
+{
+    Int transSlot = translatedSlotPosition(slot, conMgr->getLocalPlayerID());
+    if (transSlot == -1) {
+        return; // not in game from this client's point of view
+    }
+
+    // If DC system already removed this player (timed out/voted out), skip
+    if (!isPlayerInGame(transSlot, conMgr)) {
+        return;
+    }
+
+    DEBUG_LOG(("DisconnectManager::onRemotePlayerDisconnected - queuing DestroyPlayer for slot %d", slot));
+
+    sendPlayerDestruct(slot, conMgr);
+}
+
 void DisconnectManager::playerHasAdvancedAFrame(Int slot, UnsignedInt frame) {
 	// if they have advanced beyond the frame they had been previously disconnecting on.
 	if (frame >= m_disconnectFrames[slot]) {
