@@ -997,16 +997,21 @@ Bool Network::areAllQueuesEmpty(void)
  * Quit the game now.  This should only be called from the disconnect screen.
  */
 void Network::quitGame() {
-	if (m_conMgr != NULL) {
-		m_conMgr->quitGame();
-	}
-    
-// Always self-destruct when quitting from the disconnect menu.
-GameMessage *msg = TheMessageStream->appendMessage(GameMessage::MSG_SELF_DESTRUCT);
-msg->appendBooleanArgument(TRUE);
-	TheMessageStream->appendMessage(GameMessage::MSG_CLEAR_GAME_DATA);
-	m_localStatus = NETLOCALSTATUS_POSTGAME;
-	DEBUG_LOG(("Network::quitGame - quitting game..."));
+    if (m_conMgr != NULL) {
+        Int localIndex = m_conMgr->getLocalPlayerID();
+        selfDestructPlayer(localIndex);
+    }
+
+    if (m_conMgr != NULL) {
+        m_conMgr->quitGame();
+    }
+
+    GameMessage *msg = TheMessageStream->appendMessage(GameMessage::MSG_SELF_DESTRUCT);
+    msg->appendBooleanArgument(TRUE);
+
+    TheMessageStream->appendMessage(GameMessage::MSG_CLEAR_GAME_DATA);
+    m_localStatus = NETLOCALSTATUS_POSTGAME;
+    DEBUG_LOG(("Network::quitGame - quitting game..."));
 }
 
 void Network::selfDestructPlayer(Int index)
@@ -1107,3 +1112,4 @@ void Network::notifyOthersOfNewFrame(UnsignedInt frame) {
 	}
 
 }
+
