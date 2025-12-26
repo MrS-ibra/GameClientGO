@@ -959,37 +959,64 @@ void ConnectionManager::processAck(NetCommandMsg *msg) {
  * If we are leaving and are also the packet router, it will return the PLAYERLEAVECODE_LOCAL return code.
  */
 PlayerLeaveCode ConnectionManager::processPlayerLeave(NetPlayerLeaveCommandMsg *msg) {
-	UnsignedByte playerID = msg->getLeavingPlayerID();
-	if ((playerID != m_localSlot) && (m_connections[playerID] != NULL)) {
-		DEBUG_LOG(("ConnectionManager::processPlayerLeave() - setQuitting() on player %d on frame %d", playerID, TheGameLogic->getFrame()));
-		m_connections[playerID]->setQuitting();
-	}
-	DEBUG_ASSERTCRASH(m_frameData[playerID]->getIsQuitting() == FALSE, ("Player %d is already quitting", playerID));
-	if ((playerID != m_localSlot) && (m_frameData[playerID] != NULL) && (m_frameData[playerID]->getIsQuitting() == FALSE)) {
-		DEBUG_LOG(("ConnectionManager::processPlayerLeave - setQuitFrame on player %d for frame %d", playerID, TheGameLogic->getFrame()+1));
-		m_frameData[playerID]->setQuitFrame(TheGameLogic->getFrame() + FRAMES_TO_KEEP + 1);
-	}
+    UnsignedByte playerID = msg->getLeavingPlayerID();
 
-	if (playerID == m_localSlot)
-	{
-		// we're leaving, so mark our connections and frame datas to go away.
-		for (Int i=0; i<MAX_SLOTS; ++i)
-		{
-			if (m_connections[i])
-			{
-				m_connections[i]->clearCommandsExceptFrom(m_localSlot);
-				m_connections[i]->setQuitting();
-			}
-		}
-	}
+    if ((playerID != m_localSlot) && (m_connections[playerID] != NULL)) {
+        DEBUG_LOG(("ConnectionManager::processPlayerLeave() - setQuitting() on player %d on frame %d",
+            playerID, TheGameLogic->getFrame()));
+        m_connections[playerID]->setQuitting();
+    }
 
-	PlayerLeaveCode code = disconnectPlayer(playerID);
-	DEBUG_LOG(("ConnectionManager::processPlayerLeave() - just disconnected player %d with ret code %d", playerID, code));
-	if (code == PLAYERLEAVECODE_PACKETROUTER)
-		resendPendingCommands();
+    DEBUG_ASSERTCRASH(m_frameData[playerID]->getIsQuitting() == FALSE,
+        ("Player %d is already quitting", playerID));
 
-	PopulateInGameDiplomacyPopup();
-	return code;
+    if ((playerID != m_localSlot) && (m_frameData[playerID] != NULL) &&
+        (m_frameData[playerID]->getIsQuitting() == FALSE)) {
+        DEBUG_LOG(("ConnectionManager::processPlayerLeave - setQuitFrame on player %d for frame %d",
+            playerID, TheGameLogic->getFrame()+1));
+        m_frameData[playerID]->setQuitFrame(TheGameLogic->getFrame() + FRAMES_TO_KEEP + 1);
+    }
+
+    if (playerID == m_localSlot)
+    {
+        // we're leaving, so mark our connections and frame datas to go away.
+        for (Int i = 0; i < MAX_SLOTS; ++i)
+        {
+            if (m_connections[i])
+            {
+                m_connections[i]->clearCommandsExceptFrom(m_localSlot);
+                m_connections[i]->setQuitting();
+            }
+        }
+    }
+
+    // Perform the actual disconnect.
+    PlayerLeaveCode code = disconnectPlayer(playerID);
+    DEBUG_LOG(("ConnectionManager::processPlayerLeave() - just disconnected player %d with ret code %d",
+        playerID, code));
+
+    // If the leaving player was the packet router, resend pending commands.
+    if (code == PLAYERLEAVECODE_PACKETROUTER) {
+        resendPendingCommands();
+    }
+
+    // NEW: Treat this leave as a defeat event for this player.
+    // Only the current packet router should queue the DestroyPlayer command,
+    // to avoid duplicates. The disconnect system already assumes that the
+    // packet router (or next router) will be responsible for sending this.
+    if (m_disconnectManager != NULL) {
+        // Check if this client is the packet router.
+        if (isPacketRouter()) {
+            DEBUG_LOG(("ConnectionManager::processPlayerLeave - queuing DestroyPlayer for leaving player %d", playerID));
+            m_disconnectManager->sendPlayerDestruct(playerID, this);
+        } else {
+            DEBUG_LOG(("ConnectionManager::processPlayerLeave - player %d left, but local is not packet router; not queuing DestroyPlayer here",
+                playerID));
+        }
+    }
+
+    PopulateInGameDiplomacyPopup();
+    return code;
 }
 
 UnsignedInt ConnectionManager::getPacketRouterFallbackSlot(Int packetRouterNumber) {
