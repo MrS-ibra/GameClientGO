@@ -999,14 +999,24 @@ Bool Network::areAllQueuesEmpty(void)
  */
 void Network::quitGame() {
     if (m_conMgr != NULL) {
-        Int localIndex = m_conMgr->getLocalPlayerID();
-        selfDestructPlayer(localIndex);
+        UnsignedInt frame     = TheGameLogic->getFrame();
+        UnsignedInt localSlot = m_conMgr->getLocalPlayerID();
+
+        // 1) Use the normal "player is leaving" mechanism so other clients
+        //    see this as a proper leave, not just a silent disconnect.
+        m_conMgr->handleLocalPlayerLeaving(frame);
+
+        // 2) Queue ourselves for self-destruct so RelayCommandsToCommandList
+        //    can turn this into a MSG_SELF_DESTRUCT game message.
+        selfDestructPlayer(localSlot);
     }
 
+    // 3) Preserve existing disconnect-protocol behavior for the DC system.
     if (m_conMgr != NULL) {
         m_conMgr->quitGame();
     }
 
+    // 4) Also send a local self-destruct message, like a normal quit menu quit.
     GameMessage *msg = TheMessageStream->appendMessage(GameMessage::MSG_SELF_DESTRUCT);
     msg->appendBooleanArgument(TRUE);
 
@@ -1113,5 +1123,6 @@ void Network::notifyOthersOfNewFrame(UnsignedInt frame) {
 	}
 
 }
+
 
 
