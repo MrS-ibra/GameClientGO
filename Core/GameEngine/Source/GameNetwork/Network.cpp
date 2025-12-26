@@ -1000,13 +1000,10 @@ void Network::quitGame() {
 	if (m_conMgr != NULL) {
 		m_conMgr->quitGame();
 	}
-
-#if !RTS_GENERALS || !RETAIL_COMPATIBLE_CRC
-	// Blow up / Transfer your units when you quit.  Like a normal quit menu quit.
-	GameMessage *msg = TheMessageStream->appendMessage(GameMessage::MSG_SELF_DESTRUCT);
-	msg->appendBooleanArgument(TRUE);
-#endif
-
+    
+// Always self-destruct when quitting from the disconnect menu.
+GameMessage *msg = TheMessageStream->appendMessage(GameMessage::MSG_SELF_DESTRUCT);
+msg->appendBooleanArgument(TRUE);
 	TheMessageStream->appendMessage(GameMessage::MSG_CLEAR_GAME_DATA);
 	m_localStatus = NETLOCALSTATUS_POSTGAME;
 	DEBUG_LOG(("Network::quitGame - quitting game..."));
@@ -1108,4 +1105,5 @@ void Network::notifyOthersOfNewFrame(UnsignedInt frame) {
 	if (m_conMgr != NULL) {
 		m_conMgr->notifyOthersOfNewFrame(frame);
 	}
+
 }
