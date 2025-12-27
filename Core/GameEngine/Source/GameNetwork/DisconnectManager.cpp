@@ -324,7 +324,6 @@ void DisconnectManager::processDisconnectPlayer(NetCommandMsg *msg, ConnectionMa
 
     // experimental behavior: also defeat this player if DC did not
     // already handle them via timeout/vote logic.
-    if (TheNetwork->isPacketRouter()) {
         Int localSlot = conMgr->getLocalPlayerID();
         Int translated = translatedSlotPosition(slot, localSlot);
 
@@ -341,7 +340,6 @@ void DisconnectManager::processDisconnectPlayer(NetCommandMsg *msg, ConnectionMa
             sendPlayerDestruct(slot, conMgr);
         } else {
             DEBUG_LOG(("DisconnectManager::processDisconnectPlayer - slot %d already handled by DC; not sending DestroyPlayer here", slot));
-        }
     }
 }
 
