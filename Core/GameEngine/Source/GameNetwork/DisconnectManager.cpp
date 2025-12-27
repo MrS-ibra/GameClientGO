@@ -310,10 +310,39 @@ void DisconnectManager::processDisconnectKeepAlive(NetCommandMsg *msg, Connectio
 }
 
 void DisconnectManager::processDisconnectPlayer(NetCommandMsg *msg, ConnectionManager *conMgr) {
-	NetDisconnectPlayerCommandMsg *cmdMsg = (NetDisconnectPlayerCommandMsg *)msg;
-	DEBUG_LOG(("DisconnectManager::processDisconnectPlayer - Got disconnect player command from player %d.  Disconnecting player %d on frame %d", msg->getPlayerID(), cmdMsg->getDisconnectSlot(), cmdMsg->getDisconnectFrame()));
-	DEBUG_ASSERTCRASH(TheGameLogic->getFrame() == cmdMsg->getDisconnectFrame(), ("disconnecting player on the wrong frame!!!"));
-	disconnectPlayer(cmdMsg->getDisconnectSlot(), conMgr);
+    NetDisconnectPlayerCommandMsg *cmdMsg = (NetDisconnectPlayerCommandMsg *)msg;
+    Int slot = cmdMsg->getDisconnectSlot();
+
+    DEBUG_LOG(("DisconnectManager::processDisconnectPlayer - Got disconnect player command from player %d.  Disconnecting player %d on frame %d",
+        msg->getPlayerID(), slot, cmdMsg->getDisconnectFrame()));
+
+    DEBUG_ASSERTCRASH(TheGameLogic->getFrame() == cmdMsg->getDisconnectFrame(),
+        ("disconnecting player on the wrong frame!!!"));
+
+    // Disconnect/remove from DC UI
+    disconnectPlayer(slot, conMgr);
+
+    // experimental behavior: also defeat this player if DC did not
+    // already handle them via timeout/vote logic.
+    if (TheNetwork->isPacketRouter()) {
+        Int localSlot = conMgr->getLocalPlayerID();
+        Int translated = translatedSlotPosition(slot, localSlot);
+
+        Bool votedOut = FALSE;
+        Bool timedOut = FALSE;
+
+        if (translated != -1) {
+            votedOut = isPlayerVotedOut(translated, conMgr);
+            timedOut = hasPlayerTimedOut(translated);
+        }
+
+        if (!votedOut && !timedOut) {
+            DEBUG_LOG(("DisconnectManager::processDisconnectPlayer - slot %d was not voted out or timed out; sending DestroyPlayer as direct leave", slot));
+            sendPlayerDestruct(slot, conMgr);
+        } else {
+            DEBUG_LOG(("DisconnectManager::processDisconnectPlayer - slot %d already handled by DC; not sending DestroyPlayer here", slot));
+        }
+    }
 }
 
 void DisconnectManager::processPacketRouterQuery(NetCommandMsg *msg, ConnectionManager *conMgr) {
