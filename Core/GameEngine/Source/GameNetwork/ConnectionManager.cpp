@@ -1931,22 +1931,10 @@ PlayerLeaveCode ConnectionManager::disconnectPlayer(int64_t userID)
 #endif
 
 void ConnectionManager::quitGame() {
-	// Need to do the NetDisconnectPlayerCommandMsg creation and sending here.
-	NetDisconnectPlayerCommandMsg *disconnectMsg = newInstance(NetDisconnectPlayerCommandMsg);
-	disconnectMsg->setDisconnectSlot(m_localSlot);
-	disconnectMsg->setDisconnectFrame(TheGameLogic->getFrame());
-	disconnectMsg->setPlayerID(m_localSlot);
-	if (DoesCommandRequireACommandID(disconnectMsg->getNetCommandType())) {
-		disconnectMsg->setID(GenerateNextCommandID());
-	}
-	//DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - about to send disconnect command"));
-	sendLocalCommandDirect(disconnectMsg, 0xff ^ (1 << m_localSlot));
 
 	//DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - about to flush connections"));
 	flushConnections(); // need to do this so our packet actually gets sent before the connections are deleted.
 	//DEBUG_LOG(("ConnectionManager::disconnectLocalPlayer - done flushing connections"));
-
-	disconnectMsg->detach();
 
 #if RTS_GENERALS
 	// if we get here, we hit Quit on the disconnect screen.  Mark everyone as having disconnected from us
