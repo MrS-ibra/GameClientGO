@@ -2392,8 +2392,7 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 			s_matchStartCountdownWasRunning = true;
 
 			const int64_t timeBetweenChecks = 1000;
-			int64_t currTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-				std::chrono::utc_clock::now().time_since_epoch()).count();
+			int64_t currTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::utc_clock::now().time_since_epoch()).count();
 
 			if (currTime - TheNGMPGame->GetCountdownLastCheckTime() >= timeBetweenChecks)
 			{
@@ -2409,8 +2408,7 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 				else
 					strInform.format(TheGameText->fetch("LAN:GameStartTimerPlural"), secondsRemaining);
 
-				NGMP_OnlineServices_LobbyInterface* pLobbyInterface =
-					NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+				NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
 				if (pLobbyInterface != nullptr)
 				{
 					pLobbyInterface->SendAnnouncementMessageToCurrentLobby(strInform, true);
@@ -2423,7 +2421,7 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 					TheNGMPGame->StopCountdown();
 
 					// send start game packet
-					std::shared_ptr<WebSocket> pWS = NGMP_OnlineServicesManager::GetWebSocket();
+					std::shared_ptr<WebSocket>  pWS = NGMP_OnlineServicesManager::GetWebSocket();
 					if (pWS != nullptr)
 					{
 						pWS->SendData_StartGame();
@@ -3775,8 +3773,10 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 					}
 					else if (controlID == comboBoxPlayerID[i] && pLobbyInterface->IsHost())
 					{
+						// We don't have anything that'll happen if we click on ourselves
 						if (i == myGame->getLocalSlotNum())
 							break;
+						// Get
 
 						Int pos = -1;
 						GadgetComboBoxGetSelectedPos(comboBoxPlayer[i], &pos);
@@ -3784,12 +3784,25 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 						{
 							if (myGame->getSlot(i)->getState() == SLOT_PLAYER)
 							{
+								// TODO_NGMP: Support kick again
+                                /*
+                                PeerRequest req;
+                                req.peerRequestType = PeerRequest::PEERREQUEST_UTMPLAYER;
+                                req.UTM.isStagingRoom = TRUE;
+                                AsciiString aName;
+                                aName.translate(myGame->getSlot(i)->getName());
+                                req.nick = aName.str();
+                                req.id = "KICK/";
+                                req.options = "true";
+                                TheGameSpyPeerMessageQueue->addRequest(req);
+                                */
+
 								UnicodeString name = myGame->getSlot(i)->getName();
 
+								// NOTE: No host check here, service enforces it
 								NGMPGameSlot* pSlot = (NGMPGameSlot*)myGame->getSlot(i);
 								int64_t userBeingKicked = pSlot->m_userID;
 
-								// use existing pLobbyInterface (do NOT redeclare)
 								pLobbyInterface->UpdateCurrentLobby_KickUser(userBeingKicked, name);
 
 								myGame->getSlot(i)->setState(SlotState(pos));
@@ -3807,6 +3820,8 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 								Bool isAI = (myGame->getSlot(i)->isAI());
 								myGame->resetAccepted();
 
+								// // TODO_NGMP
+                                //TheGameSpyInfo->setGameOptions();
 								// any slot change -> reset auto-ready & countdown
 								pLobbyInterface->ClearAutoReadyCountdown();
 
@@ -3817,6 +3832,7 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 								pLobbyInterface->UpdateCurrentLobby_SetSlotState(i, pos);
 
 								WOLDisplaySlotList();
+								//TheLAN->OnPlayerLeave(name);
 							}
 						}
 						break;

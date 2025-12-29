@@ -725,8 +725,6 @@ std::vector<int64_t> m_vecUsersProcessed;
 void PopulateLobbyPlayerListbox(void)
 {
 
-#if defined(GENERALS_ONLINE_ENABLE_MATCH_START_COUNTDOWN)
-
 	NGMP_OnlineServices_RoomsInterface* pRoomsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_RoomsInterface>();
 	NGMP_OnlineServices_StatsInterface* pStatsInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_StatsInterface>();
 	NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
@@ -959,7 +957,7 @@ void PopulateLobbyPlayerListbox(void)
 		}
 		*/
 	}
-#endif
+
 	return;
 
 	if (!listboxLobbyPlayers)
