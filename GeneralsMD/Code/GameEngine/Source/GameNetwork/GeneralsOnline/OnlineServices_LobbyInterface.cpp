@@ -943,6 +943,15 @@ void NGMP_OnlineServices_LobbyInterface::UpdateRoomDataCache(std::function<void(
 								}
 							}
 
+							// stop countdown if player count actually decreased and we're the host
+							if (IsHost()
+								&& TheNGMPGame != nullptr
+								&& TheNGMPGame->IsCountdownStarted()
+								&& lobbyEntry.current_players < m_CurrentLobby.current_players)
+							{
+								TheNGMPGame->StopCountdown();
+							}
+
 							// store
 							m_CurrentLobby = lobbyEntry;
 

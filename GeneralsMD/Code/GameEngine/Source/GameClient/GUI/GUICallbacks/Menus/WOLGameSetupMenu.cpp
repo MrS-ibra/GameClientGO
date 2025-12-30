@@ -2349,8 +2349,6 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 
 					TheNGMPGame->UpdateSlotsFromCurrentLobby();
 
-					WOLDisplaySlotList();
-
 					// Force a refresh to get latest lobby data
 					NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
 					if (pLobbyInterface != nullptr)
