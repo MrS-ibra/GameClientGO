@@ -470,12 +470,10 @@ NGMP_OnlineServices_LobbyInterface::NGMP_OnlineServices_LobbyInterface()
 
 void NGMP_OnlineServices_LobbyInterface::StopMatchStartCountdownIfRunning()
 {
-#if defined(GENERALS_ONLINE_ENABLE_MATCH_START_COUNTDOWN)
 	if (TheNGMPGame != nullptr && TheNGMPGame->IsCountdownStarted())
 	{
 		TheNGMPGame->StopCountdown();
 	}
-#endif
 }
 
 void NGMP_OnlineServices_LobbyInterface::SearchForLobbies(std::function<void()> onStartCallback, std::function<void(std::vector<LobbyEntry>)> onCompleteCallback)

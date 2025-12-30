@@ -201,9 +201,7 @@ static NameKeyType buttonEmoteID = NAMEKEY_INVALID;
 static NameKeyType buttonSelectMapID = NAMEKEY_INVALID;
 static NameKeyType windowMapID = NAMEKEY_INVALID;
 
-#if defined(GENERALS_ONLINE_ENABLE_MATCH_START_COUNTDOWN)
 static bool s_matchStartCountdownWasRunning = false;
-#endif
 static NameKeyType windowMapSelectMapID = NAMEKEY_INVALID;
 static NameKeyType checkBoxUseStatsID = NAMEKEY_INVALID;
 static NameKeyType checkBoxLimitSuperweaponsID = NAMEKEY_INVALID;
@@ -2386,9 +2384,7 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 	{
 		if (TheNGMPGame->IsCountdownStarted())
 		{
-			// mark that countdown is currently running
-			s_matchStartCountdownWasRunning = true;
-
+			s_matchStartCountdownWasRunning = true;  // mark that countdown is currently running
 			const int64_t timeBetweenChecks = 1000;
 			int64_t currTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::utc_clock::now().time_since_epoch()).count();
 
@@ -3805,10 +3801,7 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 
 								myGame->getSlot(i)->setState(SlotState(pos));
 								myGame->resetAccepted();
-
-								// any slot change -> reset auto-ready & countdown
-								pLobbyInterface->ClearAutoReadyCountdown();
-
+								pLobbyInterface->ClearAutoReadyCountdown(); // any slot change -> reset auto-ready & countdown
 								WOLDisplaySlotList();
 							}
 							else if (myGame->getSlot(i)->getState() != pos)

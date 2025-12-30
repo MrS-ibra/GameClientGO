@@ -409,12 +409,10 @@ public:
 	{
 		m_timeStartAutoReadyCountdown = -1;
 
-#if defined(GENERALS_ONLINE_ENABLE_MATCH_START_COUNTDOWN)
 		if (TheNGMPGame != nullptr && TheNGMPGame->IsCountdownStarted())
 		{
 			TheNGMPGame->StopCountdown();
 		}
-#endif
 	}
 
 	bool HasAutoReadyCountdown()
