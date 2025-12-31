@@ -158,7 +158,7 @@ public:
 			}
 		}
 
-		return Real(highestLatencyMs);
+		return Real(highestLatencyMs) / 1000.0f;
 	}
 
 
@@ -204,4 +204,5 @@ private:
 	std::string m_strTurnUsernameString;
 	std::string m_strTurnTokenString;
 };
+
 
