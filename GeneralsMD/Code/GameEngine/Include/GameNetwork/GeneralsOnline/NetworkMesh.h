@@ -146,18 +146,19 @@ public:
 
 	Real getMaximumHistoricalLatency()
 	{
-		int highestLatency = 0;
+		int highestLatencyMs = 0;
 
 		for (auto& kvPair : m_mapConnections)
 		{
 			PlayerConnection& conn = kvPair.second;
-			if (conn.GetLatency() > highestLatency)
+			int histMs = conn.GetHighestHistoricalLatency(); // ms
+			if (histMs > highestLatencyMs)
 			{
-				highestLatency = conn.GetHighestHistoricalLatency();
+				highestLatencyMs = histMs;
 			}
 		}
 
-		return Real(highestLatency);
+		return Real(highestLatencyMs) / 1000.0f;
 	}
 
 
@@ -203,3 +204,5 @@ private:
 	std::string m_strTurnUsernameString;
 	std::string m_strTurnTokenString;
 };
+
+

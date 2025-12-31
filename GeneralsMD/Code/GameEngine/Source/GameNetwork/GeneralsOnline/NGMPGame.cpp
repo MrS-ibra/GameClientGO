@@ -449,8 +449,8 @@ void NGMPGame::launchGame(void)
 	NetworkMesh* pMesh = NGMP_OnlineServicesManager::GetNetworkMesh();
 	if (pMesh != nullptr)
 	{
-
-		TheNetwork->SeedLatencyData(pMesh->getMaximumHistoricalLatency());
+		// pMesh->getMaximumHistoricalLatency() returns ms as Real, cast to int
+		TheNetwork->SeedLatencyData(static_cast<int>(pMesh->getMaximumHistoricalLatency()));
 	}
 
 	// TODO_NGMP: Do we really care about these values anymore
@@ -546,3 +546,4 @@ void NGMPGame::StartCountdown()
 		pWS->SendData_CountdownStarted();
 	}
 }
+
