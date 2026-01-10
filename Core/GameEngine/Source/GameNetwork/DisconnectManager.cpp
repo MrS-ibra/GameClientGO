@@ -309,6 +309,16 @@ void DisconnectManager::processDisconnectKeepAlive(NetCommandMsg *msg, Connectio
 	}
 }
 
+void DisconnectManager::disconnectAndDestructPlayer(Int slot, ConnectionManager* conMgr)
+{
+	DEBUG_LOG(("DisconnectManager::disconnectAndDestructPlayer - dropping slot %d due to mismatch on frame %d",
+		slot, TheGameLogic->getFrame()));
+
+	sendDisconnectCommand(slot, conMgr);
+	disconnectPlayer(slot, conMgr);
+	sendPlayerDestruct(slot, conMgr);
+}
+
 void DisconnectManager::processDisconnectPlayer(NetCommandMsg *msg, ConnectionManager *conMgr) {
 	NetDisconnectPlayerCommandMsg *cmdMsg = (NetDisconnectPlayerCommandMsg *)msg;
 	DEBUG_LOG(("DisconnectManager::processDisconnectPlayer - Got disconnect player command from player %d.  Disconnecting player %d on frame %d", msg->getPlayerID(), cmdMsg->getDisconnectSlot(), cmdMsg->getDisconnectFrame()));

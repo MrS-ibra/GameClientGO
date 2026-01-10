@@ -2649,6 +2649,15 @@ void GameLogic::processDestroyList(void)
 //-------------------------------------------------------------------------------------------------
 void GameLogic::processCommandList(CommandList* list)
 {
+	static Bool s_waitingForSecondMismatchCheck = FALSE;
+	static Int  s_nextMismatchCheckFrame = 0;
+
+	if (m_frame == 0)
+	{
+		s_waitingForSecondMismatchCheck = FALSE;
+		s_nextMismatchCheckFrame = 0;
+	}
+
 	m_cachedCRCs.clear();
 	m_shouldValidateCRCs = FALSE;
 
@@ -2662,119 +2671,173 @@ void GameLogic::processCommandList(CommandList* list)
 		logicMessageDispatcher(msg, NULL);
 	}
 
-	if (m_shouldValidateCRCs && !TheNetwork->sawCRCMismatch())
+	if (TheNetwork)
 	{
-		Bool sawCRCMismatch = FALSE;
 		Int numPlayers = 0;
-		DEBUG_ASSERTCRASH(TheNetwork, ("No Network!"));
-		if (TheNetwork)
+		for (Int i = 0; i < MAX_SLOTS; ++i)
 		{
-			for (Int i = 0; i < MAX_SLOTS; ++i)
+			if (TheNetwork->isPlayerConnected(i))
+				++numPlayers;
+		}
+
+		auto haveCRCMismatch = [&]() -> Bool
 			{
-				if (TheNetwork->isPlayerConnected(i))
-					++numPlayers;
-			}
+				if (m_cachedCRCs.empty())
+					return FALSE;
+
+				std::map<Int, UnsignedInt>::const_iterator it = m_cachedCRCs.begin();
+				UnsignedInt referenceCRC = it->second;
+				while (++it != m_cachedCRCs.end())
+				{
+					if (it->second != referenceCRC)
+						return TRUE;
+				}
+				return FALSE;
+			};
+
+#if defined(GENERALS_ONLINE)
+		auto buildCRCMismatchDetails = [&](UnicodeString& strMismatchDetails,
+			std::vector<Int>* outMismatchingSlots)
+			{
+				// provide more details
+				strMismatchDetails.format(L"GameLogic frame %d, latest frame %d, GetGameLogicRandomSeedCRC was %d\nHad %d CRCs from %d players\nMismatched Players:\n",
+					TheGameLogic->getFrame(),
+					TheGameLogic->getFrame() - TheNetwork->getRunAhead() - 1,
+					GetGameLogicRandomSeedCRC(),
+					m_cachedCRCs.size(),
+					numPlayers);
+
+				// determine who is at fault
+				std::map<UnsignedInt, int> mapCRCOccurences;
+				for (std::map<Int, UnsignedInt>::const_iterator crcIt = m_cachedCRCs.begin();
+					crcIt != m_cachedCRCs.end(); ++crcIt)
+				{
+					UnsignedInt crc = crcIt->second;
+					if (mapCRCOccurences.contains(crc))
+						++mapCRCOccurences[crc];
+					else
+						mapCRCOccurences[crc] = 1;
+				}
+
+				// take the 'most frequent' CRC as the correct one, everyone else is to blame
+				int         biggestCRCCount = -1;
+				UnsignedInt biggestCRC = (UnsignedInt)-1;
+				for (auto& crcIter : mapCRCOccurences)
+				{
+					if (crcIter.second > biggestCRCCount)
+					{
+						biggestCRC = crcIter.first;
+						biggestCRCCount = crcIter.second;
+					}
+				}
+
+				// show all mismatching players
+				for (std::map<Int, UnsignedInt>::const_iterator crcIt = m_cachedCRCs.begin();
+					crcIt != m_cachedCRCs.end(); ++crcIt)
+				{
+					const Int slot = crcIt->first;
+					const UnsignedInt crc = crcIt->second;
+
+					if (crc == biggestCRC)
+						continue;
+
+					if (outMismatchingSlots)
+						outMismatchingSlots->push_back(slot);
+
+					UnicodeString playerName;
+					if (TheNetwork)
+						playerName = TheNetwork->getPlayerName(slot);
+
+					if (playerName.getLength() == 0)
+					{
+						Player* player = ThePlayerList->getNthPlayer(slot);
+						if (player)
+							playerName = player->getPlayerDisplayName();
+					}
+
+					UnicodeString strPlayerInfo;
+					strPlayerInfo.format(L"player %d (%s) = %X [MISMATCH]\n", slot, playerName.getLength() > 0 ? playerName.str() : L"<NONE>", crc);
+
+					strMismatchDetails.concat(strPlayerInfo);
+				}
+			};
+#endif
+
+		if (m_shouldValidateCRCs && !TheNetwork->sawCRCMismatch())
+		{
+			Bool sawCRCMismatch = FALSE;
+			DEBUG_ASSERTCRASH(TheNetwork, ("No Network!"));
 
 			if (m_cachedCRCs.size() < numPlayers)
 			{
 				DEBUG_CRASH(("Not enough CRCs!"));
 				sawCRCMismatch = TRUE;
 			}
-			else
+			else if (haveCRCMismatch())
 			{
-				//DEBUG_LOG(("Comparing %d CRCs on frame %d", m_cachedCRCs.size(), m_frame));
-				std::map<Int, UnsignedInt>::const_iterator crcIt = m_cachedCRCs.begin();
-				Int validatorCRC = crcIt->second;
-				//DEBUG_LOG(("Validator CRC from player %d is %8.8X", crcIt->first, validatorCRC));
-				while (++crcIt != m_cachedCRCs.end())
-				{
-					Int validatedCRC = crcIt->second;
-					//DEBUG_LOG(("CRC to validate is from player %d: %8.8X", crcIt->first, validatedCRC));
-					if (validatorCRC != validatedCRC)
-					{
-						DEBUG_CRASH(("CRC mismatch!"));
-						sawCRCMismatch = TRUE;
-					}
-				}
+				DEBUG_CRASH(("CRC mismatch!"));
+				sawCRCMismatch = TRUE;
 			}
-		}
 
-		if (sawCRCMismatch)
-		{
+			if (sawCRCMismatch)
+			{
 #ifdef DEBUG_LOGGING
-			DEBUG_LOG(("CRC Mismatch - saw %d CRCs from %d players", m_cachedCRCs.size(), numPlayers));
-			for (std::map<Int, UnsignedInt>::const_iterator crcIt = m_cachedCRCs.begin(); crcIt != m_cachedCRCs.end(); ++crcIt)
-			{
-				Player* player = ThePlayerList->getNthPlayer(crcIt->first);
-				DEBUG_LOG(("CRC from player %d (%ls) = %X", crcIt->first,
-					player ? player->getPlayerDisplayName().str() : L"<NONE>", crcIt->second));
-			}
-#endif // DEBUG_LOGGING
-
-#if defined(GENERALS_ONLINE)
-			// provide more details
-			UnicodeString strMismatchDetails;
-			strMismatchDetails.format(L"GameLogic frame %d, latest frame %d, GetGameLogicRandomSeedCRC was %d\nHad %d CRCs from %d players\nMismatched Players:\n",
-				TheGameLogic->getFrame(),
-				TheGameLogic->getFrame() - TheNetwork->getRunAhead() - 1,
-				GetGameLogicRandomSeedCRC(),
-				m_cachedCRCs.size(),
-				numPlayers);
-
-			// determine who is at fault
-			std::map<UnsignedInt, int> mapCRCOccurences;
-			for (std::map<Int, UnsignedInt>::const_iterator crcIt = m_cachedCRCs.begin(); crcIt != m_cachedCRCs.end(); ++crcIt)
-			{
-				// data to determine who mismatched
-				if (mapCRCOccurences.contains(crcIt->second))
-				{
-					++mapCRCOccurences[crcIt->second];
-				}
-				else
-				{
-					mapCRCOccurences[crcIt->second] = 1;
-				}
-			}
-
-			// determine who mismatched
-			// take the 'most frequent' CRC as the correct one, everyone else is to blame
-			int biggestCRCCount = -1;
-			UnsignedInt biggestCRC = -1;
-			for (auto& crcIter : mapCRCOccurences)
-			{
-				if (crcIter.second > biggestCRCCount)
-				{
-					biggestCRC = crcIter.first;
-					biggestCRCCount = crcIter.second;
-				}
-			}
-
-			// show all players
-			for (std::map<Int, UnsignedInt>::const_iterator crcIt = m_cachedCRCs.begin(); crcIt != m_cachedCRCs.end(); ++crcIt)
-			{
-				// only show users who arent OK, UI isn't huge
-				if (crcIt->second != biggestCRC)
+				DEBUG_LOG(("CRC Mismatch - saw %d CRCs from %d players", m_cachedCRCs.size(), numPlayers));
+				for (std::map<Int, UnsignedInt>::const_iterator crcIt = m_cachedCRCs.begin();
+					crcIt != m_cachedCRCs.end(); ++crcIt)
 				{
 					Player* player = ThePlayerList->getNthPlayer(crcIt->first);
-					UnicodeString strPlayerInfo;
-					strPlayerInfo.format(L"player %d (%s) = %X [MISMATCH]\n", crcIt->first, player ? player->getPlayerDisplayName().str() : L"<NONE>", crcIt->second);
-
-					strMismatchDetails.concat(strPlayerInfo);
+					DEBUG_LOG(("CRC from player %d (%ls) = %X", crcIt->first,
+						player ? player->getPlayerDisplayName().str() : L"<NONE>", crcIt->second));
 				}
-			}
+#endif
+
+#if defined(GENERALS_ONLINE)
+				UnicodeString   strMismatchDetails;
+				std::vector<Int> MismatchingSlots;
+				buildCRCMismatchDetails(strMismatchDetails, &MismatchingSlots);
+
+				// Drop desynced players
+				if (!MismatchingSlots.empty())
+				{
+					ConnectionManager* conMgr = TheNetwork->GetConnectionManager();
+					if (conMgr)
+					{
+						DisconnectManager* disMgr = conMgr->GetDisconnectManager();
+						if (disMgr)
+						{
+							for (Int slot : MismatchingSlots)
+							{
+								disMgr->disconnectAndDestructPlayer(slot, conMgr);
+							}
+						}
+					}
+				}
+
+				if (numPlayers == 2)
+				{
+					TheScriptEngine->startEndGameTimer(true); // cant really tell who is at fault, end the game
+				}
+
+				if (numPlayers > 2 && !s_waitingForSecondMismatchCheck)
+				{
+					s_waitingForSecondMismatchCheck = TRUE;
+					const Int SECOND_CHECK_DELAY_FRAMES = LOGICFRAMES_PER_SECOND * 15;
+					s_nextMismatchCheckFrame = m_frame + SECOND_CHECK_DELAY_FRAMES;
+				}
 
 			// TODO_NGMP: Handle missing CRCs, although that doesnt seem common
 
 			TheNetwork->setSawCRCMismatch(strMismatchDetails);
 
 #if defined(GENERALS_ONLINE_USE_SENTRY)
-			if (TheNGMPGame != nullptr)
-			{
-				// local player info
-				int64_t userID = -1;
-				std::string strDisplayname = "Unknown";
-				NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
-				if (pAuthInterface != nullptr)
+				if (TheNGMPGame != nullptr)
+				{
+					// local player info
+					int64_t userID = -1;
+					std::string strDisplayname = "Unknown";
+					NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
+					if (pAuthInterface != nullptr)
 				{
 					userID = pAuthInterface->GetUserID();
 					strDisplayname = pAuthInterface->GetDisplayName();
@@ -2798,10 +2861,33 @@ void GameLogic::processCommandList(CommandList* list)
 #else
 			TheNetwork->setSawCRCMismatch();
 #endif
+			}
+		}
+
+		if (s_waitingForSecondMismatchCheck && m_frame >= s_nextMismatchCheckFrame)
+		{
+			if (numPlayers > 1 && m_cachedCRCs.size() >= (size_t)numPlayers && haveCRCMismatch())
+			{
+				// out of sync AGAIN! show details and end the game
+#if defined(GENERALS_ONLINE)
+				UnicodeString strMismatchDetails;
+				buildCRCMismatchDetails(strMismatchDetails, NULL);
+				TheNetwork->setSawCRCMismatch(strMismatchDetails);
+#else
+				TheNetwork->setSawCRCMismatch();
+#endif
+				TheScriptEngine->startEndGameTimer(true);
+				s_waitingForSecondMismatchCheck = FALSE;
+			}
+			else
+			{
+				const Int SECOND_CHECK_DELAY_FRAMES = LOGICFRAMES_PER_SECOND * 15;
+				s_nextMismatchCheckFrame = m_frame + SECOND_CHECK_DELAY_FRAMES;
+			}
 		}
 	}
-
 }
+
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
