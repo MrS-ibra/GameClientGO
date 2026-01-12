@@ -201,6 +201,7 @@ static NameKeyType buttonEmoteID = NAMEKEY_INVALID;
 static NameKeyType buttonSelectMapID = NAMEKEY_INVALID;
 static NameKeyType windowMapID = NAMEKEY_INVALID;
 
+static bool s_matchStartCountdownWasRunning = false;
 static NameKeyType windowMapSelectMapID = NAMEKEY_INVALID;
 static NameKeyType checkBoxUseStatsID = NAMEKEY_INVALID;
 static NameKeyType checkBoxLimitSuperweaponsID = NAMEKEY_INVALID;
@@ -2346,8 +2347,6 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 
 					TheNGMPGame->UpdateSlotsFromCurrentLobby();
 
-					WOLDisplaySlotList();
-
 					// Force a refresh to get latest lobby data
 					NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
 					if (pLobbyInterface != nullptr)
@@ -2385,6 +2384,7 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 	{
 		if (TheNGMPGame->IsCountdownStarted())
 		{
+			s_matchStartCountdownWasRunning = true;  // mark that countdown is currently running
 			const int64_t timeBetweenChecks = 1000;
 			int64_t currTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::utc_clock::now().time_since_epoch()).count();
 
@@ -2407,7 +2407,6 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 				{
 					pLobbyInterface->SendAnnouncementMessageToCurrentLobby(strInform, true);
 				}
-				
 
 				// are we done?
 				if (secondsRemaining <= 0)
@@ -2423,7 +2422,26 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 					}
 				}
 			}
+		}
+		else
+		{
+			// countdown is currently NOT running.
+			// If it was running before, it just got cancelled or finished.
+			if (s_matchStartCountdownWasRunning)
+			{
+				s_matchStartCountdownWasRunning = false;
 
+				// Re-enable Back and Start buttons when countdown stops
+				if (buttonBack != nullptr)
+				{
+					buttonBack->winEnable(TRUE);
+				}
+
+				if (buttonStart != nullptr)
+				{
+					buttonStart->winEnable(TRUE);
+				}
+			}
 		}
 	}
 #endif
@@ -3753,6 +3771,7 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 						if (i == myGame->getLocalSlotNum())
 							break;
 						// Get
+
 						Int pos = -1;
 						GadgetComboBoxGetSelectedPos(comboBoxPlayer[i], &pos);
 						if (pos != SLOT_PLAYER && pos >= 0)
@@ -3760,17 +3779,17 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 							if (myGame->getSlot(i)->getState() == SLOT_PLAYER)
 							{
 								// TODO_NGMP: Support kick again
-								/*
-								PeerRequest req;
-								req.peerRequestType = PeerRequest::PEERREQUEST_UTMPLAYER;
-								req.UTM.isStagingRoom = TRUE;
-								AsciiString aName;
-								aName.translate(myGame->getSlot(i)->getName());
-								req.nick = aName.str();
-								req.id = "KICK/";
-								req.options = "true";
-								TheGameSpyPeerMessageQueue->addRequest(req);
-								*/
+                                /*
+                                PeerRequest req;
+                                req.peerRequestType = PeerRequest::PEERREQUEST_UTMPLAYER;
+                                req.UTM.isStagingRoom = TRUE;
+                                AsciiString aName;
+                                aName.translate(myGame->getSlot(i)->getName());
+                                req.nick = aName.str();
+                                req.id = "KICK/";
+                                req.options = "true";
+                                TheGameSpyPeerMessageQueue->addRequest(req);
+                                */
 
 								UnicodeString name = myGame->getSlot(i)->getName();
 
@@ -3778,19 +3797,12 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 								NGMPGameSlot* pSlot = (NGMPGameSlot*)myGame->getSlot(i);
 								int64_t userBeingKicked = pSlot->m_userID;
 
-								NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
-								if (pLobbyInterface != nullptr)
-								{
-									pLobbyInterface->UpdateCurrentLobby_KickUser(userBeingKicked, name);
-								}
+								pLobbyInterface->UpdateCurrentLobby_KickUser(userBeingKicked, name);
 
 								myGame->getSlot(i)->setState(SlotState(pos));
 								myGame->resetAccepted();
-
-								// // TODO_NGMP
-								//TheGameSpyInfo->setGameOptions();
+								pLobbyInterface->ClearAutoReadyCountdown(); // any slot change -> reset auto-ready & countdown
 								WOLDisplaySlotList();
-								//TheLAN->OnPlayerLeave(name);
 							}
 							else if (myGame->getSlot(i)->getState() != pos)
 							{
@@ -3798,17 +3810,20 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 								myGame->getSlot(i)->setState(SlotState(pos));
 								Bool isAI = (myGame->getSlot(i)->isAI());
 								myGame->resetAccepted();
+
+								// // TODO_NGMP
+                                //TheGameSpyInfo->setGameOptions();
+								// any slot change -> reset auto-ready & countdown
+								pLobbyInterface->ClearAutoReadyCountdown();
+
 								if (wasAI ^ isAI)
 									PopulatePlayerTemplateComboBox(i, comboBoxPlayerTemplate, myGame, wasAI && myGame->getAllowObservers());
 
-								// inform service
-								NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
-								if (pLobbyInterface != nullptr)
-								{
-									pLobbyInterface->UpdateCurrentLobby_SetSlotState(i, pos);
-								}
+								// inform service about new slot state
+								pLobbyInterface->UpdateCurrentLobby_SetSlotState(i, pos);
 
 								WOLDisplaySlotList();
+								//TheLAN->OnPlayerLeave(name);
 							}
 						}
 						break;
