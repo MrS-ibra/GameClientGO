@@ -279,7 +279,17 @@ void PopBackToLobby( void )
 
 	if (parentWOLGameSetup)
 	{
-		nextScreen = "Menus/WOLCustomLobby.wnd";
+		// If we joined via invite, WOLCustomLobby may not be in the shell stack.
+		// In that case just pop back to wherever we came from (MOTD screen etc).
+		if (pLobbyInterface != nullptr && pLobbyInterface->m_bJoinedViaInvite)
+		{
+			pLobbyInterface->m_bJoinedViaInvite = false;
+			nextScreen = nullptr;
+		}
+		else
+		{
+			nextScreen = "Menus/WOLCustomLobby.wnd";
+		}
 		TheShell->pop();
 
 
@@ -1894,11 +1904,12 @@ void WOLGameSetupMenuInit( WindowLayout *layout, void *userData )
 
 		// TODO_NGMP: Only do this if still connected to service
 		//if (TheGameSpyPeerMessageQueue && TheGameSpyPeerMessageQueue->isConnected())
+		if (!pLobbyInterface->m_bJoinedViaInvite)
 		{
 			DEBUG_LOG(("We're still connected, so pushing back on the lobby"));
 			TheShell->push("Menus/WOLCustomLobby.wnd", TRUE);
 		}
-
+		pLobbyInterface->m_bJoinedViaInvite = false;
 		return;
 	}
 

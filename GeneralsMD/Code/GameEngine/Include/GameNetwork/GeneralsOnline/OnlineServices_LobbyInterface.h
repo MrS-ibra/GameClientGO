@@ -207,6 +207,8 @@ public:
 		return m_bLobbyListDirty;
 	}
 
+	bool m_bJoinedViaInvite = false;
+
 	UnicodeString m_PendingCreation_LobbyName;
 	UnicodeString m_PendingCreation_InitialMapDisplayName;
 	AsciiString m_PendingCreation_InitialMapPath;

@@ -147,6 +147,10 @@ public:
 
 	void CommitLobbyPlayerListToRecentlyPlayedWithList();
 
+	void ClearPendingInviteLobbyID() { m_pendingInviteLobbyID = -1; }
+	bool HasPendingInvite() const { return m_pendingInviteLobbyID != -1; }
+	int64_t GetPendingInviteLobbyID() const { return m_pendingInviteLobbyID; }
+
 private:
 	void TriggerCallback_OnNumberGlobalNotificationsChanged()
 	{
@@ -185,4 +189,5 @@ private:
 	int64_t m_RecentlyPlayedWithTimestamp = -1;
 
 	bool m_bOverlayActive = false;
+	int64_t m_pendingInviteLobbyID = -1;
 };

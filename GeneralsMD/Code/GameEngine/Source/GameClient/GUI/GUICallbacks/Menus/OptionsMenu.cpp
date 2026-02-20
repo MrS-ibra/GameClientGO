@@ -1019,6 +1019,16 @@ Bool OptionPreferences::getShowMoneyPerMinute(void) const
 	return FALSE;
 }
 
+Bool OptionPreferences::getAllowLobbyInvites(void)
+{
+	OptionPreferences::const_iterator it = find("AllowLobbyInvites");
+	if (it == end())
+		return TRUE;
+	if (stricmp(it->second.str(), "yes") == 0)
+		return TRUE;
+	return FALSE;
+}
+
 static OptionPreferences *pref = nullptr;
 
 static void setDefaults( void )

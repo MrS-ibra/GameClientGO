@@ -151,6 +151,8 @@ public:
 
 	Real getResolutionFontAdjustment(void);
 
+	Bool getAllowLobbyInvites(void);
+
 	Bool getShowMoneyPerMinute(void) const;
 };
 

@@ -134,6 +134,7 @@ public:
 	void SendData_ChangeName(UnicodeString& strNewName);
 	void SendData_RoomChatMessage(UnicodeString& msg, bool bIsAction);
 	void SendData_FriendMessage(UnicodeString& msg, int64_t target_user_id);
+	void SendData_LobbyInvite(int64_t target_user_id, int64_t lobby_id, const std::string& lobby_name);
 	void SendData_LobbyChatMessage(UnicodeString& msg, bool bIsAction, bool bIsAnnouncement, bool bShowAnnouncementToHost);
 	void SendData_JoinNetworkRoom(int roomID);
 	void SendData_LeaveNetworkRoom();

@@ -952,6 +952,8 @@ GlobalData::GlobalData()
 	m_observerStatsFontSize = 7;
 	m_observerNotificationFontSize = 10;
 
+	m_allowLobbyInvites = TRUE;
+
 	m_showMoneyPerMinute = FALSE;
 	m_allowMoneyPerMinuteForPlayer = FALSE;
 
@@ -1238,6 +1240,7 @@ void GlobalData::parseGameDataDefinition( INI* ini )
 	TheWritableGlobalData->m_showMoneyPerMinute = optionPref.getShowMoneyPerMinute();
 	TheWritableGlobalData->m_observerStatsFontSize = optionPref.getObserverStatsFontSize();
 	TheWritableGlobalData->m_observerNotificationFontSize = optionPref.getObserverNotificationFontSize();
+	TheWritableGlobalData->m_allowLobbyInvites = optionPref.getAllowLobbyInvites();
 
 	Int val=optionPref.getGammaValue();
 	//generate a value between 0.6 and 2.0.

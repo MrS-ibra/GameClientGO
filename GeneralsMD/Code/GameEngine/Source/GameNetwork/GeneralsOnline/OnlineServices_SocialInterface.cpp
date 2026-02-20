@@ -211,6 +211,49 @@ void NGMP_OnlineServices_SocialInterface::RejectPendingRequest(int64_t target_us
 
 void NGMP_OnlineServices_SocialInterface::OnChatMessage(int64_t source_user_id, int64_t target_user_id, UnicodeString unicodeStr)
 {
+	// Check if this is a lobby invite
+	{
+		std::string utf8Msg = to_utf8(unicodeStr.str());
+		const std::string prefix = "LOBBY_INVITE:";
+		size_t prefixPos = utf8Msg.find(prefix);
+		if (prefixPos != std::string::npos)
+		{
+			NGMP_OnlineServices_AuthInterface* pAuthCheck = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
+			if (pAuthCheck && pAuthCheck->GetUserID() != source_user_id)
+			{
+				std::string payload = utf8Msg.substr(prefixPos + prefix.size());
+
+				size_t colonPos = payload.find(':');
+				if (colonPos != std::string::npos)
+				{
+					std::string strLobbyID = payload.substr(0, colonPos);
+					std::string strLobbyName = payload.substr(colonPos + 1);
+
+					int64_t lobbyID = -1;
+					try { lobbyID = std::stoll(strLobbyID); }
+					catch (...) {}
+
+					if (lobbyID != -1)
+					{
+						if (!TheGlobalData->m_allowLobbyInvites)
+							return;
+
+						std::string senderName = "Someone";
+						if (m_mapFriends.contains(source_user_id))
+							senderName = m_mapFriends[source_user_id].display_name;
+
+						m_pendingInviteLobbyID = lobbyID;
+
+						UnicodeString msg;
+						msg.format(L"%hs is inviting you to join %hs. Click to join!", senderName.c_str(), strLobbyName.c_str());
+						showNotificationBox(AsciiString(senderName.c_str()), msg, true);
+					}
+				}
+			}
+			return;
+		}
+	}
+
 	// also cache it incase UI isnt visible
 	NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
 	if (pAuthInterface != nullptr)
@@ -255,7 +298,8 @@ void NGMP_OnlineServices_SocialInterface::OnChatMessage(int64_t source_user_id, 
                 if (NGMP_OnlineServicesManager::Settings.Social_Notifications_FriendComesOnline_Gameplay())
                 {
 #if defined(GENERALS_ONLINE)
-                    showNotificationBox(AsciiString::TheEmptyString, unicodeStr, true /*bPlaySound*/);
+					if (!HasPendingInvite())
+						showNotificationBox(AsciiString::TheEmptyString, unicodeStr, true /*bPlaySound*/);
 #else
                     showNotificationBox(AsciiString::TheEmptyString, unicodeStr);
 #endif
@@ -266,7 +310,8 @@ void NGMP_OnlineServices_SocialInterface::OnChatMessage(int64_t source_user_id, 
                 if (NGMP_OnlineServicesManager::Settings.Social_Notifications_FriendComesOnline_Menus())
                 {
 #if defined(GENERALS_ONLINE)
-                    showNotificationBox(AsciiString::TheEmptyString, unicodeStr, true /*bPlaySound*/);
+					if (!HasPendingInvite())
+						showNotificationBox(AsciiString::TheEmptyString, unicodeStr, true /*bPlaySound*/);
 #else
                     showNotificationBox(AsciiString::TheEmptyString, unicodeStr);
 #endif

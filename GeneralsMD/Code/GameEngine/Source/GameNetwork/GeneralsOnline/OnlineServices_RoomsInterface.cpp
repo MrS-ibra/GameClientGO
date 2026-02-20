@@ -128,6 +128,19 @@ void WebSocket::SendData_RoomChatMessage(UnicodeString& msg, bool bIsAction)
 	Send(strBody.c_str());
 }
 
+void WebSocket::SendData_LobbyInvite(int64_t target_user_id, int64_t lobby_id, const std::string& lobby_name)
+{
+	std::string payload = std::format("LOBBY_INVITE:{}:{}", lobby_id, lobby_name);
+
+	nlohmann::json j;
+	j["msg_id"] = EWebSocketMessageID::SOCIAL_FRIEND_CHAT_MESSAGE_CLIENT_TO_SERVER;
+	j["target_user_id"] = target_user_id;
+	j["message"] = payload;
+	std::string strBody = j.dump();
+
+	Send(strBody.c_str());
+}
+
 void WebSocket::SendData_MarkReady(bool bReady)
 {
 	nlohmann::json j;

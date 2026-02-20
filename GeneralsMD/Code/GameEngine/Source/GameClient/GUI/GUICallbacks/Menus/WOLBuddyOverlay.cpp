@@ -105,7 +105,7 @@ static WindowLayout *noticeLayout = nullptr;
 static UnsignedInt noticeExpires = 0;
 
 #if defined(GENERALS_ONLINE)
-	enum { NOTIFICATION_EXPIRES = 5000 };
+	enum { NOTIFICATION_EXPIRES = 5000, LOBBY_INVITE_EXPIRES = 7000 };
 #else
 	enum { NOTIFICATION_EXPIRES = 3000 };
 #endif
@@ -953,6 +953,11 @@ void HandleBuddyResponses( void )
 
 	if(noticeLayout && timeGetTime() > noticeExpires)
 	{
+		NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+		if (pSocialInterface != nullptr)
+		{
+			pSocialInterface->ClearPendingInviteLobbyID();
+		}
 		deleteNotificationBox();
 	}
 }
@@ -988,7 +993,9 @@ void showNotificationBox(AsciiString nick, UnicodeString message)
 		message.format(message, nick.str());
 	GadgetButtonSetText(win, message);
 	//GadgetStaticTextSetText(win, message);
-	noticeExpires = timeGetTime() + NOTIFICATION_EXPIRES;
+	NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+	bool bIsInvite = pSocialInterface && pSocialInterface->HasPendingInvite();
+	noticeExpires = timeGetTime() + (bIsInvite ? LOBBY_INVITE_EXPIRES : NOTIFICATION_EXPIRES);
 	noticeLayout->bringForward();
 
 	AudioEventRTS buttonClick("GUICommunicatorIncoming");
@@ -1225,6 +1232,69 @@ WindowMsgHandledType WOLBuddyOverlayInput( GameWindow *window, UnsignedInt msg,
 	}
 
 	return MSG_IGNORED;
+}
+
+//-------------------------------------------------------------------------------------------------
+/** Handle lobby invite notifications */
+//-------------------------------------------------------------------------------------------------
+void HandleInviteNotificationClicked()
+{
+	NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+	if (pSocialInterface == nullptr || pSocialInterface->GetPendingInviteLobbyID() == -1)
+		return;
+
+	int64_t lobbyIDToJoin = pSocialInterface->GetPendingInviteLobbyID();
+	pSocialInterface->ClearPendingInviteLobbyID();
+	deleteNotificationBox();
+
+	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+	if (pLobbyInterface == nullptr)
+		return;
+
+	bool bOnValidScreen = TheShell->findScreenByFilename("Menus/WOLCustomLobby.wnd") != nullptr || TheShell->findScreenByFilename("Menus/WOLWelcomeMenu.wnd") != nullptr;
+
+	if (!bOnValidScreen)
+	{
+		GameSpyOpenOverlay(GSOVERLAY_BUDDY);
+		return;
+	}
+
+	LobbyEntry lobbyEntry;
+	lobbyEntry.lobbyID = (int)lobbyIDToJoin;
+	pLobbyInterface->RegisterForJoinLobbyCallback([](EJoinLobbyResult result)
+		{
+			SetLobbyAttemptHostJoin(FALSE);
+			if (result == EJoinLobbyResult::JoinLobbyResult_Success)
+			{
+				NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+				if (pLobbyInterface != nullptr)
+				{
+					pLobbyInterface->m_bPendingHostHasLeft = false;
+					pLobbyInterface->m_bHostMigrated = false;
+					pLobbyInterface->m_bJoinedViaInvite = true;
+				}
+				TheShell->push("Menus/GameSpyGameOptionsMenu.wnd");
+			}
+			else
+			{
+				UnicodeString s;
+				switch (result)
+				{
+				case EJoinLobbyResult::JoinLobbyResult_FullRoom:
+					s = TheGameText->fetch("GUI:JoinFailedRoomFull");
+					break;
+				case EJoinLobbyResult::JoinLobbyResult_BadPassword:
+					s = TheGameText->fetch("GUI:JoinFailedBadPassword");
+					break;
+				default:
+					s = TheGameText->fetch("GUI:JoinFailedDefault");
+					break;
+				}
+				GSMessageBoxOk(TheGameText->fetch("GUI:JoinFailedDefault"), s);
+			}
+		});
+
+	pLobbyInterface->JoinLobby(lobbyEntry, std::string());
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1616,16 +1686,23 @@ WindowMsgHandledType PopupBuddyNotificationSystem( GameWindow *window, UnsignedI
 			}
 
 		case GBM_SELECTED:
+		{
+			GameWindow* control = (GameWindow*)mData1;
+			if (control->winGetWindowId() == buttonNotificationID)
 			{
-				GameWindow *control = (GameWindow *)mData1;
-				Int controlID = control->winGetWindowId();
-
-				if (controlID == buttonNotificationID)
+				NGMP_OnlineServices_SocialInterface* pSocialInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_SocialInterface>();
+				if (pSocialInterface != nullptr && pSocialInterface->GetPendingInviteLobbyID() != -1)
 				{
-					GameSpyOpenOverlay( GSOVERLAY_BUDDY );
+					HandleInviteNotificationClicked();
 				}
-				break;
+				else
+				{
+					deleteNotificationBox();
+					GameSpyOpenOverlay(GSOVERLAY_BUDDY);
+				}
 			}
+			break;
+		}
 
 		default:
 			return MSG_IGNORED;
@@ -1656,8 +1733,21 @@ void WOLBuddyOverlayRCMenuInit( WindowLayout *layout, void *userData )
 	AsciiString controlName;
 	controlName.format("%s:ButtonAdd",layout->getFilename().str()+6);
 	buttonAddID =  TheNameKeyGenerator->nameToKey( controlName );
+
 	controlName.format("%s:ButtonDelete",layout->getFilename().str()+6);
 	buttonDeleteID =  TheNameKeyGenerator->nameToKey( controlName );
+#if defined(GENERALS_ONLINE)
+	{
+		NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+		if (pLobbyInterface != nullptr && pLobbyInterface->IsInLobby())
+		{
+			GameWindow* btn = TheWindowManager->winGetWindowFromId(layout->getFirstWindow(), buttonDeleteID);
+			if (btn)
+				btn->winSetText(UnicodeString(L"Invite"));
+		}
+	}
+#endif
+
 	controlName.format("%s:ButtonPlay",layout->getFilename().str()+6);
 	buttonPlayID =  TheNameKeyGenerator->nameToKey( controlName );
 	controlName.format("%s:ButtonIgnore",layout->getFilename().str()+6);
@@ -1869,6 +1959,39 @@ WindowMsgHandledType WOLBuddyOverlayRCMenuSystem( GameWindow *window, UnsignedIn
 				{
 					if(!isGameSpyUser)
 						break;
+
+#if defined(GENERALS_ONLINE)
+					{
+						NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+						if (pLobbyInterface != nullptr && pLobbyInterface->IsInLobby() && isBuddy)
+						{
+							LobbyEntry& theLobby = pLobbyInterface->GetCurrentLobby();
+							bool bAlreadyInLobby = false;
+							for (auto& member : theLobby.members)
+							{
+								if (member.user_id == (int64_t)profileID)
+								{
+									bAlreadyInLobby = true;
+									break;
+								}
+							}
+
+							if (bAlreadyInLobby)
+							{
+								GSMessageBoxOk(UnicodeString(L"Invite Failed"), UnicodeString(L"This player is already in your lobby."));
+							}
+							else
+							{
+								std::shared_ptr<WebSocket> pWS = NGMP_OnlineServicesManager::GetWebSocket();
+								if (pWS != nullptr)
+									pWS->SendData_LobbyInvite((int64_t)profileID, theLobby.lobbyID, theLobby.name);
+							}
+							closeRightClickMenu(window);
+							break;
+						}
+					}
+#endif
+
 					if (isBuddy)
 					{
 						// delete the buddy
