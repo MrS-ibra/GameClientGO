@@ -1703,6 +1703,8 @@ Bool initialAcceptEnable = FALSE;
 //-------------------------------------------------------------------------------------------------
 void WOLGameSetupMenuInit( WindowLayout *layout, void *userData )
 {
+	revealArmies = false;
+
 	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
 	if (pLobbyInterface == nullptr)
 	{
@@ -3434,6 +3436,8 @@ Bool handleGameSetupSlashCommands(UnicodeString uText)
 		GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"/maxcameraheight <value> - Sets the maximum camera zoom out level - Example: /maxcameraheight 650"), GameSpyColor[GSCOLOR_CHAT_NORMAL], -1, -1);
 		GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"/friendsonly - Sets the lobby to only be joinable by friends"), GameSpyColor[GSCOLOR_CHAT_NORMAL], -1, -1);
 		GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"/public - Sets the lobby to be joinable by anyone"), GameSpyColor[GSCOLOR_CHAT_NORMAL], -1, -1);
+		GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"/showarmy - Reveals armies on loading and diplomacy screens"), GameSpyColor[GSCOLOR_CHAT_NORMAL], -1, -1);
+		GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"/hidearmy - Shows random armies on loading and diplomacy screens"), GameSpyColor[GSCOLOR_CHAT_NORMAL], -1, -1);
 		return TRUE; // was a slash command
 	}
 	else if (token == "friendsonly")
@@ -3608,6 +3612,36 @@ Bool handleGameSetupSlashCommands(UnicodeString uText)
 		}
 
 		return TRUE; // was a slash command
+	}
+	else if (token == "showarmy" || token == "showarmies" || token == "revealarmy" || token == "revealarmies")
+	{
+		NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+		if (pLobbyInterface != nullptr && pLobbyInterface->IsHost())
+		{
+			revealArmies = true;
+			UnicodeString showMsg(L"The host has enabled revealing armies for this lobby.");
+			pLobbyInterface->SendAnnouncementMessageToCurrentLobby(showMsg, true);
+		}
+		else
+		{
+			GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"Only the host can change this setting."), GameSpyColor[GSCOLOR_CHAT_NORMAL], -1, -1);
+		}
+		return TRUE;
+	}
+	else if (token == "hidearmy" || token == "hidearmies")
+	{
+		NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+		if (pLobbyInterface != nullptr && pLobbyInterface->IsHost())
+		{
+			revealArmies = false;
+			UnicodeString hideMsg(L"The host has disabled revealing armies.");
+			pLobbyInterface->SendAnnouncementMessageToCurrentLobby(hideMsg, true);
+		}
+		else
+		{
+			GadgetListBoxAddEntryText(listboxGameSetupChat, UnicodeString(L"Only the host can change this setting."), GameSpyColor[GSCOLOR_CHAT_NORMAL], -1, -1);
+		}
+		return TRUE;
 	}
 	else if (token == "removepassword" || token == "clearpassword" || token == "resetpassword")
 	{

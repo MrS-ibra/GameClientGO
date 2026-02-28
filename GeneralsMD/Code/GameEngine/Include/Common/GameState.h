@@ -48,6 +48,8 @@ typedef void (*IterateSaveFileCallback)( AsciiString filename, void *userData );
 	* save/load menu initialization you can make that menu allow loading only, or allow
 	* both saving and loading from the same menu */
 // ------------------------------------------------------------------------------------------------
+extern bool revealArmies;
+
 enum SaveLoadLayoutType CPP_11(: Int)
 {
 	SLLT_INVALID = 0,

@@ -56,6 +56,7 @@
 #include "GameNetwork/NetworkInterface.h"
 #include "GameNetwork/GameSpy/BuddyDefs.h"
 #include "GameNetwork/GameSpy/PeerDefs.h"
+#include "Common/GameState.h"
 
 
 //-------------------------------------------------------------------------------------------------
@@ -525,8 +526,8 @@ void PopulateInGameDiplomacyPopup( void )
 			{
 				staticTextSide[rowNum]->winSetEnabledTextColors( playerColor, backColor );
 
-#if defined(GO_REVEAL_TEAMS)
-                const PlayerTemplate* pt = ThePlayerTemplateStore->getNthPlayerTemplate(slot->getPlayerTemplate());
+#if defined(GENERALS_ONLINE)
+				const PlayerTemplate* pt = revealArmies ? ThePlayerTemplateStore->getNthPlayerTemplate(slot->getPlayerTemplate()) : nullptr;
                 GadgetStaticTextSetText(staticTextSide[rowNum], pt ? pt->getDisplayName() : slot->getApparentPlayerTemplateDisplayName());
 #else
 				GadgetStaticTextSetText(staticTextSide[rowNum], slot->getApparentPlayerTemplateDisplayName());
