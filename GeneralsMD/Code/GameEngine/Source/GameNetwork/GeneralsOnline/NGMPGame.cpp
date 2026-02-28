@@ -417,6 +417,7 @@ void NGMPGame::launchGame(void)
 #endif
 
 	setGameInProgress(TRUE);
+	StartMatchTimer();
 
 	for (Int i = 0; i < MAX_SLOTS; ++i)
 	{

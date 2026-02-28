@@ -1179,6 +1179,7 @@ void initInternetMultiPlayer(void)
             if (!TheNGMPGame->HasCommittedOutcome())
             {
                 TheNGMPGame->SetHasCommittedOutcome();
+				NetworkLog(ELogVerbosity::LOG_RELEASE, "[STATS] Game ended - committing final outcome: isWin=%d", TheVictoryConditions->isLocalAlliedVictory());
                 pStatsInterface->CommitMyOutcome(localPlayer->getScoreKeeper(), TheVictoryConditions->isLocalAlliedVictory());
             }
         }
@@ -2081,7 +2082,32 @@ winName.format("ScoreScreen.wnd:StaticTextScore%d", pos);
 						}
 						else if (gameEndedInDisconnect)
 						{
-							++stats.discons[ptIdx];
+							if (TheVictoryConditions->isLocalAlliedVictory())
+							{
+								++stats.wins[ptIdx];
+
+								// log disconnecting opponent
+								NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+								if (pLobbyInterface != nullptr)
+								{
+									uint64_t matchID = pLobbyInterface->GetCurrentMatchID();
+									// get the disconnected opponent's userID
+									for (int i = 0; i < MAX_SLOTS; ++i)
+									{
+										const GameSlot* slot = TheGameInfo->getConstSlot(i);
+										if (slot->isOccupied() && slot->disconnected() && i != localSlotNum)
+										{
+											NGMPGameSlot* oppSlot = TheNGMPGame->getGameSpySlot(i);
+											if (oppSlot != nullptr && oppSlot->m_userID != -1)
+											{
+												pStatsInterface->GetDisconnectLog(oppSlot->m_userID, matchID, oppSlot->getName());
+											}
+										}
+									}
+								}
+							}
+							else
+								++stats.discons[ptIdx];
 						}
 						else if (TheVictoryConditions->isLocalAlliedDefeat() || !TheVictoryConditions->getEndFrame())
 						{
@@ -2119,11 +2145,23 @@ winName.format("ScoreScreen.wnd:StaticTextScore%d", pos);
 						}
 						else if (gameEndedInDisconnect)
 						{
-							stats.lossesInARow = 0;
-							stats.desyncsInARow = 0;
-							stats.disconsInARow++;
-							stats.winsInARow = 0;
-							stats.maxDisconsInARow = max(stats.disconsInARow, stats.maxDisconsInARow);
+							if (TheVictoryConditions->isLocalAlliedVictory())
+							{
+								// Opponent disconnected, I won, give me my win!
+								stats.lossesInARow = 0;
+								stats.desyncsInARow = 0;
+								stats.disconsInARow = 0;
+								stats.winsInARow++;
+								stats.maxWinsInARow = max(stats.winsInARow, stats.maxWinsInARow);
+							}
+							else
+							{
+								stats.lossesInARow = 0;
+								stats.desyncsInARow = 0;
+								stats.disconsInARow++;
+								stats.winsInARow = 0;
+								stats.maxDisconsInARow = max(stats.disconsInARow, stats.maxDisconsInARow);
+							}
 						}
 						else if (TheVictoryConditions->isLocalAlliedVictory())
 						{

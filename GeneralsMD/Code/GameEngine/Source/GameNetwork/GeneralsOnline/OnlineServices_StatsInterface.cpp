@@ -1,4 +1,4 @@
-#include "GameNetwork/GeneralsOnline/json.hpp"
+﻿#include "GameNetwork/GeneralsOnline/json.hpp"
 #include "GameNetwork/GeneralsOnline/NGMP_interfaces.h"
 #include "GameNetwork/GameSpy/PersistentStorageThread.h"
 #include "GameNetwork/RankPointValue.h"
@@ -447,6 +447,47 @@ void NGMP_OnlineServices_StatsInterface::CommitMyOutcome(ScoreKeeper* pScoreKeep
 
 			});
 	}
+}
+
+void NGMP_OnlineServices_StatsInterface::GetDisconnectLog(int64_t opponentUserID, uint64_t matchID, UnicodeString playerName)
+{
+	std::string strPlayerName = to_utf8(playerName.str());
+
+	auto now = std::chrono::system_clock::now();
+	int totalSeconds = (int)std::chrono::duration_cast<std::chrono::seconds>(now - TheNGMPGame->GetStartTime()).count();
+	int minutes = totalSeconds / 60;
+	int seconds = totalSeconds % 60;
+	std::string strDuration = std::format("{}m {}s", minutes, seconds);
+
+	// Get reporter (winner) name
+	std::string strReporterName = "";
+	if (ThePlayerList->getLocalPlayer())
+		strReporterName = to_utf8(ThePlayerList->getLocalPlayer()->getPlayerDisplayName().str());
+
+	nlohmann::json embed;
+	embed["title"] = "Disconnect Abuse Detected";
+	embed["color"] = 15158332;
+	embed["fields"] = nlohmann::json::array({
+		{{"name", "DCing Player"}, {"value", strPlayerName}, {"inline", true}},
+		{{"name", "User ID"}, {"value", std::to_string(opponentUserID)}, {"inline", true}},
+		{{"name", "Winner"}, {"value", strReporterName}, {"inline", true}},
+		{{"name", "Match ID"}, {"value", std::to_string(matchID)}, {"inline", true}},
+		{{"name", "Game Duration"}, {"value", strDuration}, {"inline", true}}
+		});
+
+	nlohmann::json j;
+	j["embeds"] = nlohmann::json::array({ embed });
+
+	std::string strPostData = j.dump();
+	std::string strURI = "https://discord.com/api/webhooks****"; // can this be stored in service?
+
+	std::map<std::string, std::string> mapHeaders;
+	mapHeaders["Content-Type"] = "application/json";
+
+	NGMP_OnlineServicesManager::GetInstance()->GetHTTPManager()->SendPOSTRequest(
+		strURI.c_str(), EIPProtocolVersion::DONT_CARE, mapHeaders, strPostData.c_str(),
+		[](bool bSuccess, int statusCode, std::string strBody, HTTPRequest* pReq) {}
+	);
 }
 
 std::string NGMP_OnlineServices_StatsInterface::JSONSerialize(PSPlayerStats stats)

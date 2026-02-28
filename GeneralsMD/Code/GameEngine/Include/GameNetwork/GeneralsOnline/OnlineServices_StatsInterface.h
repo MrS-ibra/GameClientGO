@@ -477,6 +477,7 @@ public:
 	void UpdateMyStats(PSPlayerStats stats);
 
 	void CommitMyOutcome(ScoreKeeper* pScoreKeeper, bool bWon);
+	void GetDisconnectLog(int64_t opponentUserID, uint64_t matchID, UnicodeString playerName);
 
 private:
 	std::string JSONSerialize(PSPlayerStats stats);
