@@ -158,6 +158,7 @@ set(WW3D2_SRC
     #render2d.cpp
     #render2d.h
     render2dsentence.cpp
+    EmojiRenderer.cpp
     render2dsentence.h
     renderobjectrecycler.cpp
     renderobjectrecycler.h

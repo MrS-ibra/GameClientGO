@@ -981,13 +981,13 @@ void WebSocket::SendData_RemoveLobbyPassword()
 
 	Send(strBody.c_str());
 }
-
+std::string to_utf8(const char* str);
 void WebSocket::SendData_ChangeName(UnicodeString& strNewName)
 {
 	nlohmann::json j;
 	j["msg_id"] = EWebSocketMessageID::PLAYER_NAME_CHANGE;
 	j["name"] = to_utf8(strNewName.str());
-	std::string strBody = j.dump();
+	std::string strBody = j.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
 
 	Send(strBody.c_str());
 }
@@ -999,7 +999,7 @@ void WebSocket::SendData_FriendMessage(UnicodeString& msg, int64_t target_user_i
 	j["msg_id"] = EWebSocketMessageID::SOCIAL_FRIEND_CHAT_MESSAGE_CLIENT_TO_SERVER;
 	j["target_user_id"] = target_user_id;
 	j["message"] = to_utf8(msg.str());
-	std::string strBody = j.dump();
+	std::string strBody = j.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
 
 	Send(strBody.c_str());
 }
@@ -1012,7 +1012,7 @@ void WebSocket::SendData_LobbyChatMessage(UnicodeString& msg, bool bIsAction, bo
 	j["action"] = bIsAction;
 	j["announcement"] = bIsAnnouncement;
 	j["show_announcement_to_host"] = bShowAnnouncementToHost;
-	std::string strBody = j.dump();
+	std::string strBody = j.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
 
 	Send(strBody.c_str());
 }

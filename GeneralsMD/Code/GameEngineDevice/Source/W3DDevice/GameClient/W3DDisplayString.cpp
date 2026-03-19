@@ -254,29 +254,32 @@ void W3DDisplayString::getSize( Int *width, Int *height )
 /** Get text with up to charPos characters, -1 = all characters */
 //=============================================================================
 
-Int W3DDisplayString::getWidth( Int charPos )
+Int W3DDisplayString::getWidth(Int charPos)
 {
-	FontCharsClass *	font;
+	FontCharsClass* font;
 	Int width = 0;
 	Int count = 0;
-
 	font = m_textRenderer.Peek_Font();
-
-	if ( font )
+	if (font)
 	{
-		const WideChar *text = m_textString.str();
+		const WideChar* text = m_textString.str();
 		WideChar ch;
-
-		while ( (ch = *text++ ) != 0 && ( charPos == -1 || count < charPos ) )
+		while ((ch = *text++) != 0 && (charPos == -1 || count < charPos))
 		{
-			if ( ch != (WideChar)'\n' )
+			if (ch != (WideChar)'\n')
 			{
-				width += font->Get_Char_Spacing( ch );
+				// Handle surrogate pairs, decode to full codepoint
+				uint32_t codepoint = ch;
+				if (ch >= 0xD800 && ch <= 0xDBFF && *text >= 0xDC00 && *text <= 0xDFFF)
+				{
+					WCHAR low = *text++;
+					codepoint = 0x10000 + ((ch - 0xD800) << 10) + (low - 0xDC00);
+				}
+				width += font->Get_Char_Spacing(codepoint);
 			}
 			count++;
 		}
 	}
-
 	return width;
 }
 

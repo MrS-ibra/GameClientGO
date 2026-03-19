@@ -84,6 +84,7 @@
 #include "GameLogic/GhostObject.h"
 #include "GameLogic/Object.h"
 #include "GameLogic/ScriptEngine.h"		// For TheScriptEngine - jkmcd
+#include "EmojiRenderer.h"
 
 #include "../NextGenMP_defines.h"
 #include <chrono>
@@ -323,6 +324,16 @@ void GameClient::init( void )
 	TheFontLibrary = createFontLibrary();
 	if( TheFontLibrary )
 		TheFontLibrary->init();
+
+	// Initialize emoji renderer, loads PNGs from <exe_dir>\emoji
+	{
+		char exePath[MAX_PATH];
+		GetModuleFileNameA(nullptr, exePath, MAX_PATH);
+		char* lastSlash = strrchr(exePath, '\\');
+		if (lastSlash) *(lastSlash + 1) = 0;
+		strcat(exePath, "emoji\\");
+		EmojiRenderer::Get_Instance()->Init(exePath);
+	}
 
 	// create the mouse
 	TheMouse = TheGlobalData->m_headless ? NEW MouseDummy : createMouse();

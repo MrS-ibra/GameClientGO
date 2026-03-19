@@ -230,23 +230,41 @@ WindowMsgHandledType GadgetTextEntryInput( GameWindow *window, UnsignedInt msg,
 
 				// --------------------------------------------------------------------
 				case KEY_BACKSPACE:
-
-					if( BitIsSet( mData2, KEY_STATE_DOWN ) )
+					if (BitIsSet(mData2, KEY_STATE_DOWN))
 					{
-						// if conCharPos != 0 this will fall through to next case.
-						// it should be noted that conCharPos can only != 0 in Jap & Kor
-						if( e->conCharPos == 0 )
+						if (e->conCharPos == 0)
 						{
-							if( e->charPos > 0 )
+							if (e->charPos > 0)
 							{
-
-								e->text->removeLastChar();
-								e->sText->removeLastChar();
-								e->charPos--;
-								TheWindowManager->winSendSystemMsg( window->winGetOwner(),
-																								GEM_UPDATE_TEXT,
-																								(WindowMsgData)window,
-																								0 );
+								WideChar last = e->text->getText().getCharAt(e->charPos - 1);
+								if (last >= 0xDC00 && last <= 0xDFFF && e->charPos >= 2)
+								{
+									WideChar prev = e->text->getText().getCharAt(e->charPos - 2);
+									if (prev >= 0xD800 && prev <= 0xDBFF)
+									{
+										e->text->removeLastChar();
+										e->text->removeLastChar();
+										e->sText->removeLastChar();
+										e->sText->removeLastChar();
+										e->charPos -= 2;
+									}
+									else
+									{
+										e->text->removeLastChar();
+										e->sText->removeLastChar();
+										e->charPos--;
+									}
+								}
+								else
+								{
+									e->text->removeLastChar();
+									e->sText->removeLastChar();
+									e->charPos--;
+								}
+								TheWindowManager->winSendSystemMsg(window->winGetOwner(),
+									GEM_UPDATE_TEXT,
+									(WindowMsgData)window,
+									0);
 							}
 						}
 					}

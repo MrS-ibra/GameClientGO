@@ -35,7 +35,6 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #pragma once
-
 #include "always.h"
 #include "render2d.h"
 #include "Vector.h"
@@ -55,9 +54,9 @@ class FontCharsClassCharDataStruct : public W3DMPO
 {
 	W3DMPO_GLUE(FontCharsClassCharDataStruct)
 public:
-	WCHAR				Value;
+	uint32_t			Value;
 	short				Width;
-	uint16 *		Buffer;
+	uint16* Buffer;
 };
 
 enum { CHAR_BUFFER_LEN		= 32768 };
@@ -87,12 +86,12 @@ public:
 	const char * Get_Name( void )			{ return Name; }
 
 	int	Get_Char_Height( void )			{ return CharHeight; }
-	int	Get_Char_Width( WCHAR ch );
-	int	Get_Char_Spacing( WCHAR ch );
+	int	Get_Char_Width(uint32_t ch);
+	int	Get_Char_Spacing(uint32_t ch);
 
 	int Get_Extra_Overlap(void) {return PixelOverlap;}
 
-	void	Blit_Char( WCHAR ch, uint16 *dest_ptr, int dest_stride, int x, int y );
+	void	Blit_Char(uint32_t ch, uint16* dest_ptr, int dest_stride, int x, int y);
 
 private:
 
@@ -101,11 +100,11 @@ private:
 	//
 	bool							Create_GDI_Font( const char *font_name );
 	void							Free_GDI_Font( void );
-	const FontCharsClassCharDataStruct *	Store_GDI_Char( WCHAR ch );
+	const FontCharsClassCharDataStruct* Store_GDI_Char(uint32_t ch);
 	void							Update_Current_Buffer( int char_width );
-	const FontCharsClassCharDataStruct	*	Get_Char_Data( WCHAR ch );
+	const FontCharsClassCharDataStruct* Get_Char_Data(uint32_t ch);
 
-	void							Grow_Unicode_Array( WCHAR ch );
+	void							Grow_Unicode_Array(WCHAR ch);
 	void							Free_Character_Arrays( void );
 
 	//
@@ -126,8 +125,8 @@ private:
 	HFONT									GDIFont;
 	uint8 *								GDIBitmapBits;
 	HDC									MemDC;
-	FontCharsClassCharDataStruct *					ASCIICharArray[256];
-	FontCharsClassCharDataStruct **					UnicodeCharArray;
+	FontCharsClassCharDataStruct* ASCIICharArray[256];
+	FontCharsClassCharDataStruct** UnicodeCharArray;
 	uint16								FirstUnicodeChar;
 	uint16								LastUnicodeChar;
 	bool									IsBold;
@@ -203,6 +202,14 @@ private:
 	//
 	//	Private structures
 	//
+	struct EmojiDataStruct {
+		uint32_t Codepoint;
+		RectClass ScreenRect;
+
+		bool operator==(const EmojiDataStruct& src) { return false; }
+		bool operator!=(const EmojiDataStruct& src) { return true; }
+	};
+
 	struct SentenceDataStruct {
 		SurfaceClass *		Surface;
 		RectClass			ScreenRect;
@@ -241,6 +248,7 @@ private:
 	//
 	//	Private member data
 	//
+	DynamicVectorClass<EmojiDataStruct> EmojiData;
 	DynamicVectorClass<SentenceDataStruct>		SentenceData;
 	DynamicVectorClass<PendingSurfaceStruct>	PendingSurfaces;
 	DynamicVectorClass<RendererDataStruct>		Renderers;

@@ -40,6 +40,7 @@
 #include "wwprofile.h"
 #include "wwmemlog.h"
 #include "dx8wrapper.h"
+#include "EmojiRenderer.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -207,21 +208,50 @@ Render2DSentenceClass::Set_Shader (ShaderClass shader)
 //
 ////////////////////////////////////////////////////////////////////////////////////
 void
-Render2DSentenceClass::Render (void)
+Render2DSentenceClass::Render(void)
 {
-	//
-	//	Build any textures that are pending
-	//
-	Build_Textures ();
+	Build_Textures();
 
-	//
-	//	Ask each renderer to draw its contents
-	//
-	for (int i = 0; i < Renderers.Count (); i ++) {
-		Renderers[i].Renderer->Render ();
+	for (int i = 0; i < Renderers.Count(); i++) {
+		Renderers[i].Renderer->Render();
 	}
 
-	return ;
+	for (int i = 0; i < EmojiData.Count(); i++)
+	{
+		EmojiDataStruct& ed = EmojiData[i];
+
+		TextureClass* tex = EmojiRenderer::Get_Instance()->Get_Texture(ed.Codepoint);
+		if (!tex) continue;
+
+		RectClass rect = ed.ScreenRect;
+		rect += Location;
+
+		if (IsClippedEnabled)
+		{
+			if (rect.Right <= ClipRect.Left ||
+				rect.Bottom <= ClipRect.Top ||
+				rect.Left >= ClipRect.Right ||
+				rect.Top >= ClipRect.Bottom)
+				continue;
+		}
+
+		Render2DClass emojiDraw;
+		emojiDraw.Set_Coordinate_Range(Render2DClass::Get_Screen_Resolution());
+
+		ShaderClass shader = Render2DClass::Get_Default_Shader();
+		shader.Set_Dst_Blend_Func(ShaderClass::DSTBLEND_ONE_MINUS_SRC_ALPHA);
+		shader.Set_Src_Blend_Func(ShaderClass::SRCBLEND_SRC_ALPHA);
+		shader.Set_Primary_Gradient(ShaderClass::GRADIENT_MODULATE);
+		ShaderClass* cs = emojiDraw.Get_Shader();
+		*cs = shader;
+
+		emojiDraw.Set_Texture(tex);
+		RectClass uv(0.0f, 0.0f, 1.0f, 1.0f);
+		emojiDraw.Add_Quad(rect, uv, 0xFFFFFFFF);
+		emojiDraw.Render();
+	}
+
+	return;
 }
 
 
@@ -296,19 +326,21 @@ Render2DSentenceClass::Get_Formatted_Text_Extents (const WCHAR *text)
 //
 ////////////////////////////////////////////////////////////////////////////////////
 void
-Render2DSentenceClass::Reset_Sentence_Data (void)
+Render2DSentenceClass::Reset_Sentence_Data(void)
 {
-	//
-	//	Release our hold on each texture used in the sentence
-	//
-	for (int index = 0; index < SentenceData.Count (); index ++) {
-		REF_PTR_RELEASE (SentenceData[index].Surface);
+	for (int index = 0; index < SentenceData.Count(); index++) {
+		REF_PTR_RELEASE(SentenceData[index].Surface);
 	}
 
-	if (SentenceData.Count()>0) {
-		SentenceData.Delete_All ();
+	if (SentenceData.Count() > 0) {
+		SentenceData.Delete_All();
 	}
-	return ;
+
+	if (EmojiData.Count() > 0) {
+		EmojiData.Delete_All();
+	}
+
+	return;
 }
 
 
@@ -572,8 +604,7 @@ Render2DSentenceClass::Draw_Sentence (uint32 color)
 			}
 		}
 	}
-
-	return ;
+	return;
 }
 
 
@@ -875,9 +906,18 @@ void	Render2DSentenceClass::Build_Sentence_Centered (const WCHAR *text, int *hkX
 			calcHotKeyX = false;
 			hotKeyPosX = Cursor.X + notCenteredHotkeyX;
 		}
-
-		for(int i = 0; i <= charCount; i++) {
-			WCHAR ch = *text++;
+		for (int i = 0; i <= charCount; i++) {
+			WCHAR raw = *text++;
+			uint32_t ch;
+			if (raw >= 0xD800 && raw <= 0xDBFF && *text >= 0xDC00 && *text <= 0xDFFF)
+			{
+				WCHAR low = *text++;
+				ch = 0x10000 + ((raw - 0xD800) << 10) + (low - 0xDC00);
+			}
+			else
+			{
+				ch = raw;
+			}
 			dontBlit = false;
 			//
 			//	Determine how much horizontal space this character requires
@@ -1022,7 +1062,18 @@ Vector2	Render2DSentenceClass::Build_Sentence_Not_Centered (const WCHAR *text, i
 	//	Loop over all the characters in the string
 	//
 	while (text != nullptr) {
-		WCHAR ch = *text++;
+		// handle surrogate pairs for emoji
+		WCHAR raw = *text++;
+		uint32_t ch;
+		if (raw >= 0xD800 && raw <= 0xDBFF && *text >= 0xDC00 && *text <= 0xDFFF)
+		{
+			WCHAR low = *text++;
+			ch = 0x10000 + ((raw - 0xD800) << 10) + (low - 0xDC00);
+		}
+		else
+		{
+			ch = raw;
+		}
 		dontBlit = false;
 		//
 		//	Determine how much horizontal space this character requires
@@ -1041,7 +1092,7 @@ Vector2	Render2DSentenceClass::Build_Sentence_Not_Centered (const WCHAR *text, i
 		float char_spacing = Font->Get_Char_Spacing (ch);
 
 		bool exceeded_texture_width	= ((TextureOffset.I + char_spacing) >= CurrTextureSize);
-		bool encountered_break_char	= (ch == L' ' || ch == L'\n' || ch == 0);
+		bool encountered_break_char = (ch == (uint32_t)L' ' || ch == (uint32_t)L'\n' || ch == 0);
 		bool wordBiggerThenLine = ((useHardWordWrap) && ( WrapWidth != 0 ) &&((Cursor.X + TextureOffset.I -TextureStartX + char_spacing) >= WrapWidth));
 		//
 		//	Do we need to record this portion of the sentence to its own chunk?
@@ -1141,9 +1192,27 @@ Vector2	Render2DSentenceClass::Build_Sentence_Not_Centered (const WCHAR *text, i
 			//
 			//	Blit the character to the surface
 			//
-			if (!justCalcExtents && !dontBlit )
+			if (!justCalcExtents && !dontBlit)
 			{
-				Font->Blit_Char (ch, LockedPtr, LockedStride, TextureOffset.I, TextureOffset.J);
+				if (ch >= 0x1F000 && EmojiRenderer::Get_Instance()->Has_Emoji(ch))
+				{
+					// Record emoji position for deferred rendering
+					// (will be drawn in Draw_Sentence with correct Location offset)
+					float emojiSize = (float)Font->Get_Char_Height();
+					float ex = Cursor.X + (TextureOffset.I - TextureStartX);
+					float ey = Cursor.Y;
+					EmojiDataStruct emojiEntry;
+					emojiEntry.Codepoint = ch;
+					emojiEntry.ScreenRect.Left = ex;
+					emojiEntry.ScreenRect.Top = ey;
+					emojiEntry.ScreenRect.Right = ex + emojiSize;
+					emojiEntry.ScreenRect.Bottom = ey + emojiSize;
+					EmojiData.Add(emojiEntry);
+				}
+				else
+				{
+					Font->Blit_Char(ch, LockedPtr, LockedStride, TextureOffset.I, TextureOffset.J);
+				}
 			}
 			TextureOffset.I += char_spacing;
 		}
@@ -1240,33 +1309,33 @@ FontCharsClass::~FontCharsClass (void)
 //	Get_Char_Data
 //
 ////////////////////////////////////////////////////////////////////////////////////
-const FontCharsClassCharDataStruct *
-FontCharsClass::Get_Char_Data (WCHAR ch)
+const FontCharsClassCharDataStruct*
+FontCharsClass::Get_Char_Data(uint32_t ch)
 {
-	const FontCharsClassCharDataStruct *retval = nullptr;
+	const FontCharsClassCharDataStruct* retval = nullptr;
 
-	if ( ch < 256 )
+	if (ch < 256)
 	{
 		retval = ASCIICharArray[ch];
 	}
- 	else if ( AlternateUnicodeFont && this != AlternateUnicodeFont )
+	else if (AlternateUnicodeFont && this != AlternateUnicodeFont)
 	{
-		return AlternateUnicodeFont->Get_Char_Data( ch );
+		return AlternateUnicodeFont->Get_Char_Data(ch);
 	}
 	else
 	{
-		Grow_Unicode_Array( ch );
+		Grow_Unicode_Array((WCHAR)ch);
 		retval = UnicodeCharArray[ch - FirstUnicodeChar];
 	}
 
 	//
 	//	If the character wasn't found, then add it to our list
 	//
-	if ( retval == nullptr ) {
-		retval = Store_GDI_Char( ch );
+	if (retval == nullptr) {
+		retval = Store_GDI_Char(ch);
 	}
 
-	WWASSERT( retval->Value == ch );
+	WWASSERT(retval->Value == ch);
 	return retval;
 }
 
@@ -1277,7 +1346,7 @@ FontCharsClass::Get_Char_Data (WCHAR ch)
 //
 ////////////////////////////////////////////////////////////////////////////////////
 int
-FontCharsClass::Get_Char_Width (WCHAR ch)
+FontCharsClass::Get_Char_Width(uint32_t ch)
 {
 	const FontCharsClassCharDataStruct	* data = Get_Char_Data( ch );
 	if ( data != nullptr ) {
@@ -1294,11 +1363,16 @@ FontCharsClass::Get_Char_Width (WCHAR ch)
 //
 ////////////////////////////////////////////////////////////////////////////////////
 int
-FontCharsClass::Get_Char_Spacing (WCHAR ch)
+FontCharsClass::Get_Char_Spacing(uint32_t ch)
 {
-	const FontCharsClassCharDataStruct	* data = Get_Char_Data( ch );
-	if ( data != nullptr ) {
-		if ( data->Width != 0 ) {
+	if (ch >= 0x1F000)
+	{
+		return CharHeight;
+	}
+
+	const FontCharsClassCharDataStruct* data = Get_Char_Data(ch);
+	if (data != nullptr) {
+		if (data->Width != 0) {
 			return data->Width - PixelOverlap - CharOverhang;
 		}
 	}
@@ -1313,7 +1387,7 @@ FontCharsClass::Get_Char_Spacing (WCHAR ch)
 //
 ////////////////////////////////////////////////////////////////////////////////////
 void
-FontCharsClass::Blit_Char (WCHAR ch, uint16 *dest_ptr, int dest_stride, int x, int y)
+FontCharsClass::Blit_Char(uint32_t ch, uint16* dest_ptr, int dest_stride, int x, int y)
 {
 	const FontCharsClassCharDataStruct	* data = Get_Char_Data( ch );
 	if ( data != nullptr && data->Width != 0 ) {
@@ -1350,11 +1424,26 @@ FontCharsClass::Blit_Char (WCHAR ch, uint16 *dest_ptr, int dest_stride, int x, i
 //	Store_GDI_Char
 //
 ////////////////////////////////////////////////////////////////////////////////////
-const FontCharsClassCharDataStruct *
-FontCharsClass::Store_GDI_Char (WCHAR ch)
+const FontCharsClassCharDataStruct*
+FontCharsClass::Store_GDI_Char(uint32_t ch)
 {
-	int width	= PointSize * 2;
-	int height	= PointSize * 2;
+	int width = PointSize * 2;
+	int height = PointSize * 2;
+
+	// Build the WCHAR sequence (surrogate pair for emoji above U+FFFF)
+	WCHAR gdi_chars[3] = { 0 };
+	int gdi_len = 1;
+	if (ch >= 0x10000)
+	{
+		uint32_t v = ch - 0x10000;
+		gdi_chars[0] = (WCHAR)(0xD800 + (v >> 10));
+		gdi_chars[1] = (WCHAR)(0xDC00 + (v & 0x3FF));
+		gdi_len = 2;
+	}
+	else
+	{
+		gdi_chars[0] = (WCHAR)ch;
+	}
 
 	//
 	//	Draw the character into the memory DC
@@ -1364,13 +1453,13 @@ FontCharsClass::Store_GDI_Char (WCHAR ch)
 	if (ch == 'W') {
 		xOrigin = 1;
 	}
-	::ExtTextOutW( MemDC, xOrigin, 0, ETO_OPAQUE, &rect, &ch, 1, nullptr);
+	::ExtTextOutW(MemDC, xOrigin, 0, ETO_OPAQUE, &rect, gdi_chars, gdi_len, nullptr);
 
 	//
 	//	Get the size of the character we just drew
 	//
 	SIZE char_size = { 0 };
-	::GetTextExtentPoint32W( MemDC, &ch, 1, &char_size );
+	::GetTextExtentPoint32W(MemDC, gdi_chars, gdi_len, &char_size);
 	char_size.cx += PixelOverlap + xOrigin;
 	//
 	//	Get a pointer to the surface that this character should use
@@ -1383,64 +1472,17 @@ FontCharsClass::Store_GDI_Char (WCHAR ch)
 	//	Copy the BMP contents to the buffer
 	//
 	int stride = (((width * 3) + 3) & ~3);
-	for (int row = 0; row < char_size.cy; row ++) {
-
-		//
-		//	Compute the indices into the BMP and surface
-		//
+	for (int row = 0; row < char_size.cy; row++) {
 		int index = (row * stride);
-
-		//
-		//	Loop over each column
-		//
-		for (int col = 0; col < char_size.cx; col ++) {
-
-			//
-			//	Get the pixel color at this location
-			//
+		for (int col = 0; col < char_size.cx; col++) {
 			uint8 pixel_value = GDIBitmapBits[index];
 			index += 3;
-#ifdef TEST_PLACEMENT
- 			if (row==CharHeight-1&&col==0) {
- 				pixel_value = 0xff;
- 			}
- 			if (row==CharHeight-2&&col==1) {
- 				pixel_value = 0xff;
- 			}
- 			if (row==0&&col==0) {
- 				pixel_value = 0xff;
- 			}
- 			if (row==1&&col==1) {
- 				pixel_value = 0xff;
- 			}
- 			if (row==CharHeight-1&&col==char_size.cx-1-PixelOverlap) {
- 				pixel_value = 0xff;
- 			}
- 			if (row==CharHeight-2&&col==char_size.cx-2-PixelOverlap) {
- 				pixel_value = 0xff;
- 			}
- 			if (row==0&&col==char_size.cx-1-PixelOverlap) {
- 				pixel_value = 0xff;
- 			}
- 			if (row==1&&col==char_size.cx-2-PixelOverlap) {
- 				pixel_value = 0xff;
- 			}
- 			if (pixel_value == 0x00) {
- 				pixel_value = 0x40;
- 			}
-#endif
-
 			uint16 pixel_color = 0;
 			if (pixel_value != 0) {
 				pixel_color = 0x0FFF;
 			}
-
-			//
-			//	Convert the pixel intensity from 8bit to 4bit and
-			// store it in our buffer
-			//
-			uint8 alpha_value	= ((pixel_value >> 4) & 0xF);
-			*curr_buffer_p++	= pixel_color | (alpha_value << 12);
+			uint8 alpha_value = ((pixel_value >> 4) & 0xF);
+			*curr_buffer_p++ = pixel_color | (alpha_value << 12);
 		}
 	}
 
@@ -1455,16 +1497,19 @@ FontCharsClass::Store_GDI_Char (WCHAR ch)
 	//
 	//	Insert this character into our array
 	//
-	if ( ch < 256 ) {
+	if (ch < 256)
+	{
 		ASCIICharArray[ch] = char_data;
-	} else {
+	}
+	else
+	{
 		UnicodeCharArray[ch - FirstUnicodeChar] = char_data;
 	}
 
 	//
 	//	Advance the character position
 	//
-	CurrPixelOffset += ((char_size.cx+PixelOverlap) * CharHeight);
+	CurrPixelOffset += ((char_size.cx + PixelOverlap) * CharHeight);
 
 	//
 	//	Return the index of the entry we just added

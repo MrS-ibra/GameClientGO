@@ -12,6 +12,16 @@ std::mutex m_logMutex;
 
 extern NGMPGame* TheNGMPGame;
 
+std::string to_utf8(const char* str)
+{
+	int wsize = MultiByteToWideChar(CP_ACP, 0, str, -1, nullptr, 0);
+	if (wsize <= 0)
+		return str;
+	std::wstring wide(wsize - 1, 0);
+	MultiByteToWideChar(CP_ACP, 0, str, -1, &wide[0], wsize);
+	return to_utf8(wide);
+}
+
 std::string to_utf8(const std::wstring& wstr)
 {
 	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
