@@ -82,6 +82,7 @@ static Bool s_inQM = FALSE;
 #include "../OnlineServices_Auth.h"
 #include "../NGMPGame.h"
 extern NGMPGame* TheNGMPGame;
+extern HWND ApplicationHWnd;
 #endif
 #include "../OnlineServices_MatchmakingInterface.h"
 #include "../OnlineServices_LobbyInterface.h"
@@ -1205,7 +1206,7 @@ void WOLQuickMatchMenuInit( WindowLayout *layout, void *userData )
 				if (buttonBuddy)
 					buttonBuddy->winEnable(FALSE);
 				GameSpyCloseOverlay(GSOVERLAY_BUDDY);
-
+				SetForegroundWindow(ApplicationHWnd);
 				*TheNGMPGame = *myGame;
 				TheNGMPGame->startGame(0);
 			});

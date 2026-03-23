@@ -74,7 +74,7 @@ NGMPGame* TheNGMPGame = NULL;
 
 void WOLDisplaySlotList( void );
 
-
+extern HWND ApplicationHWnd;
 extern std::list<PeerResponse> TheLobbyQueuedUTMs;
 extern void MapSelectorTooltip(GameWindow *window, WinInstanceData *instData,	UnsignedInt mouse);
 
@@ -1851,7 +1851,7 @@ void WOLGameSetupMenuInit( WindowLayout *layout, void *userData )
 			if (buttonBuddy)
 				buttonBuddy->winEnable(FALSE);
 			GameSpyCloseOverlay(GSOVERLAY_BUDDY);
-
+			SetForegroundWindow(ApplicationHWnd);
 			*TheNGMPGame = *myGame;
 			TheNGMPGame->startGame(0);
 		});
@@ -2636,7 +2636,7 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 					if (buttonBuddy)
 						buttonBuddy->winEnable(FALSE);
 					GameSpyCloseOverlay(GSOVERLAY_BUDDY);
-
+					SetForegroundWindow(ApplicationHWnd);
 					*TheNGMPGame = *myGame;
 					TheNGMPGame->startGame(0);
 				}
