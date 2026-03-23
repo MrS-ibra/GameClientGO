@@ -62,7 +62,8 @@ enum GameMode CPP_11(: Int);
 
 enum MouseButtonState CPP_11(: Int)
 {
-	MBS_Up = 0,
+	MBS_None = -1,
+		MBS_Up = 0,
 		MBS_Down,
 		MBS_DoubleClick,
 };
@@ -105,17 +106,14 @@ struct MouseIO
 								 user while - is down/toward user */
 	ICoord2D deltaPos;  ///< overall change in mouse pointer this frame
 
-	MouseButtonState leftState;					// button state: Up, Down, DoubleClick (Which is also down)
+	MouseButtonState leftState;					// button state: None (no event), Up, Down, DoubleClick
 	Int leftEvent;											// Most important event this frame
-	Int leftFrame;											// last frame button state changed
 
 	MouseButtonState rightState;
 	Int rightEvent;
-	Int rightFrame;
 
 	MouseButtonState middleState;
 	Int middleEvent;
-	Int middleFrame;
 };
 
 class CursorInfo
@@ -277,15 +275,15 @@ public:
 	virtual void init() override;		///< init mouse, extend this functionality, do not replace
 	virtual void reset() override;		///< Reset the system
 	virtual void update() override;  ///< update the state of the mouse position and buttons
-	virtual void initCursorResources()=0;	///< needed so Win32 cursors can load resources before D3D device created.
+	virtual void initCursorResources() = 0;	///< needed so Win32 cursors can load resources before D3D device created.
 
 	virtual void createStreamMessages();  /**< given state of device, create
 																									 messages and put them on the
 																									 stream for the raw state. */
 
 	virtual void draw() override;													///< draw the mouse
-	virtual void setPosition( Int x, Int y );						///< set the mouse position
-	virtual void setCursor( MouseCursor cursor ) = 0;		///< set mouse cursor
+	virtual void setPosition(Int x, Int y);						///< set the mouse position
+	virtual void setCursor(MouseCursor cursor) = 0;		///< set mouse cursor
 
 	void initCapture(); ///< called once to unlock the mouse capture functionality
 	void setCursorCaptureMode(CursorCaptureMode mode); ///< set the rules for the mouse capture
@@ -293,23 +291,23 @@ public:
 	Bool isCursorCaptured(); ///< true if the mouse is captured in the game window
 
 	// access methods for the mouse data
-	const MouseIO *getMouseStatus() { return &m_currMouse; }							///< get current mouse status
+	const MouseIO* getMouseStatus() { return &m_currMouse; }							///< get current mouse status
 
-  Int  getCursorTooltipDelay() { return m_tooltipDelay; }
-  void setCursorTooltipDelay(Int delay) { m_tooltipDelay = delay; }
+	Int  getCursorTooltipDelay() { return m_tooltipDelay; }
+	void setCursorTooltipDelay(Int delay) { m_tooltipDelay = delay; }
 
-	void setCursorTooltip( UnicodeString tooltip, Int tooltipDelay = -1, const RGBColor *color = nullptr, Real width = 1.0f );		///< set tooltip string at cursor
-	void setMouseText( UnicodeString text, const RGBAColorInt *color, const RGBAColorInt *dropColor );					///< set the cursor text, *NOT* the tooltip text
+	void setCursorTooltip(UnicodeString tooltip, Int tooltipDelay = -1, const RGBColor* color = nullptr, Real width = 1.0f);		///< set tooltip string at cursor
+	void setMouseText(UnicodeString text, const RGBAColorInt* color, const RGBAColorInt* dropColor);					///< set the cursor text, *NOT* the tooltip text
 	virtual void setMouseLimits();					///< update the limit extents the mouse can move in
 	MouseCursor getMouseCursor() { return m_currentCursor; }	///< get the current mouse cursor image type
-	virtual void setRedrawMode(RedrawMode mode)	{m_currentRedrawMode=mode;} ///<set cursor drawing method.
+	virtual void setRedrawMode(RedrawMode mode) { m_currentRedrawMode = mode; } ///<set cursor drawing method.
 	virtual RedrawMode getRedrawMode() { return m_currentRedrawMode; } //get cursor drawing method
 	virtual void setVisibility(Bool visible) { m_visible = visible; } // set visibility for load screens, etc
 	Bool getVisibility() { return m_visible; } // get visibility state
 
 	void drawTooltip();					///< draw the tooltip text
 	void drawCursorText();			///< draw the mouse cursor text
-	Int getCursorIndex( const AsciiString& name );
+	Int getCursorIndex(const AsciiString& name);
 	void resetTooltipDelay();
 
 	virtual void loseFocus(); ///< called when window has lost focus
@@ -360,15 +358,15 @@ protected:
 	virtual void releaseCapture() = 0; ///< release the mouse capture
 
 	/// you must implement getting a buffered mouse event from you device here
-	virtual UnsignedByte getMouseEvent( MouseIO *result, Bool flush ) = 0;
+	virtual UnsignedByte getMouseEvent(MouseIO* result, Bool flush) = 0;
 
 	//-----------------------------------------------------------------------------------------------
 
 	// internal methods
 	void updateMouseData();													///< update the mouse with the current device data
-	void processMouseEvent( Int eventToProcess );			///< combine mouse events into final data
+	void processMouseEvent(Int eventToProcess);			///< combine mouse events into final data
 	void checkForDrag();												///< check for mouse drag
-	void moveMouse( Int x, Int y, Int relOrAbs );			///< move mouse by delta or absolute
+	void moveMouse(Int x, Int y, Int relOrAbs);			///< move mouse by delta or absolute
 
 	//---------------------------------------------------------------------------
 	// internal mouse data members
@@ -392,9 +390,6 @@ protected:
 	Int m_maxX;							///< mouse is locked to this region
 	Int m_minY;							///< mouse is locked to this region
 	Int m_maxY;							///< mouse is locked to this region
-
-	UnsignedInt m_inputFrame;				///< frame input was gathered on
-	UnsignedInt m_deadInputFrame;		///< Frame which last input occured
 
 	Bool m_inputMovesAbsolute;			/**< if TRUE, when processing mouse position
 																	chanages the movement will be done treating
@@ -436,7 +431,7 @@ class MouseDummy : public Mouse
 	virtual void setCursor(MouseCursor cursor) override {}
 	virtual void capture() override {}
 	virtual void releaseCapture() override {}
-	virtual UnsignedByte getMouseEvent(MouseIO *result, Bool flush) override { return MOUSE_NONE; }
+	virtual UnsignedByte getMouseEvent(MouseIO* result, Bool flush) override { return MOUSE_NONE; }
 };
 
 

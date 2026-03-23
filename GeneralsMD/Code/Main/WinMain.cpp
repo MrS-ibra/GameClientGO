@@ -73,9 +73,9 @@
 
 
 // GLOBALS ////////////////////////////////////////////////////////////////////
-HINSTANCE ApplicationHInstance = NULL;  ///< our application instance
-HWND ApplicationHWnd = NULL;  ///< our application window handle
-Win32Mouse* TheWin32Mouse = NULL;  ///< for the WndProc() only
+HINSTANCE ApplicationHInstance = nullptr;  ///< our application instance
+HWND ApplicationHWnd = nullptr;  ///< our application window handle
+Win32Mouse* TheWin32Mouse = nullptr;  ///< for the WndProc() only
 DWORD TheMessageTime = 0;	///< For getting the time that a message was posted from Windows.
 
 const Char* g_strFile = "data\\Generals.str";
@@ -86,7 +86,7 @@ static Bool gInitializing = false;
 static Bool gDoPaint = true;
 static Bool isWinMainActive = false;
 
-static HBITMAP gLoadScreenBitmap = NULL;
+static HBITMAP gLoadScreenBitmap = nullptr;
 
 //#define DEBUG_WINDOWS_MESSAGES
 
@@ -463,13 +463,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 				// of TestCooperativeLevel() == D3DERR_DEVICENOTRESET is not a requirement. There are other code
 				// paths that take care of that.
 
-//
-				// reset the state of our keyboard cause we haven't been paying
-				// attention to the keys while focus was away
-				//
-				if (TheKeyboard)
-					TheKeyboard->resetKeys();
-
 				isWinMainActive = (BOOL)wParam;
 
 				if (TheGameEngine)
@@ -488,23 +481,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 		//-------------------------------------------------------------------------
 		case WM_ACTIVATE:
 		{
-            Int active = LOWORD(wParam);
+			Int active = LOWORD(wParam);
 
-            if (active == WA_INACTIVE)
-            {
-                if (TheAudio)
-                    TheAudio->muteAudio(AudioManager::MuteAudioReason_WindowFocus);
-            }
-            else
-            {
-                if (TheAudio)
-                    TheAudio->unmuteAudio(AudioManager::MuteAudioReason_WindowFocus);
+			if (active == WA_INACTIVE)
+			{
+				if (TheAudio)
+					TheAudio->muteAudio(AudioManager::MuteAudioReason_WindowFocus);
+			}
+			else
+			{
+				if (TheAudio)
+					TheAudio->unmuteAudio(AudioManager::MuteAudioReason_WindowFocus);
 
-                // Cursor can only be captured after one of the activation events.
-                if (TheMouse)
-                    TheMouse->refreshCursorCapture();
-            }
-            break;
+				// Cursor can only be captured after one of the activation events.
+				if (TheMouse)
+					TheMouse->refreshCursorCapture();
+			}
+			break;
 		}
 
 		//-------------------------------------------------------------------------
@@ -536,35 +529,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 		case WM_RBUTTONUP:
 		case WM_RBUTTONDBLCLK:
 		{
-
-			if (message == WM_LBUTTONDOWN)
-			{
-				if (TheWin32Mouse)
-				{
-					TheWin32Mouse->SetDragging(true);
-				}
-			}
-			else if (message == WM_LBUTTONUP)
-			{
-				if (TheWin32Mouse)
-				{
-					if (TheAudio)
-						TheAudio->muteAudio(AudioManager::MuteAudioReason_WindowFocus);
-
-					TheWin32Mouse->SetDragging(false);
-				}
-				else
-				{
-					if (TheAudio)
-						TheAudio->unmuteAudio(AudioManager::MuteAudioReason_WindowFocus);
-
-					// Cursor can only be captured after one of the activation events.
-					if (TheMouse)
-						TheMouse->refreshCursorCapture();
-				}
-				break;
-			}
-
 			if (TheWin32Mouse)
 				TheWin32Mouse->addWin32Event(message, wParam, lParam, TheMessageTime);
 
@@ -574,7 +538,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 		//-------------------------------------------------------------------------
 		case 0x020A: // WM_MOUSEWHEEL
 		{
-			if (TheWin32Mouse == NULL)
+			if (TheWin32Mouse == nullptr)
 				return 0;
 
 			long x = (long)LOWORD(lParam);
@@ -589,30 +553,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 			TheWin32Mouse->addWin32Event(message, wParam, lParam, TheMessageTime);
 			return 0;
 		}
-		case WM_MOVING:
-		{
-			if (TheWin32Mouse)
-			{
-				TheWin32Mouse->SetDragging(true);
-			}
-				
-			break;
-		}
-
-		case WM_EXITSIZEMOVE:
-		{
-			if (TheWin32Mouse)
-			{
-
-				TheWin32Mouse->SetDragging(false);
-			}
-			break;
-		}
 
 		//-------------------------------------------------------------------------
 		case WM_MOUSEMOVE:
 		{
-			if (TheWin32Mouse == NULL)
+			if (TheWin32Mouse == nullptr)
 				return 0;
 
 			// ignore when window is not active
@@ -661,7 +606,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 				::SetBkColor(dc, RGB(0, 0, 0));
 				::TextOut(dc, 30, 30, "Loading Command & Conquer Generals...", 37);
 #endif
-				if (gLoadScreenBitmap != NULL) {
+				if (gLoadScreenBitmap != nullptr) {
 					Int savContext = ::SaveDC(dc);
 					HDC tmpDC = ::CreateCompatibleDC(dc);
 					HBITMAP savBitmap = (HBITMAP)::SelectObject(tmpDC, gLoadScreenBitmap);
@@ -684,7 +629,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 		}
 
 		// Well, it was a nice idea, but we don't get a message for an ejection.
-		// (Really unforunate, actually.) I'm leaving this in in-case some one wants
+		// (Really unfortunate, actually.) I'm leaving this in in-case some one wants
 		// to trap a different device change (for instance, removal of a mouse) - jkmcd
 #if 0
 		case WM_DEVICECHANGE:
@@ -705,10 +650,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 				// its done. I hate Windows. - jkmcd
 				DEV_BROADCAST_VOLUME* vol = (DEV_BROADCAST_VOLUME*)(hdr);
 
-					return TRUE;
-				}
-				break;
+				return TRUE;
 			}
+			break;
+		}
 #endif
 		}
 
@@ -825,7 +770,6 @@ static Bool initializeAppWindows(HINSTANCE hInstance, Int nCmdShow, Bool runWind
 
 // Necessary to allow memory managers and such to have useful critical sections
 static CriticalSection critSec1, critSec2, critSec3, critSec4, critSec5;
-
 // UnHandledExceptionFilter ===================================================
 /** Handler for unhandled win32 exceptions. */
 //=============================================================================
@@ -879,7 +823,7 @@ Int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 		/// @todo remove this force set of working directory later
 		Char buffer[_MAX_PATH];
-		GetModuleFileName(NULL, buffer, sizeof(buffer));
+		GetModuleFileName(nullptr, buffer, sizeof(buffer));
 		if (Char* pEnd = strrchr(buffer, '\\'))
 		{
 			*pEnd = 0;
@@ -905,7 +849,7 @@ Int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 // Force "splash image" to be loaded from a file, not a resource so same exe can be used in different localizations.
 #if defined(RTS_DEBUG) || defined RTS_PROFILE
 
-		// check both localized directory and root dir
+			// check both localized directory and root dir
 		char filePath[_MAX_PATH];
 		const char* fileName = "Install_Final.bmp";
 		static const char* localizedPathFormat = "Data/%s/";
@@ -922,7 +866,7 @@ Int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 #else
 
 		// in release, the file only ever lives in the root dir
-			gLoadScreenBitmap = (HBITMAP)LoadImage(hInstance, "Install_Final.bmp", IMAGE_BITMAP, 0, 0, LR_SHARED | LR_LOADFROMFILE);
+		gLoadScreenBitmap = (HBITMAP)LoadImage(hInstance, "Install_Final.bmp", IMAGE_BITMAP, 0, 0, LR_SHARED | LR_LOADFROMFILE);
 #endif
 
 		CommandLine::parseCommandLineForStartup();
@@ -940,14 +884,14 @@ Int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		// save our application instance for future use
 		ApplicationHInstance = hInstance;
 
-		if (gLoadScreenBitmap != NULL) {
+		if (gLoadScreenBitmap != nullptr) {
 			::DeleteObject(gLoadScreenBitmap);
-			gLoadScreenBitmap = NULL;
+			gLoadScreenBitmap = nullptr;
 		}
 
 
 		// BGC - initialize COM
-	//	OleInitialize(NULL);
+	//	OleInitialize(nullptr);
 
 
 
@@ -957,11 +901,11 @@ Int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		// TODO_NGMP: Better solution
 #if defined(GENERALS_ONLINE)
 		TheVersion->setVersion(VERSION_MAJOR, VERSION_MINOR, GENERALS_ONLINE_VERSION, GENERALS_ONLINE_NET_VERSION,
-	#if !defined(_DEBUG)
+#if !defined(_DEBUG)
 			AsciiString("Generals Online Development Team | GitHub Buildserver"), AsciiString(""),
-	#else
+#else
 			AsciiString("Generals Online Development Team | Development Test Build"), AsciiString(""),
-	#endif
+#endif
 			AsciiString(__TIME__), AsciiString(__DATE__));
 #else
 		TheVersion->setVersion(VERSION_MAJOR, VERSION_MINOR, VERSION_BUILDNUM, VERSION_LOCALBUILDNUM,
@@ -973,7 +917,7 @@ Int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 		if (!rts::ClientInstance::initialize())
 		{
-			HWND ccwindow = FindWindow(rts::ClientInstance::getFirstInstanceName(), NULL);
+			HWND ccwindow = FindWindow(rts::ClientInstance::getFirstInstanceName(), nullptr);
 			if (ccwindow)
 			{
 				SetForegroundWindow(ccwindow);
@@ -982,7 +926,7 @@ Int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 			DEBUG_LOG(("Generals is already running...Bail!"));
 			delete TheVersion;
-			TheVersion = NULL;
+			TheVersion = nullptr;
 			shutdownMemoryManager();
 			return exitcode;
 		}
@@ -994,7 +938,7 @@ Int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		exitcode = GameMain();
 
 		delete TheVersion;
-		TheVersion = NULL;
+		TheVersion = nullptr;
 
 #ifdef MEMORYPOOL_DEBUG
 		TheMemoryPoolFactory->debugMemoryReport(REPORT_POOLINFO | REPORT_POOL_OVERFLOW | REPORT_SIMPLE_LEAKS, 0, 0);
@@ -1016,9 +960,9 @@ Int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 #ifdef RTS_ENABLE_CRASHDUMP
 	MiniDumper::shutdownMiniDumper();
 #endif
-	TheUnicodeStringCriticalSection = NULL;
-	TheDmaCriticalSection = NULL;
-	TheMemoryPoolCriticalSection = NULL;
+	TheUnicodeStringCriticalSection = nullptr;
+	TheDmaCriticalSection = nullptr;
+	TheMemoryPoolCriticalSection = nullptr;
 
 	return exitcode;
 
@@ -1027,7 +971,7 @@ Int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 // CreateGameEngine ===========================================================
 /** Create the Win32 game engine we're going to use */
 //=============================================================================
-GameEngine *CreateGameEngine()
+GameEngine* CreateGameEngine()
 {
 	Win32GameEngine* engine;
 

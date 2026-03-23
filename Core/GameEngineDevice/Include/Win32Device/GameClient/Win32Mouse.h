@@ -80,28 +80,16 @@ public:
 	/// add an event from a win32 window procedure
 	void addWin32Event(UINT msg, WPARAM wParam, LPARAM lParam, DWORD time);
 
-	void SetDragging(bool bDragging) {
-		m_bIsDragging = bDragging;
-
-		if (!m_bIsDragging)
-		{
-			if (canCapture())
-			{
-				capture();
-			}
-		}
-	}
-
 protected:
 
 	virtual void capture(); ///< capture the mouse
 	virtual void releaseCapture(); ///< release mouse capture
 
 	/// get the next event available in the buffer
-	virtual UnsignedByte getMouseEvent( MouseIO *result, Bool flush );
+	virtual UnsignedByte getMouseEvent(MouseIO* result, Bool flush);
 
 	/// translate a win32 mouse event to our own info
-	void translateEvent( UnsignedInt eventIndex, MouseIO *result );
+	void translateEvent(UnsignedInt eventIndex, MouseIO* result);
 
 	struct Win32MouseEvent
 	{
@@ -119,9 +107,7 @@ protected:
 	MouseCursor m_currentWin32Cursor;	///< keep track of last cursor image sent to D3D.
 	Int m_directionFrame;	///< current frame of directional cursor (from 0 points up).
 	Bool m_lostFocus;		///< flag if window has lost focus and mouse should stop being updated.
-
-	bool m_bIsDragging = false;
-};  // end Win32Mouse
+};
 
 // INLINING ///////////////////////////////////////////////////////////////////
 

@@ -3859,7 +3859,7 @@ void InGameUI::postWindowDraw()
 
 	if (m_playerInfoListPointSize > 0 && TheGameLogic->isInGame() && TheControlBar->isObserverControlBarOn())
 	{
-		drawPlayerInfoList();
+		//drawPlayerInfoList();
 	}
 
 	hudOffsetX = 0;
