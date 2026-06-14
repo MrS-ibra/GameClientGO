@@ -953,6 +953,13 @@ AsciiString GameInfoToAsciiString( const GameInfo *game )
 			int lenRem = m_lanMaxOptionsLength - lenCur;  //length remaining before overflowing
 			int lenMax = lenRem / (MAX_SLOTS-i);  //share lenRem with all remaining slots
 			AsciiString name = WideCharStringToMultiByte(slot->getName().str()).c_str();
+#if defined(GENERALS_ONLINE)
+			// Replace characters that break the slot list parser with underscores for now.
+			// Ideally the service should reject these characters in usernames
+			for (char *p = (char*)name.str(); *p; ++p)
+				if (*p == ',' || *p == ':' || *p == ';')
+					*p = '_';
+#endif
 			while( name.getLength() > lenMax )
 				name.removeLastChar();  //what a horrible way to truncate.  I hate AsciiString.
 
