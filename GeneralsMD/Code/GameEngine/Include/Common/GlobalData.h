@@ -435,6 +435,9 @@ public:
 	Bool m_showMoneyPerMinute;
 	Bool m_allowMoneyPerMinuteForPlayer;
 
+	// Generals Online @feature allow the minimum run ahead to be configured
+	Int m_minRunAhead;
+
 	// Generals Online @feature 11/01/2026 allow the observer stats font size to be set, a size of zero disables it
 	Int m_observerStatsFontSize;
 

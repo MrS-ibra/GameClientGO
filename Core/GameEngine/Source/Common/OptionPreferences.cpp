@@ -942,3 +942,16 @@ Bool OptionPreferences::getShowMoneyPerMinute() const
 	}
 	return FALSE;
 }
+
+Int OptionPreferences::getMinRunAhead() const
+{
+	OptionPreferences::const_iterator it = find("MinRunAhead");
+	if (it == end())
+		return 4;
+	Int value = atoi(it->second.str());
+	if (value < 4)
+		value = 4;
+	if (value > 10)
+		value = 10;
+	return value;
+}

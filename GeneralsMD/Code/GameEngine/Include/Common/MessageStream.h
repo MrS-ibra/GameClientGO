@@ -251,6 +251,9 @@ public:
 		MSG_META_INCREASE_OBSERVER_NOTIFICATION_FONT,         ///< Generals Online @feature Increase observer notification size
 		MSG_META_DECREASE_OBSERVER_NOTIFICATION_FONT,         ///< Generals Online @feature Decrease observer notification size
 
+		MSG_META_INCREASE_MIN_RUNAHEAD,                       ///< Generals Online @feature Increase minimum run-ahead
+		MSG_META_DECREASE_MIN_RUNAHEAD,                       ///< Generals Online @feature Decrease minimum run-ahead
+
 		MSG_META_BEGIN_PATH_BUILD,									///< enter path-building mode
 		MSG_META_END_PATH_BUILD,										///< exit path-building mode
 		MSG_META_BEGIN_FORCEATTACK,									///< enter force-attack mode

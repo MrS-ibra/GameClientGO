@@ -3389,6 +3389,45 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 
 	//-----------------------------------------------------------------------------------------
 
+	case GameMessage::MSG_META_INCREASE_MIN_RUNAHEAD:
+	{
+		if (TheWritableGlobalData->m_minRunAhead < 10)
+		{
+			++TheWritableGlobalData->m_minRunAhead;
+			OptionPreferences optPref;
+			AsciiString prefString;
+			prefString.format("%d", TheWritableGlobalData->m_minRunAhead);
+			optPref["MinRunAhead"] = prefString;
+			optPref.write();
+			UnicodeString msg;
+			msg.format(L"Min Run-Ahead: %d", TheWritableGlobalData->m_minRunAhead);
+			TheInGameUI->messageNoFormat(msg);
+			disp = DESTROY_MESSAGE;
+		}
+		break;
+	}
+
+	//-----------------------------------------------------------------------------------------
+
+	case GameMessage::MSG_META_DECREASE_MIN_RUNAHEAD:
+	{
+		if (TheWritableGlobalData->m_minRunAhead > 4)
+		{
+			--TheWritableGlobalData->m_minRunAhead;
+			OptionPreferences optPref;
+			AsciiString prefString;
+			prefString.format("%d", TheWritableGlobalData->m_minRunAhead);
+			optPref["MinRunAhead"] = prefString;
+			optPref.write();
+			UnicodeString msg;
+			msg.format(L"Min Run-Ahead: %d", TheWritableGlobalData->m_minRunAhead);
+			TheInGameUI->messageNoFormat(msg);
+			disp = DESTROY_MESSAGE;
+		}
+		break;
+	}
+	//-----------------------------------------------------------------------------------------
+
 	case GameMessage::MSG_META_INCREASE_OBSERVER_STATS_FONT:
 	{
 		if (changeObserverStatsFontSize(ObserverStatsFontChange_Increase))

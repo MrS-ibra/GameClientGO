@@ -1522,7 +1522,7 @@ void ConnectionManager::updateRunAhead(Int oldRunAhead, Int frameRate, Bool didS
 #if defined(GENERALS_ONLINE)
 			if (TheNGMPGame != nullptr)
 			{
-				minRunAheadForClamp = 4;
+				minRunAheadForClamp = TheGlobalData->m_minRunAhead;
 			}
 #endif
 

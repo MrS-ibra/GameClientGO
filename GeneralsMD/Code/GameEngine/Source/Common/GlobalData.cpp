@@ -965,6 +965,8 @@ GlobalData::GlobalData()
 	m_gameTimeFontSize = 8;
 	m_playerInfoListFontSize = 8;
 
+	m_minRunAhead = 4;
+
 	m_observerStatsFontSize = 7;
 	m_observerNotificationFontSize = 10;
 	m_observerNotificationSpecialPowerUsage = TRUE;
@@ -1270,6 +1272,8 @@ void GlobalData::parseGameDataDefinition( INI* ini )
 	TheWritableGlobalData->m_observerNotificationMilestone = optionPref.getObserverNotificationMilestone();
 
 	TheWritableGlobalData->m_antiAliasLevel = optionPref.getAntiAliasing();
+
+	TheWritableGlobalData->m_minRunAhead = optionPref.getMinRunAhead();
 
 #if !defined(GENERALS_ONLINE_DISABLE_TEXTURE_FILTERING_AND_AA)
 	TheWritableGlobalData->m_textureFilteringMode = optionPref.getTextureFilterMode();

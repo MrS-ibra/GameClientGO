@@ -129,6 +129,8 @@ public:
 
 	Bool getShowMoneyPerMinute() const;
 
+	Int getMinRunAhead() const;
+
     Int getObserverStatsFontSize(void);
     Int getObserverNotificationFontSize(void);
 	Bool getObserverNotificationSpecialPowerUsage(void);
