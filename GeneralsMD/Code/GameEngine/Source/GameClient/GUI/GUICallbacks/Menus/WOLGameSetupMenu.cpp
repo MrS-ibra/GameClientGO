@@ -145,6 +145,7 @@ void SendStatsToOtherPlayers(const GameInfo *game)
 // PRIVATE DATA ///////////////////////////////////////////////////////////////////////////////////
 static Bool isShuttingDown = false;
 static Bool buttonPushed = false;
+static Bool lobbySettingsChangeIgnored = false;
 static const char *nextScreen = NULL;
 static Bool raiseMessageBoxes = false;
 static Bool launchGameNext = FALSE;
@@ -657,6 +658,9 @@ NameKeyType listboxGameSetupChatID = NAMEKEY_INVALID;
 
 static void handleColorSelection(int index)
 {
+	if (lobbySettingsChangeIgnored)
+		return;
+
 	GameWindow *combo = comboBoxColor[index];
 	Int color, selIndex;
 	GadgetComboBoxGetSelectedPos(combo, &selIndex);
@@ -723,7 +727,7 @@ static void handlePlayerTemplateSelection(int index, bool bInitialSetup = false)
 	GadgetComboBoxGetSelectedPos(combo, &selIndex);
 	playerTemplate = (Int)GadgetComboBoxGetItemData(combo, selIndex);
 
-	if (!bInitialSetup)
+	if (!bInitialSetup && !lobbySettingsChangeIgnored)
 	{
 		NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
 		NGMPGame* myGame = pLobbyInterface == nullptr ? nullptr : pLobbyInterface->GetCurrentGame();
@@ -772,6 +776,9 @@ static void handlePlayerTemplateSelection(int index, bool bInitialSetup = false)
 
 static void handleStartPositionSelection(Int player, int startPos)
 {
+	if (lobbySettingsChangeIgnored)
+		return;
+
 	NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
 	NGMPGame* myGame = pLobbyInterface == nullptr ? nullptr : pLobbyInterface->GetCurrentGame();
 
@@ -824,6 +831,9 @@ static void handleStartPositionSelection(Int player, int startPos)
 
 static void handleTeamSelection(int index)
 {
+	if (lobbySettingsChangeIgnored)
+		return;
+
 	GameWindow *combo = comboBoxTeam[index];
 	Int team, selIndex;
 	GadgetComboBoxGetSelectedPos(combo, &selIndex);
@@ -1948,6 +1958,7 @@ void WOLGameSetupMenuInit( WindowLayout *layout, void *userData )
 
 	nextScreen = NULL;
 	buttonPushed = false;
+	lobbySettingsChangeIgnored = false;
 	isShuttingDown = false;
 	launchGameNext = FALSE;
 
@@ -2455,13 +2466,22 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 		if (TheNGMPGame->IsCountdownStarted())
 		{
 			s_matchStartCountdownWasRunning = true;
+			buttonSelectMap->winEnable(FALSE);
+
 			const int64_t timeBetweenChecks = 1000;
 			int64_t currTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::utc_clock::now().time_since_epoch()).count();
+			int secondsElapsed = (currTime - TheNGMPGame->GetCountdownStartTime()) / 1000;
+			int secondsRemainingNow = TheNGMPGame->GetTotalCountdownDuration() - secondsElapsed;
+			lobbySettingsChangeIgnored = (secondsRemainingNow <= 1);
 
 			if (currTime - TheNGMPGame->GetCountdownLastCheckTime() >= timeBetweenChecks)
 			{
 				int secondsSinceCountdownStart = (currTime - TheNGMPGame->GetCountdownStartTime()) / 1000;
 				int secondsRemaining = TheNGMPGame->GetTotalCountdownDuration() - secondsSinceCountdownStart;
+				if (secondsRemaining <= 1)
+				{
+					lobbySettingsChangeIgnored = true;
+				}
 
 				TheNGMPGame->UpdateCountdownLastCheckTime();
 
@@ -2502,8 +2522,9 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 			if (s_matchStartCountdownWasRunning)
 			{
 				s_matchStartCountdownWasRunning = false;
+				lobbySettingsChangeIgnored = false;
 
-				// Re-enable Back and Start buttons when countdown stops
+				// Re-enable Back, Start and map select buttons when countdown stops
 				if (buttonBack != nullptr)
 				{
 					buttonBack->winEnable(TRUE);
@@ -2513,8 +2534,12 @@ void WOLGameSetupMenuUpdate( WindowLayout * layout, void *userData)
 				{
 					buttonStart->winEnable(TRUE);
 				}
-			}
 
+				if (buttonSelectMap != nullptr)
+				{
+					buttonSelectMap->winEnable(TRUE);
+				}
+			}
 		}
 	}
 #endif
@@ -3798,7 +3823,7 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 		//-------------------------------------------------------------------------------------------------
 		case GCM_SELECTED:
 		{
-			if (!initDone)
+			if (!initDone || lobbySettingsChangeIgnored)
 				break;
 			if (buttonPushed)
 				break;
@@ -4005,10 +4030,13 @@ WindowMsgHandledType WOLGameSetupMenuSystem( GameWindow *window, UnsignedInt msg
 						*/
 					}
 				}
-        else if ( controlID == checkBoxLimitSuperweaponsID )
-        {
-          handleLimitSuperweaponsClick();
-        }
+				else if ( controlID == checkBoxLimitSuperweaponsID )
+				{
+					if (lobbySettingsChangeIgnored)
+						break;
+
+					handleLimitSuperweaponsClick();
+				}
 				else
 				{
 					NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
