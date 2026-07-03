@@ -900,9 +900,9 @@ void StartPatchCheck()
 
 	NGMP_OnlineServicesManager::GetInstance()->StartVersionCheck([](bool bSuccess, bool bNeedsUpdate)
 		{
-//#if defined(USE_TEST_ENV) || defined(USE_DEBUG_ON_LIVE_SERVER)
+#if defined(USE_TEST_ENV) || defined(USE_DEBUG_ON_LIVE_SERVER)
 			bNeedsUpdate = false;
-//#endif
+#endif
 			cantConnectBeforeOnline = !bSuccess;
 			mustDownloadPatch = bNeedsUpdate;
 

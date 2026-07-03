@@ -8,9 +8,7 @@ if (RTS_BUILD_ZEROHOUR_DOCS)
 endif()
 
 # Set where the build results will end up
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "D:/Generals Online")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "D:/Generals Online")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG   "D:/Generals Online")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 # Add main build targets
 add_subdirectory(Code)

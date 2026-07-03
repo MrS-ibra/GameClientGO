@@ -80,7 +80,6 @@
 #include "GameClient/GameText.h"
 
 #include "ww3d.h"
-#include <GameNetwork/GeneralsOnline/NGMP_include.h>
 
 #define VERY_TRANSPARENT_MATERIAL_PASS_OPACITY (0.001f)
 #define MATERIAL_PASS_OPACITY_FADE_SCALAR (0.8f)
